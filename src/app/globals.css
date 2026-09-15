@@ -1,0 +1,145 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@theme {
+  /* viatour brand tokens — exact hex, do not alter */
+  --color-ink: #12161C;
+  --color-ink-soft: #5A6672;
+  --color-canvas: #FFFFFF;
+  --color-surface: #F5F7F8;
+  --color-line: #E4E8EB;
+  --color-brand: #1656D6;
+  --color-brand-deep: #103FAE;
+  --color-brand-tint: #E9F0FE;
+  --color-wa: #25D366;
+  --color-wa-deep: #1EBE5B;
+  --color-amber: #F5A524;
+  --color-success: #16A34A;
+  --color-error: #DC2626;
+
+  /* typography */
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+
+  /* radius system: buttons/inputs/chips 10, cards 16, panels 20 */
+  --radius-btn: 10px;
+  --radius-card: 16px;
+  --radius-panel: 20px;
+
+  /* the ONLY two shadows — subtle, per Design Bible */
+  --shadow-sm: 0 1px 2px rgba(18,22,28,.06);
+  --shadow-md: 0 12px 30px -12px rgba(16,63,134,.18);
+
+  /* motion */
+  --duration-fast: 180ms;   /* hovers/toggles: 150–200ms */
+  --duration-reveal: 280ms; /* reveals: 250–300ms */
+}
+
+/* Map shadcn semantic tokens onto viatour tokens. Light theme only. */
+:root {
+  --radius: 10px;
+  --background: #FFFFFF;
+  --foreground: #12161C;
+  --card: #FFFFFF;
+  --card-foreground: #12161C;
+  --popover: #FFFFFF;
+  --popover-foreground: #12161C;
+  --primary: #1656D6;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F5F7F8;
+  --secondary-foreground: #12161C;
+  --muted: #F5F7F8;
+  --muted-foreground: #5A6672;
+  --accent: #E9F0FE;
+  --accent-foreground: #103FAE;
+  --destructive: #DC2626;
+  --border: #E4E8EB;
+  --input: #E4E8EB;
+  --ring: #1656D6;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+}
+
+@layer base {
+  * { border-color: var(--color-line); }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 26px;
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* Focus: 3px brand-tint ring on every interactive element. Never removed. */
+  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 3px solid var(--color-brand-tint);
+    outline-offset: 2px;
+  }
+}
+
+/* Typography roles — size / line-height / weight / tracking per Design Bible §4.
+   Headings 700–800 with tight tracking; body/lead NEVER heavy weight. */
+@layer components {
+  .t-display  { font-size: 56px; line-height: 60px; font-weight: 800; letter-spacing: -0.02em; }
+  .t-h1       { font-size: 40px; line-height: 46px; font-weight: 700; letter-spacing: -0.02em; }
+  .t-h2       { font-size: 30px; line-height: 38px; font-weight: 700; letter-spacing: -0.01em; }
+  .t-h3       { font-size: 22px; line-height: 30px; font-weight: 600; letter-spacing: -0.01em; }
+  .t-body-lg  { font-size: 18px; line-height: 30px; font-weight: 400; }
+  .t-body     { font-size: 16px; line-height: 26px; font-weight: 400; }
+  .t-small    { font-size: 14px; line-height: 22px; font-weight: 500; }
+  .t-button   { font-size: 16px; line-height: 1;    font-weight: 600; }
+
+  /* Centered content container: max 1200px, 24px gutters (16px on mobile). */
+  .container-site {
+    width: 100%;
+    max-width: 1200px;
+    margin-inline: auto;
+    padding-inline: 16px;
+  }
+  /* Paragraph measure: 60–75 characters. */
+  .measure { max-width: 68ch; }
+}
+
+@media (min-width: 640px) {
+  .container-site { padding-inline: 24px; }
+}
+
+/* Responsive headline scale-down for mobile. */
+@media (max-width: 639px) {
+  .t-display { font-size: 40px; line-height: 46px; }
+  .t-h1      { font-size: 32px; line-height: 38px; }
+  .t-h2      { font-size: 26px; line-height: 32px; }
+}
+
+/* Always respect reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
