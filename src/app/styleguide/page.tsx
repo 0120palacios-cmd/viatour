@@ -30,10 +30,6 @@ const typography = [
 export default function StyleguidePage() {
   return (
     <main className="container-site space-y-16 py-12">
-      <div className="rounded-btn border border-line bg-surface p-4 t-small">
-        PÁGINA TEMPORAL — se elimina en la Etapa 2.
-      </div>
-
       <section className="space-y-6" aria-labelledby="colores">
         <h1 id="colores" className="t-h1">Colores</h1>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">

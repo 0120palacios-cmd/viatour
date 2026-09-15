@@ -134,6 +134,22 @@
   .t-h2      { font-size: 26px; line-height: 32px; }
 }
 
+.mobile-sheet[data-state="open"] {
+  animation: menu-reveal var(--duration-reveal) ease-out;
+}
+.mobile-sheet[data-state="closed"] {
+  animation: menu-hide var(--duration-reveal) ease-out;
+}
+@keyframes menu-reveal { from { transform: translateX(100%); } to { transform: translateX(0); } }
+@keyframes menu-hide { from { transform: translateX(0); } to { transform: translateX(100%); } }
+.whatsapp-float {
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(16px, env(safe-area-inset-bottom));
+}
+@media (min-width: 640px) {
+  .whatsapp-float { right: max(24px, env(safe-area-inset-right)); bottom: max(24px, env(safe-area-inset-bottom)); }
+}
+
 /* Always respect reduced motion. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

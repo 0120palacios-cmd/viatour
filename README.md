@@ -1,6 +1,6 @@
 # viatour
 
-Etapa 1: Next.js con TypeScript, Tailwind CSS, Manrope, shadcn/ui (new-york, Neutral) y clientes de Supabase.
+Etapa 2: estructura global con encabezado, menú móvil, pie de página, WhatsApp y selección persistente de moneda.
 
 ## Desarrollo
 
@@ -11,11 +11,16 @@ Etapa 1: Next.js con TypeScript, Tailwind CSS, Manrope, shadcn/ui (new-york, Neu
 
 El middleware requiere la URL y la clave pública de Supabase para atender las páginas. Con los valores vacíos, las solicitudes devuelven un error. La clave de servicio se reserva para uso del servidor.
 
-La página principal está vacía. La guía temporal se elimina en la Etapa 2.
+La página principal está vacía; `/styleguide` se conserva dentro de la estructura global. Las rutas de navegación y legales contienen únicamente sus títulos hasta las etapas correspondientes.
+
+La moneda se guarda en la cookie `viatour-currency` durante un año. `useCurrency()` expone `currency` y `setCurrency` a los componentes cliente. El servidor lee la cookie para evitar un cambio de moneda al hidratar la página; esto hace que las rutas se rendericen por solicitud.
+
+El formulario de newsletter valida los datos localmente, sin guardarlos ni enviarlos. Su texto de consentimiento, validación y estados está marcado como borrador pendiente de aprobación. El TODO de `src/components/layout/newsletter.tsx` señala la futura integración de almacenamiento. Los enlaces generales de WhatsApp abren directamente el mensaje autorizado para esta etapa.
 
 ## Verificación
 
 - `npm run lint`
 - `npm run build`
+- `npm run typecheck`
 
 Se conserva el archivo `src/middleware.ts` solicitado. Next.js 16 muestra una advertencia de obsolescencia para esta convención.
