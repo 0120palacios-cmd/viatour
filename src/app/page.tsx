@@ -1,3 +1,5 @@
+import { Hero, FeaturedDestinations, FeaturedPackages, WhyViatour, ReviewsTeaser, FinalCta } from "@/components/home/sections";
+
 export default function Home() {
-  return null;
+  return <main><Hero /><FeaturedDestinations /><FeaturedPackages /><WhyViatour /><ReviewsTeaser /><FinalCta /></main>;
 }

@@ -150,6 +150,10 @@
   .whatsapp-float { right: max(24px, env(safe-area-inset-right)); bottom: max(24px, env(safe-area-inset-bottom)); }
 }
 
+.quote-form :is(input, select, textarea):user-invalid {
+  border-color: var(--color-error);
+}
+
 /* Always respect reduced motion. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
