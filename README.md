@@ -1,6 +1,6 @@
 ﻿# viatour
 
-Etapa 3: inicio y herramienta de cotización con cuatro servicios, sobre la estructura global de la Etapa 2.
+Etapa 3b: captura real de cotizaciones en Supabase antes de continuar a WhatsApp.
 
 ## Desarrollo
 
@@ -28,8 +28,23 @@ Se conserva el archivo `src/middleware.ts` solicitado. Next.js 16 muestra una ad
 
 ## Etapa 3: cotizaciones
 
-`src/lib/quote.ts` separa la composición del mensaje, la captura y la navegación a WhatsApp. Los nuevos botones esperan `captureLead(payload)` antes de navegar en la misma pestaña para evitar bloqueos de ventanas emergentes. Si falla la captura, muestran un error y permiten reintentar.
+`src/lib/quote.ts` separa la composición del mensaje, la captura y la navegación a WhatsApp. Los botones esperan `captureLead(payload)` antes de navegar en la misma pestaña para evitar bloqueos de ventanas emergentes. Si falla la captura, registran un diagnóstico sin datos personales y continúan a WhatsApp sin mostrar un error de almacenamiento.
 
-**TODO Etapa 3b:** guardar el lead en Supabase y notificar soporte antes de abrir WhatsApp. La función actual solo resuelve: no almacena ni envía correos. Los textos de esta etapa llevan comentarios de aprobación final pendiente; esto incluye los borradores de etiquetas y validación.
+La ruta `POST /api/leads` valida JSON y `servicio`, mapea las columnas conocidas, conserva el cuerpo completo en `payload` (incluidos `formData`, tramos y habitaciones), registra `user_agent` e inserta mediante el cliente Supabase del servidor con la clave pública anon y RLS. Genera un UUID antes del INSERT y lo devuelve tras su confirmación; no usa `.select()` ni necesita permisos de lectura. `estado` conserva el valor predeterminado de la tabla. No se usa la clave service role.
+
+Todas las pestañas y botones de cotización envían la moneda del contexto. El presupuesto se almacena como número, con moneda separada; los campos vacíos se guardan como `null`. La composición del mensaje de WhatsApp no cambia. El botón conserva `disabled` y `aria-busy` mientras espera, sin demora artificial. El INSERT tiene un límite de 2 segundos y la petición del navegador de 2,5 segundos para continuar incluso si la red no responde. La captura es de mejor esfuerzo: un fallo o timeout puede dejar una solicitud sin guardar, pero no impide continuar a WhatsApp. No se reintenta automáticamente para evitar duplicados.
+
+**TODO:** notificar soporte por email (Resend) en una etapa futura. No se envían correos en esta etapa. Los textos funcionales conservan la indicación de aprobación final pendiente.
+
+### Verificar la captura
+
+1. Ejecute `npm run dev` y abra `http://localhost:3000`.
+2. Seleccione USD o HNL, complete una pestaña y pulse «Solicitar cotización por WhatsApp». En Network de las herramientas del navegador, active Preserve log: `POST /api/leads` debe devolver HTTP 201 con `{ ok: true, id }` antes de navegar.
+3. En Supabase → Table Editor → `public.leads`, filtre `id` por el UUID recibido. Revise `servicio`, `moneda`, `presupuesto`, `notas`, `payload`, `user_agent` y `estado = nuevo`. No necesita enviar el mensaje de WhatsApp para guardar el lead.
+4. Repita con Hoteles (huéspedes y habitaciones), Vuelos multidestino (tramos en `payload`), Paquetes y Viaje a medida (presupuesto).
+
+Verificación real de esta etapa: se envió un payload de formulario a la API local y Supabase confirmó HTTP 201, ID `eb1294ec-09e6-49e9-b04e-ac4ad75f1985`, nombre `Prueba tecnica etapa 3b`, servicio `Viaje a medida`, HNL, presupuesto 25000 y nota de prueba «No contactar». La política anon de solo INSERT impide leer la fila desde esta integración; la inspección de sus columnas se realiza en Table Editor.
+
+Pruebas automatizadas de validación, mapeo de los cuatro servicios y navegación tras éxito/fallo: `node --test tests/leads.test.mjs`. Estas pruebas aíslan Supabase y navegación; no crean leads reales ni envían mensajes.
 
 Verifique en móvil y escritorio las cuatro pestañas con teclado, solo ida sin regreso, añadir y eliminar tramos, fechas ordenadas, adultos/niños, moneda USD/HNL en presupuesto, mensajes de cada servicio y los enlaces de destinos/paquetes. Los paquetes reales llegan en Etapa 4 y las opiniones reales en Etapa 6.

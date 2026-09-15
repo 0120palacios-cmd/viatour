@@ -1,6 +1,6 @@
 import { siteConfig } from "@/lib/site-config";
 
-export type QuotePayload = { service: string; fields: Record<string, string>; currency?: "USD" | "HNL" };
+export type QuotePayload = { service: string; fields: Record<string, string>; currency?: "USD" | "HNL"; formData?: Record<string, string> };
 
 // Copy pendiente de aprobación final
 export function composeQuote(payload: QuotePayload) {
@@ -10,12 +10,27 @@ export function composeQuote(payload: QuotePayload) {
 }
 
 export async function captureLead(payload: QuotePayload): Promise<void> {
-  // TODO Etapa 3b: guardar lead en Supabase y notificar soporte ANTES de abrir WhatsApp
-  void payload;
+  const response = await fetch("/api/leads", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...payload, servicio: payload.service }),
+    // Bound the wait on an unavailable network; do not delay fast responses.
+    signal: AbortSignal.timeout(2500),
+    keepalive: true,
+  });
+  const result = await response.json();
+  if (!response.ok || result?.ok !== true || typeof result.id !== "string") {
+    throw new Error(`Lead capture failed (${response.status})`);
+  }
 }
 
 export async function requestQuote(payload: QuotePayload) {
-  await captureLead(payload);
+  try {
+    await captureLead(payload);
+  } catch {
+    // Avoid logging personal form data or server response bodies.
+    console.warn("Lead capture unavailable; continuing to WhatsApp.");
+  }
   // Same-tab navigation avoids popup blockers after asynchronous lead capture.
   window.location.assign(`https://wa.me/${siteConfig.whatsappNumber}?text=${encodeURIComponent(composeQuote(payload))}`);
 }

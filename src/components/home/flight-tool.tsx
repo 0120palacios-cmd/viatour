@@ -61,7 +61,7 @@ function QuoteForm({ service }: { service: string }) {
     };
     if (multi) segments.forEach((id, index) => { fields[`Tramo ${index + 1}`] = `Origen: ${value(`origin-${id}`)}; Destino: ${value(`destination-${id}`)}; Fecha: ${value(`date-${id}`)}`; });
     locked.current = true; setBusy(true);
-    try { await requestQuote({ service, fields, ...(custom && value("budget") ? { currency } : {}) }); }
+    try { await requestQuote({ service, fields, currency, formData: Object.fromEntries(Array.from(data.entries(), ([key, entry]) => [key, String(entry)])) }); }
     catch { setError("No se pudo enviar su solicitud. Por favor, inténtelo de nuevo."); }
     finally { locked.current = false; setBusy(false); }
   }
