@@ -1,6 +1,6 @@
 import { siteConfig } from "@/lib/site-config";
 
-export type QuotePayload = { service: string; fields: Record<string, string>; currency?: "USD" | "HNL"; formData?: Record<string, string> };
+export type QuotePayload = { service: string; servicio?: string; fields: Record<string, string>; currency?: "USD" | "HNL"; formData?: Record<string, string> };
 
 // Copy pendiente de aprobación final
 export function composeQuote(payload: QuotePayload) {
@@ -13,7 +13,7 @@ export async function captureLead(payload: QuotePayload): Promise<void> {
   const response = await fetch("/api/leads", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...payload, servicio: payload.service }),
+    body: JSON.stringify({ ...payload, servicio: payload.servicio ?? payload.service }),
     // Bound the wait on an unavailable network; do not delay fast responses.
     signal: AbortSignal.timeout(2500),
     keepalive: true,

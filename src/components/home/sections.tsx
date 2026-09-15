@@ -1,3 +1,6 @@
+import { Suspense } from "react";
+import { PackageGrid, PackageSkeletons } from "@/components/packages/package-card";
+import { getPackages } from "@/lib/packages";
 import Link from "next/link";
 import { ArrowUpRight, MessageSquare, SlidersHorizontal, ShieldCheck } from "lucide-react";
 import { FlightTool } from "@/components/home/flight-tool";
@@ -23,11 +26,21 @@ export function FeaturedDestinations() {
   </section>;
 }
 
+async function FeaturedPackageData() {
+  let items;
+  try {
+    items = await getPackages(true);
+  } catch {
+    // Copy funcional pendiente de aprobación final.
+    return <p role="alert" className="t-body rounded-panel border border-line bg-canvas p-8 text-ink-soft">No se pudieron cargar los paquetes. Por favor, visite la página de paquetes para volver a intentarlo.</p>;
+  }
+  return <PackageGrid items={items} />;
+}
+
 export function FeaturedPackages() {
   // Copy pendiente de aprobación final
-  // Paquetes reales y precios se cargan en la Etapa 4 — no inventar datos
   return <section className="border-y border-line bg-surface py-14 sm:py-24" aria-labelledby="packages-title"><div className="container-site"><div className="mb-8 space-y-4"><h2 id="packages-title" className="t-h2">Paquetes destacados</h2><p className="t-body-lg measure text-ink-soft">Algunas ideas para inspirarse. Cada viaje se ajusta a su presupuesto y a sus fechas.</p></div>
-    <div className="grid gap-6 md:grid-cols-3">{featuredDestinations.slice(0, 3).map(destination => <article key={destination.slug} className="overflow-hidden rounded-card border border-line bg-canvas"><PhotoPlaceholder destination={destination.name} /><div className="space-y-4 p-6"><h3 className="t-h3">Paquete a {destination.name}</h3><p className="t-small text-ink-soft">Precio referencial — pídanos su cotización</p><QuoteButton payload={{ service: "Paquetes", fields: { Destino: destination.name } }}>Solicitar cotización</QuoteButton></div></article>)}</div>
+    <Suspense fallback={<PackageSkeletons />}><FeaturedPackageData /></Suspense>
     <Link href="/paquetes" className="t-small mt-8 inline-flex items-center gap-2 text-brand underline underline-offset-4">Paquetes<ArrowUpRight size={16} aria-hidden="true" /></Link>
   </div></section>;
 }

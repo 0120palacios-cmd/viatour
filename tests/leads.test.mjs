@@ -4,6 +4,24 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import ts from 'typescript';
 
+test('package handoff keeps the database service and package identity separate from message labels', async () => {
+  let body;
+  let navigation;
+  const quote = load('src/lib/quote.ts', { '@/lib/site-config': { siteConfig: { whatsappNumber: '50488668704' } } }, {
+    fetch: async (_url, options) => {
+      body = JSON.parse(options.body);
+      return Response.json({ ok: true, id: 'package-test' });
+    },
+    window: { location: { assign: url => { navigation = url; } } },
+  });
+  await quote.requestQuote({ service: 'Paquete', servicio: 'paquetes', fields: { Destino: 'Destino de prueba', Paquete: 'Paquete de prueba' }, formData: { slug: 'prueba', nombre: 'Paquete de prueba', destino: 'Destino de prueba' } });
+  assert.equal(body.servicio, 'paquetes');
+  assert.equal(body.formData.slug, 'prueba');
+  assert.equal(body.formData.nombre, 'Paquete de prueba');
+  assert.equal(body.formData.destino, 'Destino de prueba');
+  assert.match(new URL(navigation).searchParams.get('text'), /Servicio: Paquete\nDestino: Destino de prueba\nPaquete: Paquete de prueba/);
+});
+
 // Run the actual TypeScript modules with isolated network/navigation boundaries.
 function load(file, dependencies, globals = {}) {
   const exports = {};
