@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
+import { DestinationGrid, DestinationSkeletons } from "@/components/destinations/destination-card";
+import { getDestinations } from "@/lib/destinations";
 
-export const metadata: Metadata = { title: "Destinos" };
-
+// Copy pendiente de aprobación final
+export const metadata: Metadata = { title: { absolute: "viatour | Destinos de viaje desde Honduras" }, description: "Explore los destinos que ofrecemos para viajeros hondureños.", alternates: { canonical: "/destinos" } };
+async function Destinations() { return <DestinationGrid items={await getDestinations()} />; }
 export default function Page() {
-  return <main className="container-site py-14 sm:py-24"><h1 className="t-h1">Destinos</h1></main>;
+  // Copy pendiente de aprobación final
+  return <main className="container-site space-y-12 py-14 sm:py-24"><header className="space-y-4"><h1 className="t-h1">Destinos</h1><p className="t-body-lg measure text-ink-soft">Explore los destinos que ofrecemos para viajeros hondureños.</p></header><section aria-labelledby="available-destinations"><h2 id="available-destinations" className="sr-only">Destinos disponibles</h2><Suspense fallback={<DestinationSkeletons />}><Destinations /></Suspense></section></main>;
 }

@@ -5,10 +5,17 @@ import Link from "next/link";
 import { ArrowUpRight, MessageSquare, SlidersHorizontal, ShieldCheck } from "lucide-react";
 import { FlightTool } from "@/components/home/flight-tool";
 import { QuoteButton } from "@/components/home/quote-button";
-import { featuredDestinations } from "@/lib/destinations";
+import { getDestinations } from "@/lib/destinations";
+import { DestinationGrid, DestinationSkeletons } from "@/components/destinations/destination-card";
 
-function PhotoPlaceholder({ destination }: { destination: string }) {
-  return <div role="img" aria-label={`Espacio reservado para una fotografía de ${destination}`} className="aspect-[4/3] bg-surface" />;
+async function FeaturedDestinationData() {
+  let items;
+  try { items = await getDestinations(true); }
+  catch {
+    // Copy pendiente de aprobación final
+    return <p role="alert" className="t-body rounded-panel border border-line bg-surface p-8 text-ink-soft">No se pudieron cargar los destinos. <Link href="/destinos" className="text-brand underline underline-offset-4">Ver destinos</Link></p>;
+  }
+  return <DestinationGrid items={items} />;
 }
 
 export function Hero() {
@@ -22,7 +29,7 @@ export function Hero() {
 export function FeaturedDestinations() {
   // Copy pendiente de aprobación final
   return <section className="container-site py-14 sm:py-24" aria-labelledby="destinations-title"><div className="mb-8 space-y-4"><h2 id="destinations-title" className="t-h2">Destinos destacados</h2><p className="t-body-lg measure text-ink-soft">Destinos que los viajeros hondureños están descubriendo con nosotros.</p></div>
-    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">{featuredDestinations.map(destination => <Link key={destination.slug} href={`/destinos/${destination.slug}`} className="group overflow-hidden rounded-card border border-line transition-shadow duration-(--duration-fast) ease-out hover:shadow-md"><PhotoPlaceholder destination={destination.name} /><div className="flex items-center justify-between gap-4 p-6"><h3 className="t-h3">{destination.name}</h3><ArrowUpRight size={24} strokeWidth={1.75} className="text-brand" aria-hidden="true" /></div></Link>)}</div>
+    <Suspense fallback={<DestinationSkeletons />}><FeaturedDestinationData /></Suspense>
   </section>;
 }
 

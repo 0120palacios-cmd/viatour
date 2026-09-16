@@ -48,3 +48,19 @@ Verificación real de esta etapa: se envió un payload de formulario a la API lo
 Pruebas automatizadas de validación, mapeo de los cuatro servicios y navegación tras éxito/fallo: `node --test tests/leads.test.mjs`. Estas pruebas aíslan Supabase y navegación; no crean leads reales ni envían mensajes.
 
 Verifique en móvil y escritorio las cuatro pestañas con teclado, solo ida sin regreso, añadir y eliminar tramos, fechas ordenadas, adultos/niños, moneda USD/HNL en presupuesto, mensajes de cada servicio y los enlaces de destinos/paquetes. Los paquetes reales llegan en Etapa 4 y las opiniones reales en Etapa 6.
+
+## Etapa 5: destinos
+
+El hub y las páginas individuales consultan destinos publicados mediante el cliente Supabase del servidor (anon + RLS), ordenados por `orden` y `slug`. Inicio filtra `destacado = true`; ambos reutilizan la misma tarjeta. El contenido editorial procede de la base de datos, incluidos los avisos de ejemplo de los seis registros sembrados. Los textos funcionales nuevos están pendientes de aprobación final.
+
+Las páginas incluyen cuerpo con párrafos, mejor época, paquetes vinculados por `destination_id`, acordeón accesible Radix con los tokens existentes, metadatos, canonical, BreadcrumbList, FAQPage únicamente con preguntas válidas e ItemList sin precios. Los detalles de paquetes enlazan al destino publicado. `/sitemap.xml` consulta las rutas publicadas de destinos y paquetes e incluye las rutas estáticas de navegación y legales.
+
+Las cotizaciones reutilizan Stage 3b: `servicio: destino`, nombre en `fields.Destino` e identidad en `formData` (slug, nombre, destination_id). La captura precede al enlace de WhatsApp y su fallo no bloquea la navegación. La notificación por correo conserva el TODO existente.
+
+### Verificar destinos
+
+- Ejecute `npm run dev` y después `node tests/destinations-smoke.mjs`. La prueba solo lee datos públicos y páginas; no modifica Supabase. Puede cambiar el origen con `SMOKE_ORIGIN`.
+- La prueba verifica todos los destinos publicados, sus metadatos, un H1, esquema FAQ condicional, tarjetas destacadas, vínculos en ambas direcciones, precio nulo, sitemap y HTTP 404 para un slug inexistente.
+- Los seis slugs comprobados son punta-cana, cartagena, dubai, cancun, rio-de-janeiro y panama. Los tres primeros tienen un paquete vinculado cada uno.
+- Revise visualmente móvil/escritorio, foco y navegación del acordeón con teclado. Revise los textos de ejemplo antes de publicar contenido definitivo.
+- En Network, confirme que la cotización hace POST a /api/leads antes de abrir WhatsApp y conserva el destino y la moneda. La notificación de soporte por correo aún no está implementada.

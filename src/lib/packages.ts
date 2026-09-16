@@ -2,16 +2,17 @@
 import { createClient } from "@/lib/supabase/server";
 
 export type Package = {
-  id: string; slug: string; nombre: string; destino: string; resumen: string;
+  destination_id: string | null; id: string; slug: string; nombre: string; destino: string; resumen: string;
   descripcion: string; incluye: string[]; duracion: string;
   precio_desde: number | null; moneda: string; imagen_url: string | null;
   destacado: boolean; publicado: boolean; orden: number;
 };
-const columns = "id,slug,nombre,destino,resumen,descripcion,incluye,duracion,precio_desde,moneda,imagen_url,destacado,publicado,orden";
+const columns = "destination_id,id,slug,nombre,destino,resumen,descripcion,incluye,duracion,precio_desde,moneda,imagen_url,destacado,publicado,orden";
 
-export async function getPackages(featured = false): Promise<Package[]> {
+export async function getPackages(featured = false, destinationId?: string): Promise<Package[]> {
   const supabase = await createClient();
   let query = supabase.from("packages").select(columns).eq("publicado", true).order("orden").order("slug");
+  if (destinationId) query = query.eq("destination_id", destinationId);
   if (featured) query = query.eq("destacado", true).limit(3);
   const { data, error } = await query.abortSignal(AbortSignal.timeout(8000));
   if (error) throw new Error("No se pudieron cargar los paquetes.");

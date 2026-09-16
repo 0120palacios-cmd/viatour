@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useCurrency } from "@/components/currency-provider";
-import { launchDestinations } from "@/lib/destinations";
+import { launchDestinations } from "@/lib/launch-destinations";
 import { requestQuote } from "@/lib/quote";
 
 const services = [{ name: "Vuelos", icon: Plane }, { name: "Hoteles", icon: Hotel }, { name: "Paquetes", icon: Package }, { name: "Viaje a medida", icon: Compass }];
