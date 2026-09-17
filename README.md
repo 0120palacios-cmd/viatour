@@ -64,3 +64,33 @@ Las cotizaciones reutilizan Stage 3b: `servicio: destino`, nombre en `fields.Des
 - Los seis slugs comprobados son punta-cana, cartagena, dubai, cancun, rio-de-janeiro y panama. Los tres primeros tienen un paquete vinculado cada uno.
 - Revise visualmente móvil/escritorio, foco y navegación del acordeón con teclado. Revise los textos de ejemplo antes de publicar contenido definitivo.
 - En Network, confirme que la cotización hace POST a /api/leads antes de abrir WhatsApp y conserva el destino y la moneda. La notificación de soporte por correo aún no está implementada.
+
+## Etapa 6: opiniones
+
+`/opiniones` y el inicio leen exclusivamente `reviews_resumen` y `reviews_publicas`. No hay semillas ni testimonios de ejemplo. Con cero aprobadas se muestra «Aún no hay opiniones publicadas.» y se omite el JSON-LD de valoraciones. La lista tiene paginación de 30 opiniones; el inicio muestra hasta tres. Correo y número de reserva nunca se consultan para la presentación pública.
+
+`/opiniones/nueva` envía multipart a `/api/reviews`. Configure `SUPABASE_SERVICE_ROLE_KEY` en `.env.local` (solo servidor). El servidor valida campos, honeypot, tamaño y firma de JPG/PNG/WebP (máximo 3 MB), sube a `review-photos` e inserta con `estado=pendiente`, `fuente=formulario`, `verificada=false`. Devuelve únicamente `ok/id`; elimina la foto si falla el INSERT. El límite total del cuerpo se comprueba durante su lectura. El honeypot constituye la protección básica solicitada; no hay captcha ni limitador distribuido de solicitudes.
+
+Los textos funcionales nuevos (etiquetas, validaciones, carga, errores, aviso de foto pública y navegación), salvo las frases provistas en el encargo, son **borradores pendientes de aprobación final**. No se ha añadido contenido testimonial. El bucket es público: las fotos son accesibles mediante su URL antes de moderarse, pero solo se muestran en el sitio al aprobar la opinión. No suba fotos con información privada. Las notificaciones de soporte por correo conservan la integración pendiente documentada en etapas anteriores.
+
+### Verificar envío y moderación
+
+1. Ejecute `npm run dev`, abra `/opiniones` y compruebe el estado vacío. En el HTML no debe aparecer `AggregateRating` ni esquema `Review` con cero aprobadas.
+2. Abra `/opiniones/nueva`. Para una prueba técnica, use datos claramente identificados como prueba y nunca apruebe esa fila. Para comprobar la publicación, utilice exclusivamente una opinión genuina con permiso de su autor. Complete nombre, correo, estrellas (Tab y flechas), texto y opcionalmente una foto real. Network debe mostrar `POST /api/reviews` → 201 con `ok/id` y el mensaje de moderación.
+3. En Supabase → Table Editor → `reviews`, filtre por ese `id`: compruebe `estado=pendiente`, `fuente=formulario`, correo privado y `foto_path`. En Storage → `review-photos`, busque ese path y compruebe la foto. La fila pendiente no debe aparecer en ninguna vista pública ni en el inicio.
+4. Hasta la Etapa 7, apruebe **solo una opinión genuina** cambiando `estado` a `aprobada` en Table Editor. Recargue `/opiniones` y el inicio para ver la tarjeta y los agregados; el correo no debe figurar en HTML/JSON-LD. Cambie a `rechazada` para retirarla. Elimine las pruebas técnicas y sus fotos al terminar; no las publique.
+
+### Importar opiniones genuinas (utilidad local del propietario)
+
+Use Node 24 (disponible en este proyecto). Copie `data/reviews-import.sample.csv` a `data/reviews-import.csv`: la plantilla contiene **solo encabezados**. Exporte su hoja de cálculo como CSV UTF-8 con comas; se admiten celdas entre comillas, comas y saltos de línea dentro de ellas. Complete únicamente opiniones reales de Facebook o WhatsApp, nombres y fechas originales `YYYY-MM-DD`. `email`, `numero_reserva` y `verificada` son opcionales; `verificada` admite `true/false/1/0`, vacío significa false. Un correo ausente se inserta como NULL, nunca como uno inventado; la base debe permitirlo para importaciones (el formulario siempre exige correo).
+
+```powershell
+node --env-file=.env.local scripts/import-reviews.ts data/reviews-import.csv --dry-run
+node --env-file=.env.local scripts/import-reviews.ts data/reviews-import.csv
+```
+
+El script valida el archivo completo antes de una sola inserción (hasta 500 filas) usando SERVICE ROLE y `estado=aprobada`. No lo ejecute dos veces sobre el mismo archivo: compruebe la tabla antes de reintentar una operación con resultado incierto. Los archivos privados en `data/` están ignorados por Git. La utilidad está fuera de `src/` y `public/`, sin ruta web. Nunca comparta la clave ni importe reseñas ficticias. La plantilla vacía puede validarse sin insertar nada.
+
+### Verificación realizada
+
+Build, lint, typecheck y `node --test tests/reviews.test.mjs` completados. La verificación HTTP confirmó inicio y opiniones vacíos, ausencia de `AggregateRating`, formulario con cinco radios y aviso de correo privado. Una solicitud técnica temporal obtuvo 201; se comprobó la fila pendiente, la foto en Storage y su ausencia de las vistas públicas. La fila y el archivo se eliminaron sin aprobarlos: `reviews` terminó con **0 filas**. No se importaron opiniones. El bucket indicado no existía en el proyecto conectado; se creó `review-photos` público, limitado a 3 MB y JPG/PNG/WebP. El servidor dev quedó disponible en `http://localhost:3000`. No hubo navegador conectado para completar la revisión visual y de teclado; esa comprobación manual queda pendiente.

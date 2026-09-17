@@ -1,4 +1,6 @@
 import { Suspense } from "react";
+import { getReviews } from "@/lib/reviews";
+import { RatingSummary, ReviewCards, ReviewSkeletons } from "@/components/reviews/display";
 import { PackageGrid, PackageSkeletons } from "@/components/packages/package-card";
 import { getPackages } from "@/lib/packages";
 import Link from "next/link";
@@ -62,10 +64,19 @@ export function WhyViatour() {
   return <section className="container-site py-14 sm:py-24" aria-labelledby="why-title"><h2 id="why-title" className="t-h2 mb-12 text-center">Por qué viatour</h2><div className="grid gap-8 md:grid-cols-3">{items.map(({ icon: Icon, title, body }) => <div key={title} className="space-y-4"><Icon size={32} strokeWidth={1.75} className="text-brand" aria-hidden="true" /><h3 className="t-h3">{title}</h3><p className="t-body text-ink-soft">{body}</p></div>)}</div></section>;
 }
 
+async function ReviewTeaserData() {
+  let result;
+  try {
+    result = await getReviews(3);
+  } catch { return <p role="alert" className="t-body text-ink-soft">No se pudieron cargar las opiniones. <Link href="/opiniones" className="text-brand underline">Ver opiniones</Link></p>; }
+  const { summary, reviews } = result;
+  if (!summary.total) return <div className="rounded-panel border border-line bg-canvas p-8"><p className="t-body text-ink-soft">Aún no hay opiniones publicadas.</p></div>;
+  return <div className="space-y-8"><RatingSummary summary={summary} compact /><ReviewCards reviews={reviews} /></div>;
+}
+
 export function ReviewsTeaser() {
   // Copy pendiente de aprobación final
-  // Opiniones reales llegan en la Etapa 6
-  return <section className="bg-surface py-14 sm:py-24" aria-labelledby="reviews-title"><div className="container-site grid gap-8 md:grid-cols-2 md:items-center"><div className="space-y-4"><h2 id="reviews-title" className="t-h2">Opiniones</h2><p className="t-body-lg text-ink-soft">Lo que dicen quienes ya viajaron con nosotros.</p><Link href="/opiniones" className="t-small inline-flex items-center gap-2 text-brand underline underline-offset-4">Opiniones<ArrowUpRight size={16} aria-hidden="true" /></Link></div><div className="rounded-panel border border-line bg-canvas p-8"><p className="t-body text-ink-soft">Aún no hay opiniones publicadas.</p></div></div></section>;
+  return <section className="bg-surface py-14 sm:py-24" aria-labelledby="reviews-title"><div className="container-site grid gap-8 md:grid-cols-2 md:items-center"><div className="space-y-4"><h2 id="reviews-title" className="t-h2">Opiniones</h2><p className="t-body-lg text-ink-soft">Lo que dicen quienes ya viajaron con nosotros.</p><Link href="/opiniones" className="t-small inline-flex items-center gap-2 text-brand underline underline-offset-4">Opiniones<ArrowUpRight size={16} aria-hidden="true" /></Link></div><Suspense fallback={<ReviewSkeletons />}><ReviewTeaserData /></Suspense></div></section>;
 }
 
 export function FinalCta() {
