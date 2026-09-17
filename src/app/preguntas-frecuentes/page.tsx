@@ -1,7 +1,7 @@
-import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import { getFAQs, type FAQ } from "@/lib/faqs";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
-export const metadata: Metadata = { title: "Preguntas frecuentes", alternates: { canonical: "/preguntas-frecuentes" } };
+export const metadata = pageMetadata("/preguntas-frecuentes", "viatour | Preguntas frecuentes sobre viajes desde Honduras", "Preguntas frecuentes sobre viajes desde Honduras con viatour. Consulte la información disponible y cuéntenos qué busca para recibir asesoría sobre su viaje.");
 export default async function Page() { let faqs: FAQ[] = []; let failed = false; try {
     faqs = await getFAQs();
 }

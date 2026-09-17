@@ -1,3 +1,5 @@
+import { pageMetadata } from "@/lib/seo";
+export async function generateMetadata({ params }: { params: Promise<{ section: string; id?: string }> }) { const { section, id } = await params; const url = "/admin/" + section + (id ? "/" + id : ""); return pageMetadata(url, "viatour | Administración de " + section + (id ? " / " + id : ""), "Administración privada de " + section + (id ? ". Registro " + id : "") + ". Contenido excluido de la indexación pública."); }
 import {FAQForm} from "@/components/admin/faq-form";
 import Link from "next/link";
 import { notFound } from "next/navigation";

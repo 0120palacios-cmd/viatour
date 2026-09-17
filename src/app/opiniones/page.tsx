@@ -1,7 +1,8 @@
+import { pageMetadata } from "@/lib/seo";
 import Link from "next/link";
 import { getReviews, reviewSchema } from "@/lib/reviews";
 import { RatingSummary, ReviewCards } from "@/components/reviews/display";
-export const metadata = { title: "Opiniones", alternates: { canonical: "/opiniones" } };
+export const metadata = pageMetadata("/opiniones", "viatour | Opiniones de nuestros viajeros desde Honduras", "Opiniones de nuestros viajeros desde Honduras con viatour. Consulte la información disponible y cuéntenos qué busca para recibir asesoría sobre su viaje.");
 export default async function Page({ searchParams }: { searchParams: Promise<{ pagina?: string }> }) {
   const raw = Number((await searchParams).pagina || 1);
   const page = Number.isSafeInteger(raw) && raw > 0 && raw < 100000 ? raw : 1;

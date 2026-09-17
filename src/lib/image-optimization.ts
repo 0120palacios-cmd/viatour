@@ -1,0 +1,1 @@
+export function canOptimizeImage(src: string) { try { const url = new URL(src); const storage = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL || "https://invalid.local"); return url.origin === storage.origin && url.pathname.startsWith("/storage/v1/object/public/"); } catch { return src.startsWith("/") && !src.startsWith("//"); } }

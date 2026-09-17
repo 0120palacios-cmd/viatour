@@ -1,6 +1,7 @@
+import { pageMetadata } from "@/lib/seo";
 import { getDestinations } from "@/lib/destinations";
 import { ReviewForm } from "@/components/reviews/form";
-export const metadata = { title: "Comparta su opinión" };
+export const metadata = pageMetadata("/opiniones/nueva", "viatour | Comparta su opini?n sobre su viaje desde Honduras", "Comparta su opini?n sobre su viaje desde Honduras con viatour. Consulte la información disponible y cuéntenos qué busca para recibir asesoría sobre su viaje.");
 export default async function Page() {
   let destinations: string[] = [];
   let failed = false;

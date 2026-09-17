@@ -1,3 +1,5 @@
+import { pageMetadata } from "@/lib/seo";
+export const metadata = pageMetadata("/admin", "viatour | Panel de administración", "Acceso privado a la administración de viatour. Esta página no está disponible para indexación pública.");
 import { requireAdmin } from "@/lib/admin";
 export default async function Page() {
     const { client } = await requireAdmin();

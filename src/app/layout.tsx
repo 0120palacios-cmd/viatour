@@ -1,4 +1,6 @@
-import type { Metadata } from "next";
+import { agencySchema, pageMetadata } from "@/lib/seo";
+import { Analytics } from "@/components/analytics";
+import type { Metadata, Viewport } from "next";
 import { Manrope } from "next/font/google";
 import { cookies } from "next/headers";
 import { CurrencyProvider } from "@/components/currency-provider";
@@ -16,14 +18,11 @@ const manrope = Manrope({
   variable: "--font-manrope",
 });
 
+export const viewport: Viewport = { themeColor: "#1656D6" };
 export const metadata: Metadata = {
-  metadataBase: new URL("https://miviatour.com"),
-  title: {
-    default: "viatour | Agencia de viajes en Honduras",
-    template: "viatour | %s",
-  },
-  description:
-    "Sus asesores de viaje en Honduras. Vuelos, hoteles y paquetes con atención personal.",
+ ...pageMetadata("/", "viatour | Asesoría para planificar su viaje desde Honduras", "Sus asesores de viaje en Honduras. Vuelos, hoteles y paquetes con atención personal para planificar su próximo viaje y solicitar su cotización por WhatsApp."),
+ metadataBase: new URL("https://miviatour.com"), title: { default: "viatour | Asesoría para planificar su viaje desde Honduras", template: "viatour | %s desde Honduras" }, icons: { icon: "/icon.svg", apple: "/apple-icon" },
+ ...(process.env.NEXT_PUBLIC_GSC_VERIFICATION ? { verification: { google: process.env.NEXT_PUBLIC_GSC_VERIFICATION } } : {}),
 };
 
 export default async function RootLayout({
@@ -33,7 +32,8 @@ export default async function RootLayout({
   return (
     <html lang="es-HN" className={manrope.variable}>
       <body className="flex min-h-dvh flex-col">
-        <ConsentProvider><CurrencyProvider initialCurrency={currency}>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(agencySchema) }} />
+        <ConsentProvider><PublicChrome><Analytics /></PublicChrome><CurrencyProvider initialCurrency={currency}>
           <PublicChrome><Header /></PublicChrome>
           <div className="flex-1">{children}</div>
           <PublicChrome><Footer /><WhatsAppFloat /></PublicChrome>

@@ -29,7 +29,7 @@ function load(file, dependencies, globals = {}) {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   }).outputText;
   vm.runInNewContext(code, {
-    exports, require: name => dependencies[name], Response, crypto, AbortSignal,
+    exports, require: name => name === "@/lib/analytics" ? (dependencies[name] || { trackEvent() {} }) : dependencies[name], Response, crypto, AbortSignal,
     console: { error() {}, warn() {} }, ...globals,
   });
   return exports;
@@ -88,7 +88,8 @@ test('handoff waits for capture and proceeds on HTTP, malformed, network and tim
     let resolve;
     const pending = new Promise(done => { resolve = done; });
     const navigations = [];
-    const quote = load('src/lib/quote.ts', { '@/lib/site-config': { siteConfig: { whatsappNumber: '50488668704' } } }, {
+    const events = [];
+    const quote = load('src/lib/quote.ts', { '@/lib/site-config': { siteConfig: { whatsappNumber: '50488668704' } }, '@/lib/analytics': { trackEvent: (name, params) => events.push({ name, params }) } }, {
       window: { location: { assign: url => navigations.push(url) } },
       fetch: async (url, options) => {
         assert.equal(url, '/api/leads');
@@ -106,6 +107,8 @@ test('handoff waits for capture and proceeds on HTTP, malformed, network and tim
     resolve();
     await handoff;
     assert.equal(navigations.length, 1);
+    assert.equal(events.filter(e => e.name === "whatsapp_click").length, 1);
+    assert.equal(events.filter(e => e.name === "quote_submit").length, outcome === "success" ? 1 : 0);
     assert.equal(new URL(navigations[0]).searchParams.get('text'), 'Me gustaría solicitar una cotización. Por favor, asesóreme con estas opciones.\nServicio: Vuelos\nDestino: Cartagena');
   }
 });

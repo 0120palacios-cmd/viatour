@@ -1,4 +1,5 @@
 "use client";
+import { trackEvent } from "@/lib/analytics";
 
 import { useId, useState } from "react";
 import Link from "next/link";
@@ -32,6 +33,7 @@ export function Newsletter() {
       // TODO Stage newsletter storage: POST email, optional name and explicit
       // consent to the server; only confirm subscription after a successful save.
       // Stage 2 validates locally and does not transmit or store personal data.
+      trackEvent("newsletter_signup", { status: "requested" });
       setState("success");
     }}>
       <p id={`${id}-title`} className="t-body-lg">Reciba ideas de viaje y ofertas de temporada.</p>

@@ -1,14 +1,10 @@
-import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import { Suspense } from "react";
 import { PackageGrid, PackageSkeletons } from "@/components/packages/package-card";
 import { getPackages } from "@/lib/packages";
 
 // Copy y metadatos pendientes de aprobación final.
-export const metadata: Metadata = {
-  title: { absolute: "viatour | Paquetes de viaje a su medida desde Honduras" },
-  description: "Ideas de viaje listas para inspirarse. Cada paquete se ajusta a su presupuesto y a sus fechas. Solicite su cotización con nuestros asesores de viaje en Honduras.",
-  alternates: { canonical: "/paquetes" },
-};
+export const metadata = pageMetadata("/paquetes", "viatour | Paquetes de viaje personalizados desde Honduras", "Paquetes de viaje a su medida desde Honduras con viatour. Consulte la información disponible y cuéntenos qué busca para recibir asesoría sobre su viaje.");
 
 async function Packages() {
   return <PackageGrid items={await getPackages()} />;

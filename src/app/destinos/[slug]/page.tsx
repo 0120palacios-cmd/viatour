@@ -1,3 +1,4 @@
+import { pageMetadata, detailDescription } from "@/lib/seo";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -11,17 +12,7 @@ import { QuoteButton } from "@/components/home/quote-button";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 
 type Props = { params: Promise<{ slug: string }> };
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const item = await getDestination((await params).slug);
-  if (!item) notFound();
-  const title = item.titulo_seo?.trim() || `viatour | ${item.nombre} desde Honduras`;
-  const description = item.meta_descripcion || undefined;
-  const url = `/destinos/${item.slug}`;
-  return { title: { absolute: title }, description, alternates: { canonical: url },
-    openGraph: { title, description, url, locale: "es_HN", ...(item.imagen_url ? { images: [{ url: item.imagen_url, alt: `Fotografía de ${item.nombre}` }] } : {}) },
-    twitter: { card: item.imagen_url ? "summary_large_image" : "summary", title, description, ...(item.imagen_url ? { images: [item.imagen_url] } : {}) },
-  };
-}
+export async function generateMetadata({ params }: Props): Promise<Metadata> { const item = await getDestination((await params).slug); if (!item) notFound(); return pageMetadata(`/destinos/${item.slug}`, (item.titulo_seo?.trim() && item.titulo_seo.length >= 50 ? item.titulo_seo : [`viatour | Viajes a ${item.nombre} personalizados desde Honduras`, `viatour | Viajes a ${item.nombre} a su medida desde Honduras`, `viatour | Viajes a ${item.nombre} con asesoría desde Honduras`].sort((a, b) => Math.abs(a.length - 58) - Math.abs(b.length - 58))[0]), detailDescription(item.nombre, item.meta_descripcion || item.intro), item.imagen_url, false); }
 export default async function Page({ params }: Props) {
   const item = await getDestination((await params).slug);
   if (!item) notFound();

@@ -1,4 +1,5 @@
 "use client";
+import { trackEvent } from "@/lib/analytics";
 import { useState, type FormEvent } from "react";
 import { Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ export function ReviewForm({ destinations }: { destinations: string[] }) {
       const response = await fetch("/api/reviews", { method: "POST", body });
       const result = await response.json();
       if (!response.ok || !result.ok) { setErrors(result.errors || {}); setStatus(result.error || "No se pudo enviar su opinión. Inténtelo de nuevo."); return; }
+      trackEvent("review_submit", { status: "saved" });
       setSuccess(true);
     } catch { setStatus("No se pudo enviar su opinión. Inténtelo de nuevo."); }
     finally { setBusy(false); }

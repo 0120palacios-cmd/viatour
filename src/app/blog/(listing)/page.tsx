@@ -1,8 +1,8 @@
-import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import Link from "next/link";
 import { getBlogPosts } from "@/lib/blog";
 import { BlogCard } from "@/components/blog/card";
-export const metadata: Metadata = { title: { absolute: "viatour | Blog y guías de viaje" }, alternates: { canonical: "/blog" } };
+export const metadata = pageMetadata("/blog", "viatour | Blog y guías para planificar viajes desde Honduras", "Blog y guías para planificar viajes desde Honduras con viatour. Consulte la información disponible y cuéntenos qué busca para recibir asesoría sobre su viaje.");
 export default async function Page({ searchParams }: {
     searchParams: Promise<{
         categoria?: string;

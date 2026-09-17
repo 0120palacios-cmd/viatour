@@ -28,7 +28,7 @@ export function ConsentProvider({ children }: {
 }) {
     const consent = useSyncExternalStore(subscribe, snapshot, () => "unknown" as CookieConsent);
     const ready = useSyncExternalStore(subscribe, () => true, () => false);
-    function setConsent(v: "accepted" | "rejected") { memoryConsent = v; try {
+    function setConsent(v: "accepted" | "rejected") { memoryConsent = v; const gaId = window.viatourAnalytics?.gaId; if (gaId) window[`ga-disable-${gaId}`] = v !== "accepted"; if (window.viatourAnalytics) window.viatourAnalytics.consent = v === "accepted"; try {
         localStorage.setItem(CONSENT_KEY, v);
     }
     catch { } window.dispatchEvent(new Event("viatour-consent")); }

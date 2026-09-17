@@ -1,3 +1,4 @@
+import { canOptimizeImage } from "@/lib/image-optimization";
 import Image from "next/image";
 import Link from "next/link";
 import { Clock, MapPin } from "lucide-react";
@@ -6,7 +7,7 @@ import type { Package } from "@/lib/packages";
 
 export function PackageImage({ item, hero = false }: { item: Package; hero?: boolean }) {
   const className = `${hero ? "aspect-video" : "aspect-[4/3]"} relative overflow-hidden bg-surface`;
-  return item.imagen_url ? <div className={className}><Image src={item.imagen_url} alt={`${item.nombre}, ${item.destino}`} fill unoptimized sizes={hero ? "(max-width: 1024px) 100vw, 768px" : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"} className="object-cover" /></div>
+  return item.imagen_url ? <div className={className}><Image src={item.imagen_url} alt={`${item.nombre}, ${item.destino}`} fill priority={hero} unoptimized={!canOptimizeImage(item.imagen_url)} sizes={hero ? "(max-width: 1024px) 100vw, 768px" : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"} className="object-cover" /></div>
     : <div role="img" aria-label={`Espacio reservado para una fotografía de ${item.destino}`} className={className} />;
 }
 export function PackageMeta({ item }: { item: Package }) {

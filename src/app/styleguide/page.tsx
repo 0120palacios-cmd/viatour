@@ -1,3 +1,4 @@
+export const metadata = { title: "viatour | Guía interna de diseño", description: "Guía interna de componentes y diseño de viatour.", robots: { index: false, follow: false } };
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 

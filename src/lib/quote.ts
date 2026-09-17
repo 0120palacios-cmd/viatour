@@ -1,3 +1,4 @@
+import { trackEvent } from "@/lib/analytics";
 import { siteConfig } from "@/lib/site-config";
 
 export type QuotePayload = { service: string; servicio?: string; fields: Record<string, string>; currency?: "USD" | "HNL"; formData?: Record<string, string> };
@@ -25,8 +26,10 @@ export async function captureLead(payload: QuotePayload): Promise<void> {
 }
 
 export async function requestQuote(payload: QuotePayload) {
+  trackEvent("whatsapp_click", { service: payload.servicio || payload.service });
   try {
     await captureLead(payload);
+    trackEvent("quote_submit", { service: payload.servicio || payload.service, status: "saved" });
   } catch {
     // Avoid logging personal form data or server response bodies.
     console.warn("Lead capture unavailable; continuing to WhatsApp.");

@@ -16,5 +16,5 @@ export function WhatsAppFloat() {
   // The footer has its own WhatsApp action. Remove this one from tab order when
   // the footer approaches, preventing overlap at any screen size.
   if (footerVisible) return null;
-  return <div className="whatsapp-float fixed z-20"><WhatsAppLink compact /></div>;
+  return <div className="whatsapp-float fixed z-20"><WhatsAppLink placement="floating" compact /></div>;
 }
