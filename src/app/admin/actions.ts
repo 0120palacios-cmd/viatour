@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/admin";
+import { validateBlog } from "@/lib/blog-validation";
 export type Result = {
     error?: string;
     success?: string;
@@ -33,16 +34,16 @@ export async function signOut() {
 export async function save(_: Result, form: FormData): Promise<Result> {
     const { client } = await requireAdmin();
     const table = String(form.get("table"));
-    if (!["reviews", "packages", "destinations", "leads"].includes(table))
+    if (!["reviews", "packages", "destinations", "leads", "blog_posts"].includes(table))
         return { error: "Registro inválido." };
     const id = String(form.get("id") ?? "");
     if (id && !/^[0-9a-f-]{36}$/i.test(id))
         return { error: "Registro inválido." };
     const remove = form.get("operation") === "delete";
-    if (remove && (!id || !["packages", "destinations"].includes(table)))
+    if (remove && (!id || !["packages", "destinations", "blog_posts"].includes(table)))
         return { error: "Acción inválida." };
     let previousSlug: string | undefined;
-    if (id && ["packages", "destinations"].includes(table)) {
+    if (id && ["packages", "destinations", "blog_posts"].includes(table)) {
         const previous = await client.from(table).select("slug").eq("id", id).single();
         if (previous.error)
             return { error: "No se encontró el registro." };
@@ -51,7 +52,15 @@ export async function save(_: Result, form: FormData): Promise<Result> {
     const values: Record<string, unknown> = {};
     const get = (key: string) => String(form.get(key) ?? "").trim();
     if (!remove) {
-        if (table === "reviews" || table === "leads") {
+        if (table === "blog_posts") {
+            const result = validateBlog(form);
+            if (result.error) return { error: result.error };
+            Object.assign(values, result.values);
+            const existing = await client.from("blog_posts").select("id").eq("slug", values.slug).maybeSingle();
+            if (existing.error) return { error: "No se pudo verificar el slug. Intente nuevamente." };
+            if (existing.data && existing.data.id !== id) return { error: "Ese slug ya existe. Elija otro." };
+        }
+        else if (table === "reviews" || table === "leads") {
             const allowed = table === "reviews" ? ["pendiente", "aprobada", "rechazada"] : ["nuevo", "contactado", "cerrado"];
             const state = get("accion_estado") || get("estado");
             if (!id || !allowed.includes(state))
@@ -102,7 +111,7 @@ export async function save(_: Result, form: FormData): Promise<Result> {
     const { data, error } = await query.select("id").single();
     if (error || !data)
         return { error: error?.code === "23505" ? "Ese slug ya existe. Elija otro." : "No se pudo guardar el registro. Revise los datos e intente nuevamente." };
-    const section = ({ reviews: "opiniones", packages: "paquetes", destinations: "destinos", leads: "leads" } as Record<string, string>)[table];
+    const section = ({ reviews: "opiniones", packages: "paquetes", destinations: "destinos", leads: "leads", blog_posts: "blog" } as Record<string, string>)[table];
     revalidatePath("/admin", "layout");
     if (table !== "leads") {
         revalidatePath("/");

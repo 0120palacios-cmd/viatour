@@ -11,17 +11,18 @@ export async function requireAdmin() {
   return { client, user };
 }
 
-export async function adminRows(table: "reviews" | "packages" | "destinations" | "leads") {
+export async function adminRows(table: "reviews" | "packages" | "destinations" | "leads" | "blog_posts") {
   const { client } = await requireAdmin();
   const { data, error } = await client.from(table).select("*").order(table === "packages" || table === "destinations" ? "orden" : "created_at", { ascending: table === "packages" || table === "destinations" }).limit(500);
   if (error) throw new Error("No se pudieron cargar los registros. Intente nuevamente.");
   return data as Record<string, unknown>[];
 }
 
-export async function adminPage(table: "reviews" | "packages" | "destinations" | "leads", page: number, state?: string) {
+export async function adminPage(table: "reviews" | "packages" | "destinations" | "leads" | "blog_posts", page: number, state?: string) {
   const { client } = await requireAdmin();
   let query = client.from(table).select("*", { count: "exact" });
   if (table === "reviews" && state && ["pendiente", "aprobada", "rechazada"].includes(state)) query = query.eq("estado", state);
+  if (table === "blog_posts" && ["true", "false"].includes(state ?? "")) query = query.eq("publicado", state === "true");
   const content = table === "packages" || table === "destinations";
   const { data, error, count } = await query.order(content ? "orden" : "created_at", { ascending: content }).order("id").range((page - 1) * 50, page * 50 - 1);
   if (error) throw new Error("No se pudieron cargar los registros.");

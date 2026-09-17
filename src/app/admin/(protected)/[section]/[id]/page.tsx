@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireAdmin, adminRows } from "@/lib/admin";
+import { BlogForm } from "@/components/admin/blog-form";
 import { ContentForm } from "@/components/admin/forms";
 export default async function Page({ params }: {
     params: Promise<{
@@ -10,9 +11,9 @@ export default async function Page({ params }: {
 }) {
     const { section, id } = await params;
     const { client } = await requireAdmin();
-    if (!["paquetes", "destinos"].includes(section))
+    if (!["paquetes", "destinos", "blog"].includes(section))
         notFound();
-    const table = section === "paquetes" ? "packages" : "destinations";
+    const table = section === "paquetes" ? "packages" : section === "blog" ? "blog_posts" : "destinations";
     let row: Record<string, unknown> = {};
     if (id !== "nuevo") {
         if (!/^[0-9a-f-]{36}$/i.test(id))
@@ -25,5 +26,5 @@ export default async function Page({ params }: {
         row = result.data;
     }
     const destinations = table === "packages" ? await adminRows("destinations") : [];
-    return <><Link href={`/admin/${section}`} className="text-brand underline">Volver a {section}</Link><h1 className="t-h1 my-6">{id === "nuevo" ? "Crear" : "Editar"} {table === "packages" ? "paquete" : "destino"}</h1><ContentForm table={table} row={row} destinations={destinations}/></>;
+    return <><Link href={`/admin/${section}`} className="text-brand underline">Volver a {section}</Link><h1 className="t-h1 my-6">{id === "nuevo" ? "Crear" : "Editar"} {table === "packages" ? "paquete" : table === "blog_posts" ? "publicación" : "destino"}</h1>{table === "blog_posts" ? <BlogForm row={row}/> : <ContentForm table={table} row={row} destinations={destinations}/>}</>;
 }
