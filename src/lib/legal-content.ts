@@ -1,0 +1,3 @@
+// Marcadores de posición; no constituyen documentos legales.
+export const legalContent = { terminos: { title: "Términos", sections: ["Información general", "Condiciones del servicio", "Documento definitivo"] }, privacidad: { title: "Privacidad", sections: ["Información general", "Tratamiento de datos", "Documento definitivo"] }, cancelaciones: { title: "Cancelaciones", sections: ["Información general", "Condiciones de cancelación", "Documento definitivo"] }, cookies: { title: "Cookies", sections: ["Información general", "Preferencias de cookies", "Documento definitivo"] } } as const;
+export const legalNotice = "Contenido legal pendiente de revisión. Este texto es un marcador de posición y debe ser reemplazado por el documento legal definitivo antes del lanzamiento.";

@@ -1,0 +1,8 @@
+"use client";
+import { useActionState } from "react";
+import { save } from "@/app/admin/actions";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+export function FAQForm({ row }: {
+    row: Record<string, unknown>;
+}) { const [state, action, pending] = useActionState(save, {}); return <form action={action} className="space-y-6"><input type="hidden" name="table" value="faqs"/><input type="hidden" name="id" value={String(row.id ?? "")}/><p className="t-small text-ink-soft">Revise los marcadores de posición antes de publicar. Contenido pendiente de aprobación.</p>{([['pregunta', 'Pregunta', 500], ['respuesta', 'Respuesta', 10000], ['categoria', 'Categoría (opcional)', 120]] as const).map(([name, label, max]) => <label className="t-small block space-y-2" key={name}>{label}{name !== "categoria" ? " *" : ""}{name === "respuesta" ? <textarea name={name} required maxLength={max} rows={6} defaultValue={String(row[name] ?? "")} className="t-body w-full rounded-btn border p-4"/> : <Input name={name} required={name !== "categoria"} maxLength={max} defaultValue={String(row[name] ?? "")}/>}</label>)}<label className="t-small block">Orden *<Input name="orden" type="number" step="1" required defaultValue={Number(row.orden ?? 0)}/></label><label className="flex gap-2 items-center"><input name="publicado" type="checkbox" defaultChecked={row.publicado === true}/>Publicado</label><div aria-live="polite">{state.error && <p role="alert" className="text-error">{state.error}</p>}{state.success && <p>{state.success}</p>}</div><Button disabled={pending}>{pending ? "Guardando…" : "Guardar cambios"}</Button></form>; }

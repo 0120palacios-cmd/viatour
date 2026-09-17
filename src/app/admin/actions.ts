@@ -34,13 +34,13 @@ export async function signOut() {
 export async function save(_: Result, form: FormData): Promise<Result> {
     const { client } = await requireAdmin();
     const table = String(form.get("table"));
-    if (!["reviews", "packages", "destinations", "leads", "blog_posts"].includes(table))
+    if (!["reviews", "packages", "destinations", "leads", "blog_posts", "faqs"].includes(table))
         return { error: "Registro inválido." };
     const id = String(form.get("id") ?? "");
     if (id && !/^[0-9a-f-]{36}$/i.test(id))
         return { error: "Registro inválido." };
     const remove = form.get("operation") === "delete";
-    if (remove && (!id || !["packages", "destinations", "blog_posts"].includes(table)))
+    if (remove && (!id || !["packages", "destinations", "blog_posts", "faqs"].includes(table)))
         return { error: "Acción inválida." };
     let previousSlug: string | undefined;
     if (id && ["packages", "destinations", "blog_posts"].includes(table)) {
@@ -52,7 +52,12 @@ export async function save(_: Result, form: FormData): Promise<Result> {
     const values: Record<string, unknown> = {};
     const get = (key: string) => String(form.get(key) ?? "").trim();
     if (!remove) {
-        if (table === "blog_posts") {
+        if(table === "faqs") {
+            if(!get("pregunta")||get("pregunta").length>500||!get("respuesta")||get("respuesta").length>10000||get("categoria").length>120)return {error:"Complete la pregunta y la respuesta; revise la longitud de los campos."};
+            if(!/^-?\d+$/.test(get("orden"))||!Number.isSafeInteger(Number(get("orden"))))return {error:"El orden debe ser un número entero."};
+            Object.assign(values,{pregunta:get("pregunta"),respuesta:get("respuesta"),categoria:get("categoria")||null,publicado:form.get("publicado")==="on",orden:Number(get("orden"))});
+        }
+        else if (table === "blog_posts") {
             const result = validateBlog(form);
             if (result.error) return { error: result.error };
             Object.assign(values, result.values);
@@ -111,8 +116,9 @@ export async function save(_: Result, form: FormData): Promise<Result> {
     const { data, error } = await query.select("id").single();
     if (error || !data)
         return { error: error?.code === "23505" ? "Ese slug ya existe. Elija otro." : "No se pudo guardar el registro. Revise los datos e intente nuevamente." };
-    const section = ({ reviews: "opiniones", packages: "paquetes", destinations: "destinos", leads: "leads", blog_posts: "blog" } as Record<string, string>)[table];
+    const section = ({ reviews: "opiniones", packages: "paquetes", destinations: "destinos", leads: "leads", blog_posts: "blog", faqs: "faq" } as Record<string, string>)[table];
     revalidatePath("/admin", "layout");
+    if(table === "faqs") revalidatePath("/preguntas-frecuentes");
     if (table !== "leads") {
         revalidatePath("/");
         revalidatePath(`/${section}`);

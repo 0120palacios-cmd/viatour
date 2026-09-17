@@ -146,6 +146,8 @@
   right: max(16px, env(safe-area-inset-right));
   bottom: max(16px, env(safe-area-inset-bottom));
 }
+/* Keep the consent controls clear of the floating WhatsApp action. */
+body:has([aria-labelledby="cookie-title"]) .whatsapp-float { display: none; }
 @media (min-width: 640px) {
   .whatsapp-float { right: max(24px, env(safe-area-inset-right)); bottom: max(24px, env(safe-area-inset-bottom)); }
 }

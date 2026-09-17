@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-
-export const metadata: Metadata = { title: "Contacto" };
-
-export default function Page() {
-  return <main className="container-site py-14 sm:py-24"><h1 className="t-h1">Contacto</h1></main>;
-}
+import { ContactForm } from "@/components/contact-form";
+import { WhatsAppLink } from "@/components/layout/whatsapp-link";
+export const metadata: Metadata = { title: "Contacto", alternates: { canonical: "/contacto" } };
+export default function Page() { return <main className="container-site py-14 sm:py-24"><h1 className="t-h1 mb-8">Contacto</h1><p className="t-small mb-8 text-ink-soft">Contenido funcional en borrador, pendiente de aprobación.</p><div className="grid gap-12 lg:grid-cols-2"><section aria-label="WhatsApp" className="space-y-6"><WhatsAppLink /><p>WhatsApp: +504 8866-8704</p>{/* Agregar correo empresarial y enlaces sociales solo cuando están confirmados. */}</section><section aria-labelledby="contact-title"><h2 id="contact-title" className="t-h2 mb-6">Envíenos su mensaje</h2><ContactForm /></section></div></main>; }

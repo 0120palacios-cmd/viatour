@@ -5,6 +5,8 @@ export const mainLinks = [
   { label: "Paquetes", href: "/paquetes" },
   { label: "Blog", href: "/blog" },
   { label: "Opiniones", href: "/opiniones" },
+  { label: "Nosotros", href: "/nosotros" },
+  { label: "Preguntas frecuentes", href: "/preguntas-frecuentes" },
   { label: "Contacto", href: "/contacto" },
 ] as const;
 

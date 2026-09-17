@@ -1,7 +1,4 @@
 import type { Metadata } from "next";
-
-export const metadata: Metadata = { title: "Cookies" };
-
-export default function Page() {
-  return <main className="container-site py-14 sm:py-24"><h1 className="t-h1">Cookies</h1></main>;
-}
+import { LegalPage } from "@/components/legal-page";
+export const metadata: Metadata = { title: "Cookies — pendiente de revisión", robots: { index: false, follow: true }, alternates: { canonical: "/legales/cookies" } };
+export default function Page() { return <LegalPage kind="cookies"/>; }

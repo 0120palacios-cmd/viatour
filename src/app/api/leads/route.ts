@@ -1,3 +1,4 @@
+import {validateContact} from "@/lib/contact-validation";
 import { createClient } from "@/lib/supabase/server";
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -20,6 +21,12 @@ export async function POST(request: Request) {
     return Response.json({ ok: false, error: "Indique el servicio de su solicitud." }, { status: 400 });
   }
 
+  if(payload.servicio === "contacto") {
+    const contact=validateContact(record(payload.formData)?payload.formData:payload);
+    if(contact.values.website)return Response.json({ok:false,error:"No se pudo procesar su solicitud."},{status:400});
+    if(Object.keys(contact.errors).length)return Response.json({ok:false,errors:contact.errors,error:"Revise los datos de su mensaje."},{status:400});
+    payload.nombre=contact.values.nombre;payload.notas=contact.values.mensaje;
+  }
   const fields = record(payload.fields) ? payload.fields : {};
   const form = record(payload.formData) ? payload.formData : {};
   const field = (column: string, label: string) => text(payload[column]) ?? text(fields[label]);

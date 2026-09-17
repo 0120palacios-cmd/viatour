@@ -1,7 +1,4 @@
 import type { Metadata } from "next";
-
-export const metadata: Metadata = { title: "Cancelaciones" };
-
-export default function Page() {
-  return <main className="container-site py-14 sm:py-24"><h1 className="t-h1">Cancelaciones</h1></main>;
-}
+import { LegalPage } from "@/components/legal-page";
+export const metadata: Metadata = { title: "Cancelaciones — pendiente de revisión", robots: { index: false, follow: true }, alternates: { canonical: "/legales/cancelaciones" } };
+export default function Page() { return <LegalPage kind="cancelaciones"/>; }
