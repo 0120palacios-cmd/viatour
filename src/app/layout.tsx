@@ -5,6 +5,7 @@ import { CurrencyProvider } from "@/components/currency-provider";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { WhatsAppFloat } from "@/components/layout/whatsapp-float";
+import { PublicChrome } from "@/components/layout/public-chrome";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -32,10 +33,9 @@ export default async function RootLayout({
     <html lang="es-HN" className={manrope.variable}>
       <body className="flex min-h-dvh flex-col">
         <CurrencyProvider initialCurrency={currency}>
-          <Header />
+          <PublicChrome><Header /></PublicChrome>
           <div className="flex-1">{children}</div>
-          <Footer />
-          <WhatsAppFloat />
+          <PublicChrome><Footer /><WhatsAppFloat /></PublicChrome>
         </CurrencyProvider>
       </body>
     </html>
