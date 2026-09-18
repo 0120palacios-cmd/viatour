@@ -1,4 +1,5 @@
 "use client";
+import { Turnstile } from "@/components/turnstile";
 import { trackEvent } from "@/lib/analytics";
 import { useState, type FormEvent } from "react";
 import { Star } from "lucide-react";
@@ -8,6 +9,8 @@ import { validateReview, REVIEW_PHOTO_LIMIT } from "@/lib/review-validation";
 
 // Etiquetas y mensajes funcionales no especificados: borrador pendiente de aprobación.
 export function ReviewForm({ destinations }: { destinations: string[] }) {
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [challenge, setChallenge] = useState(0);
   const [rating, setRating] = useState(0);
   const [destination, setDestination] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -20,6 +23,7 @@ export function ReviewForm({ destinations }: { destinations: string[] }) {
     if (busy) return;
     const form = event.currentTarget;
     const body = new FormData(form);
+    body.set("turnstileToken", turnstileToken);
     body.set("destino", destination === "__other" ? String(body.get("otro_destino") || "") : destination);
     const validation = validateReview(Object.fromEntries(body));
     const photo = body.get("foto");
@@ -34,7 +38,7 @@ export function ReviewForm({ destinations }: { destinations: string[] }) {
       trackEvent("review_submit", { status: "saved" });
       setSuccess(true);
     } catch { setStatus("No se pudo enviar su opinión. Inténtelo de nuevo."); }
-    finally { setBusy(false); }
+    finally { setBusy(false); setChallenge(n => n + 1); }
   }
   if (success) return <p role="status" className="t-body rounded-panel border border-line bg-surface p-8">Gracias. Su opinión será revisada antes de publicarse.</p>;
   return <form onSubmit={submit} noValidate className="space-y-6" aria-busy={busy}>
@@ -47,7 +51,8 @@ export function ReviewForm({ destinations }: { destinations: string[] }) {
       <div className="space-y-2"><label htmlFor="destino" className="t-small block">Destino (opcional)</label><select id="destino" name="destino" value={destination} onChange={e => setDestination(e.target.value)} className="t-body h-12 w-full rounded-btn border border-line bg-canvas px-3"><option value="">Seleccione un destino</option>{destinations.map(name => <option key={name}>{name}</option>)}<option value="__other">Otro destino</option></select>{destination === "__other" && <><label htmlFor="otro_destino" className="t-small block">Escriba el destino</label><Input id="otro_destino" name="otro_destino" maxLength={160} aria-invalid={!!errors.destino} aria-describedby={errors.destino ? "destino-error" : undefined} /></>}{error("destino")}</div>
       <div className="space-y-2"><label htmlFor="numero_reserva" className="t-small block">Número de reserva (opcional)</label><Input id="numero_reserva" name="numero_reserva" maxLength={80} aria-invalid={!!errors.numero_reserva} aria-describedby={errors.numero_reserva ? "numero_reserva-error" : undefined} />{error("numero_reserva")}</div>
       <div className="space-y-2"><label htmlFor="foto" className="t-small block">Foto (opcional)</label><Input id="foto" name="foto" type="file" accept="image/jpeg,image/png,image/webp" aria-invalid={!!errors.foto} aria-describedby={`foto-note${errors.foto ? " foto-error" : ""}`} /><p id="foto-note" className="t-small text-ink-soft">JPG, PNG o WebP. Máximo 3 MB. La foto se almacenará en un enlace público; no incluya información privada.</p>{error("foto")}</div>
-      <Button type="submit" disabled={busy}>{busy ? "Enviando…" : "Enviar opinión"}</Button>
+      <Turnstile onToken={setTurnstileToken} resetKey={challenge} />
+      <Button type="submit" disabled={busy || !turnstileToken}>{busy ? "Enviando…" : "Enviar opinión"}</Button>
     </fieldset><p role="alert" className="t-body text-error">{status}</p>
   </form>;
 }

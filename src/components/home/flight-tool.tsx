@@ -1,4 +1,5 @@
 "use client";
+import { Turnstile } from "@/components/turnstile";
 
 import { useId, useRef, useState, type ComponentProps, type FormEvent } from "react";
 import { CalendarDays, MapPin, Plane, Hotel, Package, Compass, Users, UserRound, Armchair, NotebookPen, Plus, Trash2, MessageCircle, Wallet, type LucideIcon } from "lucide-react";
@@ -24,6 +25,8 @@ function Field({ label, icon: Icon, options, multiline, ...props }: ComponentPro
 }
 
 function QuoteForm({ service }: { service: string }) {
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [challenge, setChallenge] = useState(0);
   const { currency } = useCurrency();
   const [type, setType] = useState("Ida y vuelta");
   const [segments, setSegments] = useState([0, 1]);
@@ -61,9 +64,9 @@ function QuoteForm({ service }: { service: string }) {
     };
     if (multi) segments.forEach((id, index) => { fields[`Tramo ${index + 1}`] = `Origen: ${value(`origin-${id}`)}; Destino: ${value(`destination-${id}`)}; Fecha: ${value(`date-${id}`)}`; });
     locked.current = true; setBusy(true);
-    try { await requestQuote({ service, fields, currency, formData: Object.fromEntries(Array.from(data.entries(), ([key, entry]) => [key, String(entry)])) }); }
+    try { await requestQuote({ service, fields, currency, turnstileToken, website: value("website"), formData: Object.fromEntries(Array.from(data.entries(), ([key, entry]) => [key, String(entry)])) }); }
     catch { setError("No se pudo enviar su solicitud. Por favor, inténtelo de nuevo."); }
-    finally { locked.current = false; setBusy(false); }
+    finally { locked.current = false; setBusy(false); setChallenge(n => n + 1); }
   }
 
   return <form onSubmit={submit} onInvalid={event => {
@@ -79,7 +82,7 @@ function QuoteForm({ service }: { service: string }) {
       <Field label="Origen" name={`origin-${id}`} icon={Plane} required />
       <Field label="Destino" name={`destination-${id}`} icon={MapPin} required />
       <Field label="Fecha" name={`date-${id}`} type="date" min={today} icon={CalendarDays} required />
-    </div>{segments.length > 2 && <Button type="button" variant="ghost" className="mt-4" aria-label={`Eliminar tramo ${index + 1}`} onClick={() => setSegments(segments.filter(segment => segment !== id))}><Trash2 size={16} className="text-ink-soft" aria-hidden="true" />Eliminar tramo</Button>}</fieldset>)}<Button type="button" variant="ghost" onClick={() => setSegments([...segments, nextSegment.current++])}><Plus size={16} className="text-ink-soft" aria-hidden="true" />Agregar tramo</Button></div> : <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+    </div>{segments.length > 2 && <Button type="button" variant="ghost" className="mt-4" aria-label={`Eliminar tramo ${index + 1}`} onClick={() => setSegments(segments.filter(segment => segment !== id))}><Trash2 size={16} className="text-ink-soft" aria-hidden="true" />Eliminar tramo</Button>}</fieldset>)}<Button type="button" variant="ghost" disabled={segments.length >= 6} onClick={() => setSegments([...segments, nextSegment.current++])}><Plus size={16} className="text-ink-soft" aria-hidden="true" />Agregar tramo</Button></div> : <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
       {flight && <Field label="Origen" name="origin" icon={Plane} required />}
       <Field label={hotel ? "Destino / ciudad" : custom ? "Destino(s) de interés" : "Destino"} name="destination" icon={MapPin} required options={service === "Paquetes" ? launchDestinations : undefined} />
       {flight || hotel ? <><Field label={hotel ? "Entrada" : "Salida"} name="start" type="date" min={today} icon={CalendarDays} required /><Field label={hotel ? "Salida" : "Regreso"} name="end" type="date" min={today} icon={CalendarDays} disabled={flight && type === "Solo ida"} required={hotel || type === "Ida y vuelta"} /></> : <Field label="Fechas aproximadas" name="approximate" icon={CalendarDays} required />}
@@ -93,8 +96,10 @@ function QuoteForm({ service }: { service: string }) {
       <Field label="Nombre (opcional)" name="name" autoComplete="given-name" icon={UserRound} />
     </div>
     <Field label="Notas (opcional)" name="notes" icon={NotebookPen} multiline />
+    <div hidden aria-hidden="true"><input name="website" tabIndex={-1} autoComplete="off" /></div>
+    <Turnstile onToken={setTurnstileToken} resetKey={challenge} />
     {error && <p id={errorId} role="alert" className="t-small text-error">{error}</p>}
-    <div className="flex justify-end border-t border-line pt-6"><Button type="submit" variant="whatsapp" disabled={busy} aria-busy={busy} className="h-auto min-h-12 w-full whitespace-normal leading-normal sm:w-auto"><MessageCircle size={24} strokeWidth={1.75} className="shrink-0 text-ink-soft" aria-hidden="true" />Solicitar cotización por WhatsApp</Button></div>
+    <div className="flex justify-end border-t border-line pt-6"><Button type="submit" variant="whatsapp" disabled={busy || !turnstileToken} aria-busy={busy} className="h-auto min-h-12 w-full whitespace-normal leading-normal sm:w-auto"><MessageCircle size={24} strokeWidth={1.75} className="shrink-0 text-ink-soft" aria-hidden="true" />Solicitar cotización por WhatsApp</Button></div>
   </form>;
 }
 

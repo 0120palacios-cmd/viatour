@@ -6,6 +6,7 @@ import ts from 'typescript';
 import { parseCsv, importRows } from '../scripts/import-reviews.ts';
 
 function load(file, dependencies = {}) {
+  dependencies = { '@/lib/public-security': { rateLimit: async () => null, verifyTurnstile: async () => true }, '@/lib/notifications': { notifySubmission: async () => {} }, ...dependencies };
   const exports = {};
   const code = ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   vm.runInNewContext(code, { exports, require: name => dependencies[name], Response, Request, File, FormData, Buffer, crypto, AbortSignal, URL });

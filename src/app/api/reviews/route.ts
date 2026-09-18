@@ -1,9 +1,14 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { REVIEW_PHOTO_LIMIT, validateReview } from "@/lib/review-validation";
 
+import { rateLimit, verifyTurnstile } from "@/lib/public-security";
+import { notifySubmission } from "@/lib/notifications";
+
 export const runtime = "nodejs";
 const MAX_BODY = REVIEW_PHOTO_LIMIT + 64 * 1024;
 export async function POST(request: Request) {
+  const limited = await rateLimit(request, "/api/reviews", 5);
+  if (limited) return limited;
   const fail = (status: number, error: string, errors?: Record<string, string>) => Response.json({ ok: false, error, errors }, { status });
   if (request.headers.get("origin") && request.headers.get("origin") !== new URL(request.url).origin) return fail(403, "Solicitud no permitida.");
   if (!request.headers.get("content-type")?.startsWith("multipart/form-data")) return fail(400, "Revise los datos de su opinión.");
@@ -25,6 +30,7 @@ export async function POST(request: Request) {
   if (form.get("website")) return fail(400, "No se pudo enviar su opinión.");
   const { data, errors } = validateReview(Object.fromEntries(form));
   if (Object.keys(errors).length) return fail(400, "Revise los campos indicados.", errors);
+  if (!await verifyTurnstile(request, form.get("turnstileToken"))) return fail(400, "No se pudo verificar su solicitud. Inténtelo nuevamente.");
   const photo = form.get("foto");
   let bytes: Buffer | undefined;
   let extension = "";
@@ -49,6 +55,7 @@ export async function POST(request: Request) {
       if (path) await client.storage.from("review-photos").remove([path]);
       return fail(503, "No se pudo guardar su opinión. Inténtelo de nuevo.");
     }
+    await notifySubmission("review", id, { ...data, foto_path: path });
     return Response.json({ ok: true, id }, { status: 201 });
   } catch { return fail(503, "No se pudo guardar su opinión. Inténtelo de nuevo."); }
 }

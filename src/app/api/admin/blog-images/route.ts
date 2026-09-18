@@ -8,10 +8,19 @@ export async function POST(request: Request) {
     const admin = await client.rpc("is_admin");
     if (admin.error || admin.data !== true)
         return NextResponse.json({ error: "Su cuenta no tiene acceso." }, { status: 403 });
-    if (Number(request.headers.get("content-length")) > 6 * 1024 * 1024)
-        return NextResponse.json({ error: "El archivo supera el tama?o permitido." }, { status: 413 });
     try {
-        const form = await request.formData();
+        const reader = request.body?.getReader();
+        if (!reader) throw Error("Missing body");
+        const chunks: Uint8Array[] = [];
+        let size = 0;
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            size += value.byteLength;
+            if (size > 5 * 1024 * 1024 + 64 * 1024) { await reader.cancel(); return NextResponse.json({ error: "Seleccione una imagen de hasta 5 MB." }, { status: 413 }); }
+            chunks.push(value);
+        }
+        const form = await new Response(Buffer.concat(chunks), { headers: { "content-type": request.headers.get("content-type") || "" } }).formData();
         const file = form.get("file");
         if (!(file instanceof File) || file.size === 0 || file.size > 5 * 1024 * 1024)
             return NextResponse.json({ error: "Seleccione una imagen de hasta 5 MB." }, { status: 400 });

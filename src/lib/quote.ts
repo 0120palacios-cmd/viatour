@@ -1,7 +1,7 @@
 import { trackEvent } from "@/lib/analytics";
 import { siteConfig } from "@/lib/site-config";
 
-export type QuotePayload = { service: string; servicio?: string; fields: Record<string, string>; currency?: "USD" | "HNL"; formData?: Record<string, string> };
+export type QuotePayload = { turnstileToken?: string; website?: string; service: string; servicio?: string; fields: Record<string, string>; currency?: "USD" | "HNL"; formData?: Record<string, string> };
 
 // Copy pendiente de aprobación final
 export function composeQuote(payload: QuotePayload) {
@@ -16,7 +16,7 @@ export async function captureLead(payload: QuotePayload): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ ...payload, servicio: payload.servicio ?? payload.service }),
     // Bound the wait on an unavailable network; do not delay fast responses.
-    signal: AbortSignal.timeout(2500),
+    signal: AbortSignal.timeout(30000),
     keepalive: true,
   });
   const result = await response.json();
@@ -26,14 +26,9 @@ export async function captureLead(payload: QuotePayload): Promise<void> {
 }
 
 export async function requestQuote(payload: QuotePayload) {
+  await captureLead(payload);
+  trackEvent("quote_submit", { service: payload.servicio || payload.service, status: "saved" });
   trackEvent("whatsapp_click", { service: payload.servicio || payload.service });
-  try {
-    await captureLead(payload);
-    trackEvent("quote_submit", { service: payload.servicio || payload.service, status: "saved" });
-  } catch {
-    // Avoid logging personal form data or server response bodies.
-    console.warn("Lead capture unavailable; continuing to WhatsApp.");
-  }
   // Same-tab navigation avoids popup blockers after asynchronous lead capture.
   window.location.assign(`https://wa.me/${siteConfig.whatsappNumber}?text=${encodeURIComponent(composeQuote(payload))}`);
 }

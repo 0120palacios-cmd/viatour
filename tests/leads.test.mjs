@@ -1,114 +1,46 @@
-import { test } from 'node:test';
+﻿import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import vm from 'node:vm';
-import ts from 'typescript';
-
-test('package handoff keeps the database service and package identity separate from message labels', async () => {
-  let body;
-  let navigation;
-  const quote = load('src/lib/quote.ts', { '@/lib/site-config': { siteConfig: { whatsappNumber: '50488668704' } } }, {
-    fetch: async (_url, options) => {
-      body = JSON.parse(options.body);
-      return Response.json({ ok: true, id: 'package-test' });
-    },
-    window: { location: { assign: url => { navigation = url; } } },
+import { load, validation, quote, request } from './security-support.mjs';
+function route(options = {}) {
+  const rows = [], emails = [];
+  const api = load('src/app/api/leads/route.ts', {
+    '@/lib/lead-validation': validation,
+    '@/lib/public-security': { rateLimit: async () => options.limit || null, readBody: async r => { const b = Buffer.from(await r.arrayBuffer()); if (b.length > 32768) throw Error('large'); return b; }, verifyTurnstile: async (_r, token) => token === 'valid', publicError: (status, error) => Response.json({ok:false,error}, {status}) },
+    '@/lib/supabase/admin': { createAdminClient: () => ({ from: table => { assert.equal(table, 'leads'); return { insert: row => { rows.push(row); return { abortSignal: async () => ({ error: options.dbError ? {code:'test'} : null }) }; } }; } }) },
+    '@/lib/notifications': { notifySubmission: async (...args) => emails.push(args) },
   });
-  await quote.requestQuote({ service: 'Paquete', servicio: 'paquetes', fields: { Destino: 'Destino de prueba', Paquete: 'Paquete de prueba' }, formData: { slug: 'prueba', nombre: 'Paquete de prueba', destino: 'Destino de prueba' } });
-  assert.equal(body.servicio, 'paquetes');
-  assert.equal(body.formData.slug, 'prueba');
-  assert.equal(body.formData.nombre, 'Paquete de prueba');
-  assert.equal(body.formData.destino, 'Destino de prueba');
-  assert.match(new URL(navigation).searchParams.get('text'), /Servicio: Paquete\nDestino: Destino de prueba\nPaquete: Paquete de prueba/);
-});
-
-// Run the actual TypeScript modules with isolated network/navigation boundaries.
-function load(file, dependencies, globals = {}) {
-  const exports = {};
-  const code = ts.transpileModule(fs.readFileSync(file, 'utf8'), {
-    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
-  }).outputText;
-  vm.runInNewContext(code, {
-    exports, require: name => name === "@/lib/analytics" ? (dependencies[name] || { trackEvent() {} }) : dependencies[name], Response, crypto, AbortSignal,
-    console: { error() {}, warn() {} }, ...globals,
-  });
-  return exports;
+  return { ...api, rows, emails };
 }
-
-test('route validates JSON/service before inserting and sanitizes failures', async () => {
-  let inserts = 0;
-  const route = load('src/app/api/leads/route.ts', {
-    '@/lib/supabase/server': { createClient: async () => {
-      inserts++;
-      throw new Error('private database detail');
-    } },
-  });
-  for (const body of ['{', '{}', 'null', '[]', '{"servicio":" "}']) {
-    assert.equal((await route.POST(new Request('http://local', { method: 'POST', body }))).status, 400);
-  }
-  assert.equal(inserts, 0);
-  const response = await route.POST(new Request('http://local', { method: 'POST', body: '{"servicio":"Vuelos"}' }));
-  assert.equal(response.status, 503);
-  assert.doesNotMatch(await response.text(), /private database detail/);
-});
-
-test('all services preserve raw data and map currency, guests, budget and notes without SELECT', async () => {
-  for (const servicio of ['Vuelos', 'Hoteles', 'Paquetes', 'Viaje a medida']) {
-    let row;
-    const route = load('src/app/api/leads/route.ts', {
-      '@/lib/supabase/server': { createClient: async () => ({ from: table => {
-        assert.equal(table, 'leads');
-        return { insert: value => { row = value; return { abortSignal: async () => ({ error: null }) }; } };
-      } }) },
-    });
-    const payload = { servicio, currency: 'HNL', fields: {
-      Nombre: 'Prueba', Origen: 'SAP', Destino: 'Cartagena', Fechas: '2026-10-01',
-      [servicio === 'Hoteles' ? 'Huéspedes' : 'Pasajeros']: 'Adultos: 2; niños: 0',
-      Clase: servicio === 'Vuelos' ? 'Económica' : '', Notas: 'No contactar.',
-      'Presupuesto aproximado': servicio === 'Viaje a medida' ? '25000 HNL' : '',
-      'Tramo 1': 'Datos completos del tramo',
-    }, formData: { budget: servicio === 'Viaje a medida' ? '25000' : '' } };
-    const response = await route.POST(new Request('http://local', {
-      method: 'POST', headers: { 'user-agent': 'test-agent' }, body: JSON.stringify(payload),
-    }));
-    assert.equal(response.status, 201);
-    assert.equal((await response.json()).id, row.id);
-    assert.equal(row.moneda, 'HNL');
-    assert.equal(row.presupuesto, servicio === 'Viaje a medida' ? 25000 : null);
-    assert.equal(row.notas, 'No contactar.');
-    assert.equal(row.pasajeros, 'Adultos: 2; niños: 0');
-    assert.equal(row.user_agent, 'test-agent');
-    assert.equal(JSON.stringify(row.payload), JSON.stringify(payload));
-    assert.equal(row.estado, undefined);
+test('all tabs and lightweight CTAs save normalized data with service role and one notification', async () => {
+  const payloads = ['Vuelos','Hoteles','Paquetes','Viaje a medida'].map(quote);
+  payloads.push({servicio:'paquetes',fields:{Destino:'Cartagena',Paquete:'Prueba'},formData:{slug:'prueba',nombre:'Prueba',destino:'Cartagena'},turnstileToken:'valid'}, {servicio:'destino',fields:{Destino:'Cartagena'},formData:{slug:'cartagena',nombre:'Cartagena',destination_id:'12345678-1234-1234-1234-123456789abc'},turnstileToken:'valid'}, {servicio:'Viaje a medida',fields:{},turnstileToken:'valid'}, {servicio:'contacto',formData:{nombre:'Prueba',email:'test@example.invalid',mensaje:'Prueba',website:''},turnstileToken:'valid'});
+  const multi = quote(); multi.fields.Tipo='Multidestino'; delete multi.formData.origin;
+  Object.assign(multi.formData, {'origin-0':'SAP','destination-0':'Madrid','date-0':'2026-10-01','origin-1':'Madrid','destination-1':'SAP','date-1':'2026-10-10'}); payloads.push(multi);
+  const one = quote(); one.fields.Tipo='Solo ida'; delete one.formData.end; payloads.push(one);
+  for (const payload of payloads) {
+    payload.admin='discard'; payload.formData ??= {}; if (Object.keys(payload.formData).length) payload.formData.secret='discard';
+    const api = route(); const response = await api.POST(request(payload)); assert.equal(response.status,201,JSON.stringify(payload));
+    assert.equal(api.rows.length,1); assert.equal(api.emails.length,1);
+    assert.equal(api.rows[0].payload.admin,undefined); assert.equal(api.rows[0].payload.formData.secret,undefined); assert.equal(api.rows[0].payload.turnstileToken,undefined);
+    assert.equal((await response.json()).id,api.rows[0].id);
   }
 });
-
-test('handoff waits for capture and proceeds on HTTP, malformed, network and timeout failures', async () => {
-  for (const outcome of ['success', 'http', 'malformed', 'network', 'timeout']) {
-    let resolve;
-    const pending = new Promise(done => { resolve = done; });
-    const navigations = [];
-    const events = [];
-    const quote = load('src/lib/quote.ts', { '@/lib/site-config': { siteConfig: { whatsappNumber: '50488668704' } }, '@/lib/analytics': { trackEvent: (name, params) => events.push({ name, params }) } }, {
-      window: { location: { assign: url => navigations.push(url) } },
-      fetch: async (url, options) => {
-        assert.equal(url, '/api/leads');
-        assert.equal(JSON.parse(options.body).servicio, 'Vuelos');
-        assert.ok(options.signal);
-        await pending;
-        if (outcome === 'network' || outcome === 'timeout') throw new Error(outcome);
-        if (outcome === 'malformed') return new Response('invalid');
-        return Response.json(outcome === 'success' ? { ok: true, id: 'test-id' } : { ok: false }, { status: outcome === 'http' ? 502 : 201 });
-      },
-    });
-    const payload = { service: 'Vuelos', currency: 'USD', fields: { Destino: 'Cartagena', Notas: '' } };
-    const handoff = quote.requestQuote(payload);
-    assert.equal(navigations.length, 0);
-    resolve();
-    await handoff;
-    assert.equal(navigations.length, 1);
-    assert.equal(events.filter(e => e.name === "whatsapp_click").length, 1);
-    assert.equal(events.filter(e => e.name === "quote_submit").length, outcome === "success" ? 1 : 0);
-    assert.equal(new URL(navigations[0]).searchParams.get('text'), 'Me gustaría solicitar una cotización. Por favor, asesóreme con estas opciones.\nServicio: Vuelos\nDestino: Cartagena');
+test('malformed bodies, missing challenges, enums, counts, date order, segments and oversized fields reject before writes', async () => {
+  const invalid = ['{','{}','null','[]', JSON.stringify(quote()).repeat(100)];
+  for (const mutate of [p=>p.servicio='unknown', p=>p.currency=['USD'],p=>p.currency='EUR',p=>p.turnstileToken='',p=>p.formData.adults='1.5',p=>p.formData.children='-1',p=>p.formData.rooms='21',p=>p.formData.class='invalid',p=>p.fields.Tipo='invalid',p=>p.formData.start='2026-02-30',p=>p.formData.end='2026-01-01',p=>p.formData.destination='x'.repeat(201),p=>p.formData.website='bot']) {
+    const p=quote(); mutate(p); if(p.formData.rooms==='21')p.servicio='Hoteles'; invalid.push(p);
+  }
+  const tooMany=quote();tooMany.fields.Tipo='Multidestino';for(let i=0;i<7;i++)Object.assign(tooMany.formData,{['origin-'+i]:'SAP',['destination-'+i]:'Madrid',['date-'+i]:'2026-10-01'});invalid.push(tooMany);
+  for(const p of invalid){const api=route();assert.equal((await api.POST(request(p))).status,400);assert.equal(api.rows.length,0);assert.equal(api.emails.length,0);}
+});
+test('rate limited and database failures do not trigger notification',async()=>{
+  for(const options of [{limit:Response.json({}, {status:429})},{dbError:true}]){const api=route(options);assert.equal((await api.POST(request(quote()))).status,options.limit?429:502);assert.equal(api.emails.length,0);}
+});
+test('WhatsApp waits for capture and never opens on HTTP, malformed, network or timeout failure',async()=>{
+  for(const outcome of ['success','http','malformed','network','timeout']){
+    const navigations=[],events=[];let resolve;const pending=new Promise(done=>resolve=done);
+    const api=load('src/lib/quote.ts',{'@/lib/site-config':{siteConfig:{whatsappNumber:'50488668704'}},'@/lib/analytics':{trackEvent:n=>events.push(n)}},{window:{location:{assign:url=>navigations.push(url)}},fetch:async()=>{await pending;if(['network','timeout'].includes(outcome))throw Error(outcome);if(outcome==='malformed')return new Response('invalid');return Response.json(outcome==='success'?{ok:true,id:'test'}:{ok:false},{status:outcome==='http'?502:201});}});
+    const handoff=api.requestQuote({service:'Vuelos',fields:{Destino:'Cartagena'},turnstileToken:'valid'});assert.equal(navigations.length,0);resolve();
+    if(outcome==='success'){await handoff;assert.equal(navigations.length,1);assert.equal(events.filter(n=>n==='quote_submit').length,1);}else{await assert.rejects(handoff);assert.equal(navigations.length,0);assert.equal(events.length,0);}
   }
 });

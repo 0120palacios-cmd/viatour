@@ -4,6 +4,8 @@ export function validateBlog(form: FormData): {
     error?: string;
 } {
     const get = (key: string) => String(form.get(key) ?? "").trim();
+    const caps: Record<string, number> = { titulo: 200, slug: 200, categoria: 120, extracto: 2000, cuerpo: 100000, cover_url: 2048, autor: 120, meta_titulo: 200, meta_descripcion: 500, publicado_en: 10 };
+    if (Object.entries(caps).some(([key, max]) => get(key).length > max)) return { error: "Revise la longitud de los campos." };
     if (!get("titulo") || !get("categoria") || !get("extracto") || !get("cuerpo") || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(get("slug")))
         return { error: "Complete los campos obligatorios y use un slug con minúsculas, números y guiones." };
     if (!["post", "guia"].includes(get("tipo")))

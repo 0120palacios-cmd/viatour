@@ -75,6 +75,12 @@ export async function save(_: Result, form: FormData): Promise<Result> {
                 values.verificada = form.get("verificada") === "on";
         }
         else {
+            const caps: Record<string, number> = { nombre: 200, slug: 200, destino: 200, destination_id: 36, resumen: 2000, descripcion: 20000, duracion: 200, moneda: 3, imagen_url: 2048, titulo_seo: 200, meta_descripcion: 500, intro: 3000, cuerpo: 100000, mejor_epoca: 2000, incluye: 20000 };
+            if (Object.entries(caps).some(([key, max]) => get(key).length > max)) return { error: "Revise la longitud de los campos." };
+            if (table === "packages" && get("destination_id") && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(get("destination_id"))) return { error: "Seleccione un destino válido." };
+            const includes = get("incluye").split("\n").map(v => v.trim()).filter(Boolean);
+            const qs = form.getAll("pregunta"), ans = form.getAll("respuesta");
+            if (includes.length > 50 || includes.some(v => v.length > 500) || qs.length > 30 || ans.length !== qs.length || qs.some(v => String(v).length > 500) || ans.some(v => String(v).length > 10000)) return { error: "Revise la cantidad y la longitud de los campos." };
             const fields = table === "packages" ? ["nombre", "slug", "destino", "destination_id", "resumen", "descripcion", "duracion", "moneda", "imagen_url"] : ["nombre", "slug", "titulo_seo", "meta_descripcion", "intro", "cuerpo", "mejor_epoca", "imagen_url"];
             for (const key of fields)
                 values[key] = get(key) || (key === "destination_id" || key === "imagen_url" || table === "destinations" && !["nombre", "slug"].includes(key) ? null : "");

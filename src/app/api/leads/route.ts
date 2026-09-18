@@ -1,67 +1,19 @@
-import {validateContact} from "@/lib/contact-validation";
-import { createClient } from "@/lib/supabase/server";
-
-function record(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function text(value: unknown): string | null {
-  return typeof value === "string" && value.trim() ? value.trim() : null;
-}
-
-// Copy funcional pendiente de aprobación final.
+﻿import { createAdminClient } from "@/lib/supabase/admin";
+import { validateLead } from "@/lib/lead-validation";
+import { notifySubmission } from "@/lib/notifications";
+import { publicError, rateLimit, readBody, verifyTurnstile } from "@/lib/public-security";
 export async function POST(request: Request) {
-  let payload: unknown;
+  const limited = await rateLimit(request, "/api/leads", 10); if (limited) return limited;
+  let raw: Record<string, unknown>, payload: ReturnType<typeof validateLead>;
+  try { raw = JSON.parse((await readBody(request, 32 * 1024)).toString("utf8")); payload = validateLead(raw); }
+  catch { return publicError(400, "Revise los datos de su solicitud."); }
+  if (!await verifyTurnstile(request, raw.turnstileToken)) return publicError(400, "No se pudo verificar su solicitud. Inténtelo nuevamente.");
+  const id = crypto.randomUUID(), fields = payload.fields;
+  const row = { id, servicio: payload.servicio, nombre: fields.Nombre || null, origen: fields.Origen || null, destino: fields.Destino || null, fechas: fields.Fechas || null, pasajeros: fields.Pasajeros || fields.Huéspedes || null, clase: fields.Clase || null, presupuesto: payload.formData.budget ? Number(payload.formData.budget) : null, moneda: payload.currency, notas: fields.Notas || null, payload, user_agent: request.headers.get("user-agent")?.slice(0, 512) || null };
   try {
-    payload = await request.json();
-  } catch {
-    return Response.json({ ok: false, error: "Revise los datos de su solicitud." }, { status: 400 });
-  }
-  if (!record(payload) || !text(payload.servicio)) {
-    return Response.json({ ok: false, error: "Indique el servicio de su solicitud." }, { status: 400 });
-  }
-
-  if(payload.servicio === "contacto") {
-    const contact=validateContact(record(payload.formData)?payload.formData:payload);
-    if(contact.values.website)return Response.json({ok:false,error:"No se pudo procesar su solicitud."},{status:400});
-    if(Object.keys(contact.errors).length)return Response.json({ok:false,errors:contact.errors,error:"Revise los datos de su mensaje."},{status:400});
-    payload.nombre=contact.values.nombre;payload.notas=contact.values.mensaje;
-  }
-  const fields = record(payload.fields) ? payload.fields : {};
-  const form = record(payload.formData) ? payload.formData : {};
-  const field = (column: string, label: string) => text(payload[column]) ?? text(fields[label]);
-  const budget = payload.presupuesto ?? form.budget ?? fields["Presupuesto aproximado"];
-  const budgetText = typeof budget === "number" ? String(budget) : text(budget)?.replace(/\s+(USD|HNL)$/, "");
-  const presupuesto = budgetText && /^\d+(\.\d+)?$/.test(budgetText) && Number.isFinite(Number(budgetText)) ? Number(budgetText) : null;
-  const currency = payload.moneda ?? payload.currency;
-  const id = crypto.randomUUID();
-
-  try {
-    const supabase = await createClient();
-    // INSERT only: returning a locally generated UUID avoids requiring SELECT under RLS.
-    const { error } = await supabase.from("leads").insert({
-      id,
-      servicio: text(payload.servicio),
-      nombre: field("nombre", "Nombre"),
-      origen: field("origen", "Origen"),
-      destino: field("destino", "Destino"),
-      fechas: field("fechas", "Fechas"),
-      pasajeros: field("pasajeros", "Pasajeros") ?? text(fields["Huéspedes"]),
-      clase: field("clase", "Clase"),
-      presupuesto,
-      moneda: currency === "HNL" ? "HNL" : "USD",
-      notas: field("notas", "Notas"),
-      payload,
-      user_agent: request.headers.get("user-agent"),
-    }).abortSignal(AbortSignal.timeout(2000));
-    if (error) {
-      console.error("Lead insert failed", { id, code: error.code });
-      return Response.json({ ok: false, error: "No se pudo guardar su solicitud." }, { status: 502 });
-    }
-    // TODO: notificar soporte por email (Resend) en una etapa futura
+    const { error } = await createAdminClient().from("leads").insert(row).abortSignal(AbortSignal.timeout(8000));
+    if (error) { console.error("Lead insert failed", { id, code: error.code }); return publicError(502, "No se pudo guardar su solicitud."); }
+    await notifySubmission("lead", id, payload);
     return Response.json({ ok: true, id }, { status: 201 });
-  } catch {
-    console.error("Lead insert unavailable", { id });
-    return Response.json({ ok: false, error: "No se pudo guardar su solicitud." }, { status: 503 });
-  }
+  } catch { console.error("Lead insert unavailable", { id }); return publicError(503, "No se pudo guardar su solicitud."); }
 }

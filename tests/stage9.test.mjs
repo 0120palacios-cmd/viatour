@@ -4,18 +4,20 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import ts from 'typescript';
 function load(file,deps={},globals={}) {
+ deps={ '@/lib/lead-validation':file === 'src/app/api/leads/route.ts' ? leadValidation : undefined, '@/lib/public-security':{publicError:(status,error)=>Response.json({ok:false,error},{status}),rateLimit:async()=>null, verifyTurnstile:async()=>true, readBody:async r=>Buffer.from(await r.arrayBuffer())}, '@/lib/notifications':{notifySubmission:async()=>{}}, ...deps };
  const exports={};
  const code=ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText;
- vm.runInNewContext(code,{exports,require:n=>deps[n],Response,Request,FormData,AbortSignal,crypto,console,...globals});return exports;
+ vm.runInNewContext(code,{exports,require:n=>deps[n],Buffer,Date,Response,Request,FormData,AbortSignal,crypto,console,...globals});return exports;
 }
 const validation=load('src/lib/contact-validation.ts');
+const leadValidation=load('src/lib/lead-validation.ts',{'./contact-validation':validation});
 test('contact validation rejects empty, invalid and oversized fields',()=>{
  assert.equal(Object.keys(validation.validateContact({}).errors).length,3);
  assert.deepEqual(Object.keys(validation.validateContact({nombre:'Persona',email:'invalid',mensaje:'Consulta',telefono:'x'}).errors),['email','telefono']);
  assert.ok(validation.validateContact({nombre:'Persona',email:'test@example.invalid',mensaje:'x'.repeat(3001)}).errors.mensaje);
 });
 test('contact route stores servicio, message and contact details in payload; honeypot prevents writes',async()=>{
- let row;let writes=0;const route=load('src/app/api/leads/route.ts',{'@/lib/contact-validation':validation,'@/lib/supabase/server':{createClient:async()=>({from:()=>({insert:value=>{row=value;writes++;return {abortSignal:async()=>({error:null})}}})})}});
+ let row;let writes=0;const route=load('src/app/api/leads/route.ts',{'@/lib/contact-validation':validation,'@/lib/supabase/admin':{createAdminClient:()=>({from:()=>({insert:value=>{row=value;writes++;return {abortSignal:async()=>({error:null})}}})})}});
  const payload={servicio:'contacto',formData:{nombre:'Persona',email:'test@example.invalid',telefono:'+504 0000-0000',mensaje:'Prueba técnica',website:''}};
  const send=()=>route.POST(new Request('http://local',{method:'POST',body:JSON.stringify(payload)}));
  assert.equal((await send()).status,201);assert.equal(row.servicio,'contacto');assert.equal(row.nombre,'Persona');assert.equal(row.notas,'Prueba técnica');assert.equal(row.payload.formData.email,'test@example.invalid');
