@@ -73,6 +73,7 @@ test('empty and failed hero images retain the tonal background without broken im
   assert.equal(failed.photos().length, 1);
   failed.photos()[0].props.onError(); failed.render();
   assert.equal(failed.photos().length, 0);
+  assert.equal(failed.timers.size, 0);
   assert.ok(failed.nodes().some(node => node.props.className?.includes('from-ink')));
 });
 
@@ -103,9 +104,23 @@ test('reduced motion displays only the first image, including when preference ch
   assert.equal(hero.photos()[0].props.src, photos[0].src);
   assert.equal(hero.timers.size, 0);
   hero.reduce(false); hero.tick();
+  hero.photos().forEach(photo => photo.props.onLoad()); hero.render(); hero.tick();
   assert.equal(hero.photos()[1].props['aria-hidden'], false);
   hero.reduce(true);
   assert.equal(hero.photos().length, 1);
   assert.equal(hero.photos()[0].props['aria-hidden'], false);
   assert.equal(hero.timers.size, 0);
+});
+
+test('rotation waits for loaded photos and skips failures in configured order', () => {
+  const hero = backdrop([...photos, { src: '/hero/three.jpg', alt: 'Fotografía de prueba tres' }]);
+  hero.photos()[0].props.onLoad(); hero.render(); hero.tick();
+  assert.equal(hero.timers.size, 0);
+  assert.equal(hero.photos()[0].props['aria-hidden'], false);
+  hero.photos()[2].props.onLoad(); hero.photos()[1].props.onLoad(); hero.render();
+  hero.tick();
+  assert.equal(hero.photos()[1].props['aria-hidden'], false);
+  hero.photos()[1].props.onError(); hero.render(); hero.tick();
+  assert.equal(hero.photos()[1].props.src, '/hero/three.jpg');
+  assert.equal(hero.photos()[1].props['aria-hidden'], false);
 });

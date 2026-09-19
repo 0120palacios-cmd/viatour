@@ -32,23 +32,39 @@ async function ready() {
 }
 async function fill(service = 'Vuelos') {
   if (service !== 'Vuelos') await form.getByLabel('Tipo de viaje', { exact: true }).selectOption(service);
+  await form.locator('summary').filter({ hasText: 'Destino' }).click();
   if (service === 'Vuelos') await form.locator('[name="origin"]').fill('SAP');
   if (service === 'Paquetes') await form.locator('[name="destination"]').selectOption({ index: 1 });
   else await form.locator('[name="destination"]').fill('Cartagena');
+  await form.locator('summary').filter({ hasText: 'Destino' }).click();
+  await form.locator('summary').filter({ hasText: 'Fechas' }).click();
   if (['Vuelos', 'Hoteles'].includes(service)) {
     await form.locator('[name="start"]').fill('2027-10-01');
     await form.locator('[name="end"]').fill('2027-10-10');
   } else await form.locator('[name="approximate"]').fill('Octubre de 2027');
+  await form.locator('summary').filter({ hasText: 'Fechas' }).click();
+  await form.locator('summary').filter({ hasText: 'Pasajeros' }).click();
   await form.locator('[name="adults"]').fill('2');
+  await form.locator('summary').filter({ hasText: 'Pasajeros' }).click();
 }
 try {
-  for (const width of [320, 390, 1440]) {
+  for (const width of [320, 390, 1024, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await ready();
     assert.equal(await hero.locator('img').count(), 0, 'config starts empty');
+    const passengerControl = form.locator('summary').filter({ hasText: 'Pasajeros' });
+    await passengerControl.focus(); await page.keyboard.press('Enter');
+    assert.equal(await form.locator('[name="adults"]').isVisible(), true);
+    const bounds = await form.locator('[name="adults"]').boundingBox();
+    assert.ok(bounds.x >= 0 && bounds.x + bounds.width <= width, `open control clipped at ${width}`);
+    await page.keyboard.press('Enter');
+    assert.equal(await form.locator('[name="adults"]').isVisible(), false);
     await fill();
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `compact overflow at ${width}`);
-    if (process.env.HERO_SCREENSHOTS) await hero.screenshot({ path: `${process.env.HERO_SCREENSHOTS}/hero-${width}.png` });
+    if (process.env.HERO_SCREENSHOTS) {
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await page.screenshot({ path: `${process.env.HERO_SCREENSHOTS}/hero-${width}.png` });
+    }
     await form.getByRole('button', { name: 'Más opciones' }).focus();
     await page.keyboard.press('Enter');
     assert.equal(await hero.getByRole('tab').count(), 4);
@@ -60,6 +76,11 @@ try {
     await page.keyboard.press('ArrowRight');
     await hero.getByRole('tab', { name: 'Hoteles', selected: true }).waitFor();
   }
+  await ready();
+  await submit();
+  assert.equal(await form.locator('[name="origin"]').isVisible(), true, 'invalid required fields open their compact group');
+  assert.equal(await form.locator('[name="origin"]').evaluate(element => element === document.activeElement), true);
+  assert.equal(captures.length, 0);
   await ready(); await fill(); outcome = 'failure';
   await submit();
   await form.getByRole('alert').waitFor();
@@ -90,5 +111,5 @@ try {
   assert.equal(captures.at(-1).fields.Tipo, 'Multidestino');
   assert.equal(navigations.length, 5);
   assert.deepEqual(errors, []);
-  console.log('PASS: 320/390/1440px without overflow; keyboard expansion/tabs; retained values; four compact services; expanded multi-city; failed and pending capture block WhatsApp; success hands off to the unchanged number.');
+  console.log('PASS: 320/390/1024/1440px without overflow; keyboard compact controls/expansion/tabs; retained values; four compact services; expanded multi-city; failed and pending capture block WhatsApp; success hands off to the unchanged number.');
 } finally { await browser.close(); }
