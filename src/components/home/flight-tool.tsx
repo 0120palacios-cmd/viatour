@@ -1,7 +1,7 @@
 "use client";
 import { Turnstile } from "@/components/turnstile";
 
-import { useId, useRef, useState, type ComponentProps, type FormEvent } from "react";
+import { useId, useRef, useState, type ComponentProps, type FormEvent, type ReactNode } from "react";
 import { CalendarDays, MapPin, Plane, Hotel, Package, Compass, Users, UserRound, Armchair, NotebookPen, Plus, Trash2, MessageCircle, Wallet, type LucideIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,7 @@ function Field({ label, icon: Icon, options, multiline, ...props }: ComponentPro
   </div>;
 }
 
-function QuoteForm({ service }: { service: string }) {
+function QuoteForm({ service, compact = false, serviceControl, optionsControl, onExpand }: { service: string; compact?: boolean; serviceControl?: ReactNode; optionsControl?: ReactNode; onExpand?: () => void }) {
   const [turnstileToken, setTurnstileToken] = useState("");
   const [challenge, setChallenge] = useState(0);
   const { currency } = useCurrency();
@@ -35,6 +35,7 @@ function QuoteForm({ service }: { service: string }) {
   const locked = useRef(false);
   const [error, setError] = useState("");
   const errorId = useId();
+  const typeId = useId();
   const flight = service === "Vuelos";
   const hotel = service === "Hoteles";
   const custom = service === "Viaje a medida";
@@ -77,32 +78,71 @@ function QuoteForm({ service }: { service: string }) {
     if (field.validity?.valid) field.removeAttribute("aria-invalid");
   }} className="quote-form space-y-6" aria-label={`Cotización de ${service}`} aria-describedby={error ? errorId : undefined}>
     <p className="t-small text-ink-soft">Los campos marcados con * son obligatorios.</p>
-    {flight && <div className="sm:max-w-64"><label className="t-small mb-2 block" htmlFor="flight-type">Tipo de viaje *</label><select id="flight-type" className={controlClass} value={type} onChange={event => { setType(event.target.value); setError(""); }}><option>Ida y vuelta</option><option>Solo ida</option><option>Multidestino</option></select></div>}
+    <div className={compact ? "grid gap-6 sm:grid-cols-2 lg:grid-cols-4" : "space-y-6"}>
+    <div className={!compact && !flight ? "hidden" : "space-y-4 sm:max-w-64"}>
+      {serviceControl}
+      {flight && <div><label className="t-small mb-2 block" htmlFor={typeId}>{compact ? "Vuelos" : "Tipo de viaje"} *</label><select id={typeId} className={controlClass} value={type} onChange={event => { setType(event.target.value); setError(""); if (event.target.value === "Multidestino") onExpand?.(); }}><option>Ida y vuelta</option><option>Solo ida</option><option>Multidestino</option></select></div>}
+    </div>
     {multi ? <div className="space-y-4">{segments.map((id, index) => <fieldset key={id} className="rounded-card border border-line p-4"><legend className="t-small px-2">Tramo {index + 1}</legend><div className="grid gap-6 sm:grid-cols-3">
       <Field label="Origen" name={`origin-${id}`} icon={Plane} required />
       <Field label="Destino" name={`destination-${id}`} icon={MapPin} required />
       <Field label="Fecha" name={`date-${id}`} type="date" min={today} icon={CalendarDays} required />
-    </div>{segments.length > 2 && <Button type="button" variant="ghost" className="mt-4" aria-label={`Eliminar tramo ${index + 1}`} onClick={() => setSegments(segments.filter(segment => segment !== id))}><Trash2 size={16} className="text-ink-soft" aria-hidden="true" />Eliminar tramo</Button>}</fieldset>)}<Button type="button" variant="ghost" disabled={segments.length >= 6} onClick={() => setSegments([...segments, nextSegment.current++])}><Plus size={16} className="text-ink-soft" aria-hidden="true" />Agregar tramo</Button></div> : <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+    </div>{segments.length > 2 && <Button type="button" variant="ghost" className="mt-4" aria-label={`Eliminar tramo ${index + 1}`} onClick={() => setSegments(segments.filter(segment => segment !== id))}><Trash2 size={16} className="text-ink-soft" aria-hidden="true" />Eliminar tramo</Button>}</fieldset>)}<Button type="button" variant="ghost" disabled={segments.length >= 6} onClick={() => setSegments([...segments, nextSegment.current++])}><Plus size={16} className="text-ink-soft" aria-hidden="true" />Agregar tramo</Button></div> : <div className={compact ? "contents" : "grid gap-6 sm:grid-cols-2 lg:grid-cols-4"}>
+      <div className={compact ? "space-y-4" : "contents"}>
       {flight && <Field label="Origen" name="origin" icon={Plane} required />}
       <Field label={hotel ? "Destino / ciudad" : custom ? "Destino(s) de interés" : "Destino"} name="destination" icon={MapPin} required options={service === "Paquetes" ? launchDestinations : undefined} />
+      </div>
+      <fieldset className={compact ? "min-w-0 space-y-4" : "contents"}>
+      {compact && <legend className="t-small mb-2">Fechas</legend>}
       {flight || hotel ? <><Field label={hotel ? "Entrada" : "Salida"} name="start" type="date" min={today} icon={CalendarDays} required /><Field label={hotel ? "Salida" : "Regreso"} name="end" type="date" min={today} icon={CalendarDays} disabled={flight && type === "Solo ida"} required={hotel || type === "Ida y vuelta"} /></> : <Field label="Fechas aproximadas" name="approximate" icon={CalendarDays} required />}
+      </fieldset>
     </div>}
-    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+    <div className={compact ? "space-y-4" : "grid gap-6 sm:grid-cols-2 lg:grid-cols-4"}>
+      <fieldset className={compact ? "grid min-w-0 grid-cols-2 gap-4" : "contents"}>
+      {compact && <legend className="t-small mb-2">Pasajeros</legend>}
       <Field label="Adultos" name="adults" type="number" min={1} step={1} defaultValue={1} icon={Users} required />
       <Field label="Niños" name="children" type="number" min={0} step={1} defaultValue={0} icon={Users} required />
+      </fieldset>
+      <div className={compact ? "hidden" : "contents"}>
       {flight && <Field label="Clase" name="class" options={["Económica", "Premium", "Ejecutiva", "Primera"]} icon={Armchair} required />}
+      </div>
       {hotel && <Field label="Habitaciones" name="rooms" type="number" min={1} step={1} defaultValue={1} icon={Hotel} required />}
+      <div className={compact ? "hidden" : "contents"}>
       {custom && <Field label={`Presupuesto aproximado (${currency}, opcional)`} name="budget" type="number" min={0} step="0.01" icon={Wallet} />}
       <Field label="Nombre (opcional)" name="name" autoComplete="given-name" icon={UserRound} />
+      </div>
     </div>
+    </div>
+    <div hidden={compact}>
     <Field label="Notas (opcional)" name="notes" icon={NotebookPen} multiline />
+    </div>
     <div hidden aria-hidden="true"><input name="website" tabIndex={-1} autoComplete="off" /></div>
     <Turnstile onToken={setTurnstileToken} resetKey={challenge} />
     {error && <p id={errorId} role="alert" className="t-small text-error">{error}</p>}
-    <div className="flex justify-end border-t border-line pt-6"><Button type="submit" variant="whatsapp" disabled={busy || !turnstileToken} aria-busy={busy} className="h-auto min-h-12 w-full whitespace-normal leading-normal sm:w-auto"><MessageCircle size={24} strokeWidth={1.75} className="shrink-0 text-ink-soft" aria-hidden="true" />Solicitar cotización por WhatsApp</Button></div>
+    <div className="flex flex-col gap-4 border-t border-line pt-6 sm:flex-row sm:items-center sm:justify-end">{optionsControl}<Button type="submit" variant="whatsapp" disabled={busy || !turnstileToken} aria-busy={busy} className="h-auto min-h-12 w-full whitespace-normal leading-normal sm:w-auto"><MessageCircle size={24} strokeWidth={1.75} className="shrink-0 text-ink-soft" aria-hidden="true" />Solicitar cotización por WhatsApp</Button></div>
   </form>;
 }
 
-export function FlightTool() {
-  return <Tabs defaultValue="Vuelos" className="rounded-panel border border-line bg-canvas text-left shadow-sm"><TabsList aria-label="Servicio de viaje">{services.map(({ name, icon: Icon }) => <TabsTrigger key={name} value={name}><Icon size={20} strokeWidth={1.75} aria-hidden="true" />{name}</TabsTrigger>)}</TabsList>{services.map(({ name }) => <TabsContent key={name} value={name}><QuoteForm service={name} /></TabsContent>)}</Tabs>;
+export function FlightTool({ compact = false }: { compact?: boolean }) {
+  const [expanded, setExpanded] = useState(!compact);
+  const [service, setService] = useState("Vuelos");
+  const serviceId = useId();
+  const panelId = useId();
+  const tool = useRef<HTMLDivElement>(null);
+  const compactView = compact && !expanded;
+  const expand = () => {
+    setExpanded(true);
+    window.requestAnimationFrame(() => tool.current?.querySelector<HTMLButtonElement>('[role="tab"][aria-selected="true"]')?.focus());
+  };
+  return <Tabs ref={tool} value={service} onValueChange={setService} className="min-w-0 rounded-panel border border-line bg-canvas text-left text-ink shadow-sm">
+    <div id={panelId}>
+      <div hidden={compactView}><TabsList aria-label="Servicio de viaje">{services.map(({ name, icon: Icon }) => <TabsTrigger key={name} value={name}><Icon size={20} strokeWidth={1.75} aria-hidden="true" />{name}</TabsTrigger>)}</TabsList></div>
+      {services.map(({ name }) => <TabsContent key={name} value={name} {...(compactView ? { "aria-label": `Cotización de ${name}`, "aria-labelledby": undefined } : {})}>
+        <QuoteForm service={name} compact={compactView} onExpand={compact ? expand : undefined} optionsControl={compactView ? <Button type="button" variant="ghost" className="sm:mr-auto" aria-expanded={expanded} aria-controls={panelId} onClick={expand}>Más opciones</Button> : undefined} serviceControl={compactView ? <div className="space-y-2">
+          <label htmlFor={serviceId} className="t-small block">Tipo de viaje</label>
+          <select id={serviceId} className={controlClass} value={service} onChange={event => setService(event.target.value)}>{services.map(item => <option key={item.name}>{item.name}</option>)}</select>
+        </div> : undefined} />
+      </TabsContent>)}
+    </div>
+  </Tabs>;
 }

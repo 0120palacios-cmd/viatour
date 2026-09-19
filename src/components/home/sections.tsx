@@ -6,6 +6,7 @@ import { getPackages } from "@/lib/packages";
 import Link from "next/link";
 import { ArrowUpRight, MessageSquare, SlidersHorizontal, ShieldCheck } from "lucide-react";
 import { FlightTool } from "@/components/home/flight-tool";
+import { HeroBackdrop } from "@/components/home/hero-backdrop";
 import { QuoteButton } from "@/components/home/quote-button";
 import { getDestinations } from "@/lib/destinations";
 import { DestinationGrid, DestinationSkeletons } from "@/components/destinations/destination-card";
@@ -22,10 +23,13 @@ async function FeaturedDestinationData() {
 
 export function Hero() {
   // Copy pendiente de aprobación final
-  return <section className="bg-surface py-14 sm:py-24" aria-labelledby="hero-title"><div className="container-site space-y-12">
-    <div className="max-w-4xl space-y-6"><h1 id="hero-title" className="t-display">Su próximo viaje empieza con una conversación.</h1><p className="t-body-lg measure text-ink-soft">En viatour lo asesora una persona real, de principio a fin. Cuéntenos qué busca y le preparamos opciones a su medida: vuelos, hoteles, paquetes o un viaje completamente personalizado.</p></div>
-    <FlightTool />
-  </div></section>;
+  return <HeroBackdrop><div className="container-site space-y-8 sm:space-y-12">
+    <div className="relative max-w-3xl space-y-6 py-6 text-canvas">
+      <div aria-hidden="true" className="pointer-events-none absolute -inset-x-4 inset-y-0 -z-10 rounded-panel bg-linear-to-r from-ink/85 via-ink/75 to-ink/65 opacity-0 group-data-[photo=true]/hero:opacity-100 sm:-inset-x-6" />
+      <h1 id="hero-title" className="t-display">Su próximo viaje empieza con una conversación.</h1><p className="t-body-lg measure">En viatour lo asesora una persona real, de principio a fin. Cuéntenos qué busca y le preparamos opciones a su medida: vuelos, hoteles, paquetes o un viaje completamente personalizado.</p>
+    </div>
+    <FlightTool compact />
+  </div></HeroBackdrop>;
 }
 
 export function FeaturedDestinations() {
