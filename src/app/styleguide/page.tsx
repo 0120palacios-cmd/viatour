@@ -60,7 +60,7 @@ export default function StyleguidePage() {
         <h2 id="controles" className="t-h2">Controles</h2>
         <div className="flex flex-wrap gap-4">
           <Button type="button">Primario</Button>
-          <Button type="button" className="bg-wa text-ink hover:bg-wa-deep">WhatsApp</Button>
+          <Button type="button" variant="whatsapp">WhatsApp</Button>
           <Button type="button" variant="ghost">Fantasma</Button>
         </div>
         <div className="measure space-y-2">

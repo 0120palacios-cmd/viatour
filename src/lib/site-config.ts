@@ -6,4 +6,5 @@ export const siteConfig = {
   whatsappNumber: "50488668704", // +504 8866-8704, wa.me link format
   supportEmail: "soporte@miviatour.com",
   defaultCurrency: "USD" as const,
+  social: { facebook: "", instagram: "", tiktok: "" },
 } as const;

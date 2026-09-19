@@ -8,7 +8,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        whatsapp: "bg-wa text-ink hover:bg-wa-deep ease-out",
+        whatsapp: "bg-wa text-ink hover:bg-wa-deep disabled:opacity-100 [&_svg]:text-ink ease-out",
         default: "bg-brand text-white hover:bg-brand-deep",
         ghost: "border border-line text-ink hover:bg-surface",
       },

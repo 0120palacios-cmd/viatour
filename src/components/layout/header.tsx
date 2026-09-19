@@ -8,8 +8,6 @@ import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { mainLinks } from "@/lib/navigation";
-import { CurrencyToggle } from "./currency-toggle";
-import { WhatsAppLink } from "./whatsapp-link";
 import blackLogo from "../../../public/logo-black.png";
 
 export function Header() {
@@ -42,8 +40,6 @@ export function Header() {
         </Link>
         <div className="hidden items-center gap-6 min-[1200px]:flex">
           {navigation()}
-          <WhatsAppLink />
-          <CurrencyToggle />
         </div>
         <div className="min-[1200px]:hidden">
           <Sheet open={open} onOpenChange={setOpen}>
@@ -55,10 +51,6 @@ export function Header() {
                   <SheetClose asChild><Button variant="ghost" aria-label="Cerrar menú"><X className="text-ink-soft" size={24} strokeWidth={1.75} /></Button></SheetClose>
                 </div>
                 {navigation(true)}
-                <div className="flex flex-wrap items-center gap-6 pb-8">
-                  <WhatsAppLink onClick={() => setOpen(false)} />
-                  <CurrencyToggle />
-                </div>
               </div>
             </SheetContent>
           </Sheet>
