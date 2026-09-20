@@ -79,7 +79,7 @@ async function PortalView({ reservationId }: { reservationId: string }) {
           <h1 className="t-h1 mt-2">{record.reservation.codigo}</h1>
           <p className="mt-3 text-ink-soft">{record.reservation.destino}</p>
         </div>
-        <form action={signOutReservation}><button type="submit" className="inline-flex min-h-12 items-center justify-center gap-2 self-start rounded-btn border border-line px-5 py-3 font-semibold text-ink hover:bg-surface"><LogOut size={18} strokeWidth={1.75} aria-hidden="true" />Salir</button></form>
+        <form action={signOutReservation}><button type="submit" className="inline-flex min-h-12 items-center justify-center gap-2 self-start rounded-btn border border-line px-6 py-3 font-semibold text-ink hover:bg-surface"><LogOut size={18} strokeWidth={1.75} aria-hidden="true" />Salir</button></form>
       </div>
 
       <section className="rounded-panel border bg-surface p-6 sm:p-8" aria-labelledby="portal-status-heading">
@@ -88,8 +88,8 @@ async function PortalView({ reservationId }: { reservationId: string }) {
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2" aria-label="Fechas de la reserva">
-        <div className="rounded-card border bg-canvas p-5"><p className="t-small text-ink-soft">Fecha de inicio</p><p className="mt-2 flex items-center gap-2 font-semibold"><CalendarDays size={18} className="text-brand" strokeWidth={1.75} aria-hidden="true" />{dateLabel(record.reservation.fecha_inicio)}</p></div>
-        <div className="rounded-card border bg-canvas p-5"><p className="t-small text-ink-soft">Fecha de finalización</p><p className="mt-2 flex items-center gap-2 font-semibold"><CalendarDays size={18} className="text-brand" strokeWidth={1.75} aria-hidden="true" />{dateLabel(record.reservation.fecha_fin)}</p></div>
+        <div className="rounded-card border bg-canvas p-6"><p className="t-small text-ink-soft">Fecha de inicio</p><p className="mt-2 flex items-center gap-2 font-semibold"><CalendarDays size={18} className="text-brand" strokeWidth={1.75} aria-hidden="true" />{dateLabel(record.reservation.fecha_inicio)}</p></div>
+        <div className="rounded-card border bg-canvas p-6"><p className="t-small text-ink-soft">Fecha de finalización</p><p className="mt-2 flex items-center gap-2 font-semibold"><CalendarDays size={18} className="text-brand" strokeWidth={1.75} aria-hidden="true" />{dateLabel(record.reservation.fecha_fin)}</p></div>
       </section>
 
       <section className="rounded-panel border bg-surface p-6 sm:p-8" aria-labelledby="portal-items-heading">
@@ -105,10 +105,10 @@ async function PortalView({ reservationId }: { reservationId: string }) {
 
       <section className="rounded-panel border bg-surface p-6 sm:p-8" aria-labelledby="portal-invoices-heading">
         <h2 id="portal-invoices-heading" className="t-h2">Facturas</h2>
-        <div className="mt-6 space-y-4">{record.invoices.map(invoice => <article key={invoice.id} className="flex flex-col gap-4 rounded-card border bg-canvas p-5 sm:flex-row sm:items-center sm:justify-between"><div><h3 className="t-h3">{invoice.numero}</h3><p className="t-small text-ink-soft">Emisión: {dateLabel(invoice.fecha_emision)} · Estado: {invoiceStatusLabel(invoice.estado)}</p></div><Link className="inline-flex min-h-12 items-center justify-center gap-2 rounded-btn border border-brand px-5 py-3 font-semibold text-brand hover:bg-brand-tint" href={`/api/mi-reserva/facturas/${invoice.id}/pdf`}><Download size={18} strokeWidth={1.75} aria-hidden="true" />Descargar PDF</Link></article>)}{!record.invoices.length ? <p className="rounded-card border bg-canvas p-5 text-ink-soft">No hay facturas disponibles para esta reserva.</p> : null}</div>
+        <div className="mt-6 space-y-4">{record.invoices.map(invoice => <article key={invoice.id} className="flex flex-col gap-4 rounded-card border bg-canvas p-6 sm:flex-row sm:items-center sm:justify-between"><div><h3 className="t-h3">{invoice.numero}</h3><p className="t-small text-ink-soft">Emisión: {dateLabel(invoice.fecha_emision)} · Estado: {invoiceStatusLabel(invoice.estado)}</p></div><Link className="inline-flex min-h-12 items-center justify-center gap-2 rounded-btn border border-brand px-6 py-3 font-semibold text-brand hover:bg-brand-tint" href={`/api/mi-reserva/facturas/${invoice.id}/pdf`}><Download size={18} strokeWidth={1.75} aria-hidden="true" />Descargar PDF</Link></article>)}{!record.invoices.length ? <p className="rounded-card border bg-canvas p-6 text-ink-soft">No hay facturas disponibles para esta reserva.</p> : null}</div>
       </section>
 
-      <section className="rounded-panel border border-wa bg-surface p-6 sm:p-8" aria-labelledby="portal-help-heading"><div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between"><div><h2 id="portal-help-heading" className="t-h2">¿Necesita un cambio?</h2><p className="mt-2 text-ink-soft">Escríbanos y su asesor revisará su solicitud.</p></div><a className="inline-flex min-h-12 items-center justify-center gap-2 rounded-btn bg-wa px-5 py-3 font-semibold text-ink hover:bg-wa-deep" href={whatsappUrl} target="_blank" rel="noopener noreferrer"><MessageCircle size={20} strokeWidth={1.75} aria-hidden="true" />Escríbanos</a></div></section>
+      <section className="rounded-panel border border-wa bg-surface p-6 sm:p-8" aria-labelledby="portal-help-heading"><div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><h2 id="portal-help-heading" className="t-h2">¿Necesita un cambio?</h2><p className="mt-2 text-ink-soft">Escríbanos y su asesor revisará su solicitud.</p></div><a className="inline-flex min-h-12 items-center justify-center gap-2 rounded-btn bg-wa px-6 py-3 font-semibold text-ink hover:bg-wa-deep" href={whatsappUrl} target="_blank" rel="noopener noreferrer"><MessageCircle size={20} strokeWidth={1.75} aria-hidden="true" />Escríbanos</a></div></section>
     </div>
   );
 }

@@ -37,7 +37,7 @@ export function Footer() {
             <nav key={title} aria-label={title} className="space-y-4">
               <h2 className="t-h3">{title}</h2>
               <ul className="space-y-2">
-                {links.map(({ href, label }) => <li key={href}><Link href={href} className="t-body inline-block rounded-btn py-2 transition-colors duration-(--duration-fast) ease-out hover:text-brand-tint hover:underline underline-offset-4">{label}</Link></li>)}
+                {links.map(({ href, label }) => <li key={href}><Link href={href} className="t-body inline-flex min-h-12 items-center rounded-btn py-2 transition-colors duration-(--duration-fast) ease-out hover:text-brand-tint hover:underline underline-offset-4">{label}</Link></li>)}
               </ul>
               {title === "viatour" ? <Link href={reservationLink.href} className="t-small inline-flex rounded-btn py-2 text-canvas transition-colors duration-(--duration-fast) ease-out hover:text-brand-tint hover:underline underline-offset-4">{reservationLink.label}</Link> : null}
             </nav>
