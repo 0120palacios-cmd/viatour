@@ -7,6 +7,9 @@ import { getAdminQuotation } from "@/lib/quotation-data";
 import { renderQuotationPdf } from "@/lib/quotation-pdf";
 import { clean, isQuotationStatus, validUuid, validateQuotationFields } from "@/lib/quotation-validation";
 import { siteConfig } from "@/lib/site-config";
+import { convertQuotationToReservation } from "@/app/admin/reservas/actions";
+
+export { convertQuotationToReservation };
 
 export type QuotationActionState = { error?: string; success?: string; whatsappUrl?: string; quotationId?: string };
 
