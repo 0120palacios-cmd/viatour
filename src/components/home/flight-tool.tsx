@@ -95,10 +95,10 @@ function QuoteForm({ service, compact = false, serviceControl, optionsControl, o
     const field = event.target as HTMLInputElement;
     if (field.validity?.valid) field.removeAttribute("aria-invalid");
     if (compact) setSummary(previous => ({ ...previous, [field.name]: field.value }));
-  }} className="quote-form space-y-6" aria-label={`Cotización de ${service}`} aria-describedby={error ? errorId : undefined}>
+  }} className="quote-form flex flex-col gap-6" aria-label={`Cotización de ${service}`} aria-describedby={error ? errorId : undefined}>
     <p className="t-small text-ink-soft">Los campos marcados con * son obligatorios.</p>
     <div className={compact ? "grid gap-6 sm:grid-cols-2 lg:grid-cols-4" : "space-y-6"}>
-    <div className={!compact && !flight ? "hidden" : "space-y-4 sm:max-w-64"}>
+    <div className={!compact && !flight ? "hidden" : compact ? "min-w-0" : "space-y-4 sm:max-w-64"}>
       {serviceControl}
       {flight && <div hidden={compact}><label className="t-small mb-2 block" htmlFor={typeId}>Tipo de viaje *</label><select id={typeId} className={controlClass} value={type} onChange={event => { setType(event.target.value); setError(""); if (event.target.value === "Multidestino") onExpand?.(); }}><option>Ida y vuelta</option><option>Solo ida</option><option>Multidestino</option></select></div>}
     </div>
@@ -115,7 +115,7 @@ function QuoteForm({ service, compact = false, serviceControl, optionsControl, o
       {flight || hotel ? <><Field label={hotel ? "Entrada" : "Salida"} name="start" type="date" min={today} icon={CalendarDays} required /><Field label={hotel ? "Salida" : "Regreso"} name="end" type="date" min={today} icon={CalendarDays} disabled={flight && type === "Solo ida"} required={hotel || type === "Ida y vuelta"} /></> : <Field label="Fechas aproximadas" name="approximate" icon={CalendarDays} required />}
       </CompactGroup>
     </div>}
-    <div className={compact ? "space-y-4" : "grid gap-6 sm:grid-cols-2 lg:grid-cols-4"}>
+    <div className={compact ? "min-w-0" : "grid gap-6 sm:grid-cols-2 lg:grid-cols-4"}>
       <CompactGroup compact={compact} label="Pasajeros" summary={`Adultos: ${summary.adults}; niños: ${summary.children}`}>
       <Field label="Adultos" name="adults" type="number" min={1} step={1} defaultValue={1} icon={Users} required />
       <Field label="Niños" name="children" type="number" min={0} step={1} defaultValue={0} icon={Users} required />
@@ -140,7 +140,7 @@ function QuoteForm({ service, compact = false, serviceControl, optionsControl, o
   </form>;
 }
 
-export function FlightTool({ compact = false }: { compact?: boolean }) {
+export function FlightTool({ compact = false, heading }: { compact?: boolean; heading?: ReactNode }) {
   const [expanded, setExpanded] = useState(!compact);
   const [service, setService] = useState("Vuelos");
   const serviceId = useId();
@@ -152,6 +152,7 @@ export function FlightTool({ compact = false }: { compact?: boolean }) {
     window.requestAnimationFrame(() => tool.current?.querySelector<HTMLButtonElement>('[role="tab"][aria-selected="true"]')?.focus());
   };
   return <Tabs ref={tool} value={service} onValueChange={setService} className="min-w-0 rounded-panel border border-line bg-canvas text-left text-ink shadow-sm">
+    {heading}
     <div id={panelId}>
       <div hidden={compactView}><TabsList aria-label="Servicio de viaje">{services.map(({ name, icon: Icon }) => <TabsTrigger key={name} value={name}><Icon size={20} strokeWidth={1.75} aria-hidden="true" />{name}</TabsTrigger>)}</TabsList></div>
       {services.map(({ name }) => <TabsContent key={name} value={name} {...(compactView ? { "aria-label": `Cotización de ${name}`, "aria-labelledby": undefined } : {})}>

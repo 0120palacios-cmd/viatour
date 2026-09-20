@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight, BookOpen, Compass, Hotel, MessageSquare, Package, Plane, ShieldCheck, SlidersHorizontal } from "lucide-react";
@@ -7,9 +8,9 @@ import { BlogCard } from "@/components/blog/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { getFAQs, type FAQ } from "@/lib/faqs";
 import { getReviews } from "@/lib/reviews";
-import { RatingSummary, ReviewCards, ReviewSkeletons } from "@/components/reviews/display";
+import { RatingSummary, ReviewCards } from "@/components/reviews/display";
 import { getPackages } from "@/lib/packages";
-import { PackageGrid, PackageSkeletons } from "@/components/packages/package-card";
+import { PackageGrid } from "@/components/packages/package-card";
 import { getDestinations } from "@/lib/destinations";
 import { homeDestinations } from "@/lib/home-destinations";
 import { FlightTool } from "@/components/home/flight-tool";
@@ -27,20 +28,18 @@ async function FeaturedDestinationData() {
 
   return <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">{homeDestinations.map(destination => {
     const href = destinationSlugs.has(destination.slug) ? `/destinos/${destination.slug}` : "/destinos";
-    return <Link key={destination.slug} href={href} className="group block overflow-hidden rounded-card border border-line bg-canvas shadow-sm transition-shadow duration-(--duration-fast) ease-out hover:shadow-md">
-      <div className="relative aspect-[4/3] bg-surface"><Image src={destination.image} alt={`Fotografía de un viaje a ${destination.nombre}`} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover" /></div>
+    return <Link key={destination.slug} href={href} className="media-card group block overflow-hidden rounded-card border border-line bg-canvas shadow-sm transition-shadow duration-(--duration-fast) ease-out hover:shadow-md">
+      <div className="relative aspect-[4/3] overflow-hidden bg-surface"><Image src={destination.image} alt={`Fotografía de un viaje a ${destination.nombre}`} fill sizes="(max-width: 639px) calc(100vw - 32px), (max-width: 1023px) calc((100vw - 72px) / 2), (max-width: 1199px) calc((100vw - 96px) / 3), 368px" className="object-cover" /></div>
       <div className="flex items-center justify-between gap-4 p-6"><h3 className="t-h3">{destination.nombre}</h3><ArrowUpRight size={24} strokeWidth={1.75} className="shrink-0 text-brand" aria-hidden="true" /></div>
     </Link>;
   })}</div>;
 }
 
 export function Hero() {
-  return <HeroBackdrop><div className="container-site space-y-8 sm:space-y-12">
-    <div className="relative max-w-3xl space-y-6 py-6 text-canvas">
-      <div aria-hidden="true" className="pointer-events-none absolute -inset-x-4 inset-y-0 -z-10 rounded-panel bg-linear-to-r from-ink/85 via-ink/75 to-ink/65 opacity-0 group-data-[photo=true]/hero:opacity-100 sm:-inset-x-6" />
-      <h1 id="hero-title" className="t-display">Su próximo viaje empieza con una conversación.</h1><p className="t-body-lg measure">En viatour lo asesora una persona real, de principio a fin. Cuéntenos qué busca y le preparamos opciones a su medida: vuelos, hoteles, paquetes o un viaje completamente personalizado.</p>
-    </div>
-    <FlightTool compact />
+  return <HeroBackdrop><div className="container-site">
+    <FlightTool compact heading={<div className="space-y-4 border-b border-line p-4 sm:p-8">
+      <h1 id="hero-title" className="t-h1 max-w-3xl">Su próximo viaje empieza con una conversación.</h1><p className="t-body measure text-ink-soft">En viatour lo asesora una persona real, de principio a fin. Cuéntenos qué busca y le preparamos opciones a su medida: vuelos, hoteles, paquetes o un viaje completamente personalizado.</p>
+    </div>} />
   </div></HeroBackdrop>;
 }
 
@@ -61,18 +60,15 @@ function DestinationCardSkeletons() {
   return <div role="status" aria-label="Cargando destinos" className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"><span className="sr-only">Cargando destinos</span>{homeDestinations.slice(0, 3).map(destination => <div key={destination.slug} aria-hidden="true" className="overflow-hidden rounded-card border border-line bg-canvas motion-safe:animate-pulse"><div className="aspect-[4/3] bg-surface" /><div className="h-8 bg-canvas p-6" /></div>)}</div>;
 }
 
-async function FeaturedPackageData() {
-  let items;
-  try {
-    items = await getPackages(true);
-  } catch {
-    return <p role="alert" className="t-body rounded-panel border border-line bg-canvas p-8 text-ink-soft">No se pudieron cargar los paquetes. Por favor, visite la página de paquetes para volver a intentarlo.</p>;
-  }
-  return <PackageGrid items={items} />;
+export function FeaturedPackages() {
+  return <Suspense fallback={null}><FeaturedPackageData /></Suspense>;
 }
 
-export function FeaturedPackages() {
-  return <section className="border-y border-line bg-surface py-14 sm:py-24" aria-labelledby="packages-title"><div className="container-site"><div className="mb-8 space-y-4"><h2 id="packages-title" className="t-h2">Paquetes destacados</h2><p className="t-body-lg measure text-ink-soft">Algunas ideas para inspirarse. Cada viaje se ajusta a su presupuesto y a sus fechas.</p></div><Suspense fallback={<PackageSkeletons />}><FeaturedPackageData /></Suspense><Link href="/paquetes" className="t-small mt-8 inline-flex items-center gap-2 text-brand underline underline-offset-4">Paquetes<ArrowUpRight size={16} aria-hidden="true" /></Link></div></section>;
+async function FeaturedPackageData() {
+  let items;
+  try { items = await getPackages(true); } catch { return null; }
+  if (!items.length) return null;
+  return <section className="border-y border-line bg-surface py-14 sm:py-24" aria-labelledby="packages-title"><div className="container-site"><div className="mb-8 space-y-4"><h2 id="packages-title" className="t-h2">Paquetes destacados</h2><p className="t-body-lg measure text-ink-soft">Algunas ideas para inspirarse. Cada viaje se ajusta a su presupuesto y a sus fechas.</p></div><PackageGrid items={items} /><Link href="/paquetes" className="t-small mt-8 inline-flex items-center gap-2 text-brand underline underline-offset-4">Paquetes<ArrowUpRight size={16} aria-hidden="true" /></Link></div></section>;
 }
 
 export function Services() {
@@ -94,18 +90,16 @@ export function WhyViatour() {
   return <section className="container-site py-14 sm:py-24" aria-labelledby="why-title"><h2 id="why-title" className="t-h2 mb-12 text-center">Por qué viatour</h2><div className="grid gap-8 md:grid-cols-3">{items.map(({ icon: Icon, title, body }) => <div key={title} className="space-y-4"><Icon size={32} strokeWidth={1.75} className="text-brand" aria-hidden="true" /><h3 className="t-h3">{title}</h3><p className="t-body text-ink-soft">{body}</p></div>)}</div></section>;
 }
 
-async function ReviewTeaserData() {
-  let result;
-  try {
-    result = await getReviews(3);
-  } catch { return <p role="alert" className="t-body text-ink-soft">No se pudieron cargar las opiniones. <Link href="/opiniones" className="text-brand underline">Ver opiniones</Link></p>; }
-  const { summary, reviews } = result;
-  if (!summary.total) return <div className="rounded-panel border border-line bg-canvas p-8"><p className="t-body text-ink-soft">Aún no hay opiniones publicadas.</p></div>;
-  return <div className="space-y-8"><RatingSummary summary={summary} compact /><ReviewCards reviews={reviews} /></div>;
+export function ReviewsTeaser() {
+  return <Suspense fallback={null}><ReviewTeaserData /></Suspense>;
 }
 
-export function ReviewsTeaser() {
-  return <section className="bg-surface py-14 sm:py-24" aria-labelledby="reviews-title"><div className="container-site grid gap-8 md:grid-cols-2 md:items-center"><div className="space-y-4"><h2 id="reviews-title" className="t-h2">Opiniones</h2><p className="t-body-lg text-ink-soft">Lo que dicen quienes ya viajaron con nosotros.</p><Link href="/opiniones" className="t-small inline-flex items-center gap-2 text-brand underline underline-offset-4">Opiniones<ArrowUpRight size={16} aria-hidden="true" /></Link></div><Suspense fallback={<ReviewSkeletons />}><ReviewTeaserData /></Suspense></div></section>;
+async function ReviewTeaserData() {
+  let result;
+  try { result = await getReviews(3); } catch { return null; }
+  const { summary, reviews } = result;
+  if (!summary.total || !reviews.length) return null;
+  return <section className="bg-surface py-14 sm:py-24" aria-labelledby="reviews-title"><div className="container-site grid gap-8 md:grid-cols-2 md:items-center"><div className="space-y-4"><h2 id="reviews-title" className="t-h2">Opiniones</h2><p className="t-body-lg text-ink-soft">Lo que dicen quienes ya viajaron con nosotros.</p><Link href="/opiniones" className="t-small inline-flex items-center gap-2 text-brand underline underline-offset-4">Opiniones<ArrowUpRight size={16} aria-hidden="true" /></Link></div><div className="space-y-8"><RatingSummary summary={summary} compact /><ReviewCards reviews={reviews} /></div></div></section>;
 }
 
 export function TravelGuides() {
@@ -128,6 +122,16 @@ async function FrequentlyAskedQuestionsContent() {
   try { faqs = await getFAQs(); } catch { return null; }
   if (!faqs.length) return null;
   return <section className="border-y border-line bg-surface py-14 sm:py-24" aria-labelledby="faq-title"><div className="container-site grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:gap-16"><div className="space-y-4"><h2 id="faq-title" className="t-h2">Preguntas frecuentes</h2><p className="t-body-lg text-ink-soft">Consulte algunas respuestas antes de comenzar a planificar su viaje.</p><Link href="/preguntas-frecuentes" className="t-small inline-flex items-center gap-2 text-brand underline underline-offset-4">Ver todas las preguntas<ArrowUpRight size={16} aria-hidden="true" /></Link></div><Accordion type="single" collapsible className="w-full">{faqs.slice(0, 5).map(faq => <AccordionItem key={faq.id} value={faq.id}><AccordionTrigger>{faq.pregunta}</AccordionTrigger><AccordionContent>{faq.respuesta}</AccordionContent></AccordionItem>)}</Accordion></div></section>;
+}
+
+export function TravelRequirements() {
+  return <section className="container-site py-14 sm:py-24" aria-labelledby="requirements-title">
+    <div className="space-y-6">
+      <h2 id="requirements-title" className="t-h2">Requisitos de viaje</h2>
+      <p className="t-body-lg measure text-ink-soft">Cada destino tiene sus propios requisitos de pasaporte, visa y salud.</p>
+      <Button asChild variant="ghost"><a href="https://www.iatatravelcentre.com/" target="_blank" rel="noopener noreferrer">Verificar requisitos de mi viaje<ArrowUpRight size={20} strokeWidth={1.75} className="text-ink-soft" aria-hidden="true" /></a></Button>
+    </div>
+  </section>;
 }
 
 export function FinalCta() {

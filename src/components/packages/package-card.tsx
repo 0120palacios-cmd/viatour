@@ -6,8 +6,8 @@ import { QuoteButton } from "@/components/home/quote-button";
 import type { Package } from "@/lib/packages";
 
 export function PackageImage({ item, hero = false }: { item: Package; hero?: boolean }) {
-  const className = `${hero ? "aspect-video" : "aspect-[4/3]"} relative overflow-hidden bg-surface`;
-  return item.imagen_url ? <div className={className}><Image src={item.imagen_url} alt={`${item.nombre}, ${item.destino}`} fill priority={hero} unoptimized={!canOptimizeImage(item.imagen_url)} sizes={hero ? "(max-width: 1024px) 100vw, 768px" : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"} className="object-cover" /></div>
+  const className = `${hero ? "aspect-video" : "aspect-[4/3]"} relative overflow-hidden rounded-card bg-surface`;
+  return item.imagen_url ? <div className={className}><Image src={item.imagen_url} alt={`${item.nombre}, ${item.destino}`} fill preload={hero} unoptimized={!canOptimizeImage(item.imagen_url)} sizes={hero ? "(max-width: 639px) calc(100vw - 32px), (max-width: 1023px) calc(100vw - 48px), (max-width: 1199px) calc((100vw - 80px) * 2 / 3), 747px" : "(max-width: 639px) calc(100vw - 32px), (max-width: 1023px) calc((100vw - 72px) / 2), (max-width: 1199px) calc((100vw - 96px) / 3), 368px"} className="object-cover" /></div>
     : <div role="img" aria-label={`Espacio reservado para una fotografía de ${item.destino}`} className={className} />;
 }
 export function PackageMeta({ item }: { item: Package }) {
@@ -23,7 +23,7 @@ export function PackageQuote({ item }: { item: Package }) {
   return <QuoteButton payload={{ service: "Paquete", servicio: "paquetes", fields: { Destino: item.destino, Paquete: item.nombre, Notas: "Por favor, comparta sus fechas y el número de pasajeros." }, formData: { slug: item.slug, nombre: item.nombre, destino: item.destino } }}>Solicitar cotización</QuoteButton>;
 }
 export function PackageCard({ item }: { item: Package }) {
-  return <article className="flex h-full flex-col overflow-hidden rounded-card border border-line bg-canvas shadow-sm transition-shadow duration-(--duration-fast) ease-out hover:shadow-md"><Link href={`/paquetes/${item.slug}`} className="block"><PackageImage item={item} /><h3 className="t-h3 px-6 pt-6">{item.nombre}</h3></Link><div className="flex flex-1 flex-col gap-4 p-6"><PackageMeta item={item} /><div className="mt-auto space-y-4"><PackagePrice item={item} /><PackageQuote item={item} /></div></div></article>;
+  return <article className="media-card flex h-full flex-col overflow-hidden rounded-card border border-line bg-canvas shadow-sm transition-shadow duration-(--duration-fast) ease-out hover:shadow-md"><Link href={`/paquetes/${item.slug}`} className="block"><PackageImage item={item} /><h3 className="t-h3 px-6 pt-6">{item.nombre}</h3></Link><div className="flex flex-1 flex-col gap-4 p-6"><PackageMeta item={item} /><div className="mt-auto space-y-4"><PackagePrice item={item} /><PackageQuote item={item} /></div></div></article>;
 }
 export function PackageGrid({ items }: { items: Package[] }) {
   return items.length ? <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">{items.map(item => <PackageCard key={item.id} item={item} />)}</div> : <p className="t-body rounded-panel border border-line bg-surface p-8 text-center text-ink-soft">Aún no hay paquetes disponibles.</p>;

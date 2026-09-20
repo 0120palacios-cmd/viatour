@@ -67,14 +67,14 @@ test('empty and failed hero images retain the tonal background without broken im
   const empty = backdrop([]);
   assert.equal(empty.photos().length, 0);
   assert.equal(empty.timers.size, 0);
-  assert.ok(empty.nodes().some(node => node.props.className?.includes('from-ink')));
+  assert.ok(empty.nodes().some(node => node.props.className?.includes('bg-surface')));
   const failed = backdrop(photos);
   failed.photos()[0].props.onError(); failed.render();
   assert.equal(failed.photos().length, 1);
   failed.photos()[0].props.onError(); failed.render();
   assert.equal(failed.photos().length, 0);
   assert.equal(failed.timers.size, 0);
-  assert.ok(failed.nodes().some(node => node.props.className?.includes('from-ink')));
+  assert.ok(failed.nodes().some(node => node.props.className?.includes('bg-surface')));
 });
 
 test('hero rotates every 5.5 seconds, pauses for hover/focus and offers a persistent pause', () => {

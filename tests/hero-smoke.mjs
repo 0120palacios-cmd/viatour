@@ -13,9 +13,14 @@ const errors = [], captures = [], navigations = [];
 let outcome = 'success', releaseCapture;
 page.on('pageerror', error => errors.push(error.message));
 await page.route('https://challenges.cloudflare.com/**', route => route.fulfill({ contentType: 'application/javascript', body: `window.turnstile={render(el,options){setTimeout(()=>options.callback('test-token'),0);return 'test-widget'},remove(){}};` }));
+let humanExpires = 0;
+await page.route('**/api/human', route => {
+  if (route.request().method() === 'POST') humanExpires = Date.now() + 1800000;
+  return route.fulfill({ json: { ok: true, expires: humanExpires } });
+});
 await page.route('**/api/leads', async route => {
   const payload = route.request().postDataJSON();
-  assert.equal(payload.turnstileToken, 'test-token');
+  assert.equal(payload.turnstileToken, 'human-session');
   validation.validateLead(payload);
   captures.push(payload);
   if (outcome === 'pending') await new Promise(resolve => { releaseCapture = resolve; });
@@ -51,7 +56,7 @@ try {
   for (const width of [320, 390, 1024, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await ready();
-    assert.equal(await hero.locator('img').count(), 0, 'config starts empty');
+    assert.ok(await hero.locator('img').count() > 0, 'configured real photos remain');
     const passengerControl = form.locator('summary').filter({ hasText: 'Pasajeros' });
     await passengerControl.focus(); await page.keyboard.press('Enter');
     assert.equal(await form.locator('[name="adults"]').isVisible(), true);

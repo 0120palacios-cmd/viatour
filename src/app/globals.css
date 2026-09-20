@@ -94,10 +94,17 @@
     -webkit-font-smoothing: antialiased;
   }
   /* Focus: 3px brand-tint ring on every interactive element. Never removed. */
-  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
     outline: 3px solid var(--color-brand-tint);
     outline-offset: 2px;
+    box-shadow: 0 0 0 2px var(--color-brand);
   }
+  :where(main, footer) :where(p, h1, h2, h3, a, label) { overflow-wrap: anywhere; }
+  :where(main, footer) :where(.grid, .flex) > * { min-width: 0; }
+  fieldset { min-width: 0; }
+  :where(input, select, textarea) { max-width: 100%; }
+  :where(main, #site-footer) a:not(:where(p, label) a) { min-height: 48px; }
+  :where(main, #site-footer) a:not(:where(p, label) a):not([class*="block"]) { display: inline-flex; align-items: center; }
 }
 
 /* Typography roles — size / line-height / weight / tracking per Design Bible §4.
@@ -121,6 +128,15 @@
   }
   /* Paragraph measure: 60–75 characters. */
   .measure { max-width: 68ch; }
+  .media-card {
+    transition: transform var(--duration-fast) ease-out, box-shadow var(--duration-fast) ease-out;
+  }
+  .media-card img { transition: transform var(--duration-reveal) ease-out; }
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .media-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+  .media-card:hover img { transform: scale(1.03); }
 }
 
 @media (min-width: 640px) {

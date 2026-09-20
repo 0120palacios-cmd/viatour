@@ -32,12 +32,12 @@ export function HeroBackdrop({ children }: { children: ReactNode }) {
   }, [reducedMotion, hovered, focused, paused, loaded, failed]);
 
   const visible = reducedMotion ? 0 : active;
-  return <section aria-labelledby="hero-title" data-photo={heroImages.length > 0} className="group/hero relative isolate overflow-hidden bg-ink py-14 sm:py-24"
+  return <section aria-labelledby="hero-title" data-photo={heroImages.length > 0} className="group/hero relative isolate overflow-hidden bg-surface py-14 sm:py-24"
     onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
     onFocusCapture={() => setFocused(true)} onBlurCapture={event => {
       if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
     }}>
-    <div className="pointer-events-none absolute inset-0 -z-10 bg-linear-to-br from-ink via-brand-deep to-brand">
+    <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 aspect-video overflow-hidden rounded-card bg-surface">
       {heroImages.map((photo, index) => !failed.includes(index) && (!reducedMotion || index === 0) && <Image
         key={`${index}-${photo.src}`} src={photo.src} alt={photo.alt} fill sizes="100vw"
         // Next.js 16 replaces the deprecated priority prop with preload.

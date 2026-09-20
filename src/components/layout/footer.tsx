@@ -19,7 +19,7 @@ export function Footer() {
     <footer id="site-footer" className="bg-ink text-canvas">
       <div className="container-site space-y-12 py-14 sm:py-24">
         <div className="grid gap-12 sm:grid-cols-2 min-[1200px]:grid-cols-3">
-          <div className="space-y-6">
+          <div className="flex flex-col items-start gap-6">
             <Link href="/" className="inline-block rounded-btn p-4" aria-label="viatour — Inicio">
               <Image src={whiteLogo} alt="viatour" className="h-auto w-32" sizes="128px" />
             </Link>

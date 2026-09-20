@@ -61,7 +61,7 @@ export function Newsletter() {
             <Input id={`${id}-name`} name="name" maxLength={120} autoComplete="given-name" />
           </div>
           <div className="flex items-start gap-3">
-            <Checkbox.Root id={`${id}-consent`} required checked={consent} onCheckedChange={(value) => { setConsent(value === true); if (state === "success") setState("empty"); }} aria-invalid={consentError} aria-describedby={consentError ? `${id}-consent-error` : undefined} className="mt-1 flex size-6 shrink-0 items-center justify-center rounded-btn border border-line bg-canvas text-brand data-[state=checked]:bg-brand-tint">
+            <Checkbox.Root id={`${id}-consent`} required checked={consent} onCheckedChange={(value) => { setConsent(value === true); if (state === "success") setState("empty"); }} aria-invalid={consentError} aria-describedby={consentError ? `${id}-consent-error` : undefined} className="flex size-12 shrink-0 items-center justify-center rounded-btn border border-line bg-canvas text-brand data-[state=checked]:bg-brand-tint">
               <Checkbox.Indicator><Check size={16} strokeWidth={2} aria-hidden="true" /></Checkbox.Indicator>
             </Checkbox.Root>
             <label className="t-small" htmlFor={`${id}-consent`}>Acepto recibir ideas de viaje y ofertas de temporada según la <Link className="underline underline-offset-4" href="/legales/privacidad">política de privacidad</Link>.</label>

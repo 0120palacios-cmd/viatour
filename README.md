@@ -94,3 +94,24 @@ El script valida el archivo completo antes de una sola inserción (hasta 500 fil
 ### Verificación realizada
 
 Build, lint, typecheck y `node --test tests/reviews.test.mjs` completados. La verificación HTTP confirmó inicio y opiniones vacíos, ausencia de `AggregateRating`, formulario con cinco radios y aviso de correo privado. Una solicitud técnica temporal obtuvo 201; se comprobó la fila pendiente, la foto en Storage y su ausencia de las vistas públicas. La fila y el archivo se eliminaron sin aprobarlos: `reviews` terminó con **0 filas**. No se importaron opiniones. El bucket indicado no existía en el proyecto conectado; se creó `review-photos` público, limitado a 3 MB y JPG/PNG/WebP. El servidor dev quedó disponible en `http://localhost:3000`. No hubo navegador conectado para completar la revisión visual y de teclado; esa comprobación manual queda pendiente.
+# UI polish verification
+
+Public forms share a single managed Turnstile check (`appearance: interaction-only`).
+`/api/human` verifies it on the server and issues a signed, HttpOnly, SameSite=Strict
+cookie for 30 minutes (Secure in production). Lead, review, and newsletter endpoints
+validate that cookie before skipping Siteverify; their existing database rate limits
+still run on every submission. The signing key derives from `TURNSTILE_SECRET_KEY`,
+so rotating that secret also invalidates existing human sessions. Pure WhatsApp links
+do not submit forms or request a challenge.
+
+Configure a **Managed** widget and both Turnstile environment variables for deployment.
+This repository cannot change the widget mode in the Cloudflare dashboard. Managed
+mode normally needs no visible interaction, but Cloudflare may request one when needed.
+
+Run `npm run build`, `node --test "tests/*.test.mjs"`, and `npm run lint`.
+For browser QA, start a local server with a dummy `NEXT_PUBLIC_TURNSTILE_SITE_KEY`,
+set `PLAYWRIGHT_PACKAGE` to an installed Playwright package.json, then run
+`node tests/polish-smoke.mjs` and `node tests/hero-smoke.mjs`.
+These tests intercept verification and submissions without creating real leads.
+The polish test covers 320/360/390/430/768/1440px; optional `POLISH_SCREENSHOTS`
+sets its screenshot directory. `SMOKE_ORIGIN` defaults to `http://localhost:3011`.
