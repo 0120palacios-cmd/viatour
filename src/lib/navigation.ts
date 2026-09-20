@@ -2,6 +2,7 @@ import { siteConfig } from "@/lib/site-config";
 
 export const mainLinks = [
   { label: "Inicio", href: "/" },
+  { label: "Descubrir", href: "/descubrir" },
   { label: "Paquetes", href: "/paquetes" },
   { label: "Blog", href: "/blog" },
   { label: "Opiniones", href: "/opiniones" },

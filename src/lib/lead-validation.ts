@@ -1,7 +1,7 @@
 import { validateContact } from "./contact-validation";
 const object = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 export function validateLead(input: unknown) {
-  if (!object(input) || typeof input.servicio !== "string" || !["Vuelos", "Hoteles", "Paquetes", "Viaje a medida", "paquetes", "destino", "contacto"].includes(String(input.servicio))) throw Error("Service");
+  if (!object(input) || typeof input.servicio !== "string" || !["Vuelos", "Hoteles", "Paquetes", "Viaje a medida", "paquetes", "destino", "contacto", "descubrimiento"].includes(String(input.servicio))) throw Error("Service");
   const servicio = String(input.servicio), currency = input.currency ?? "USD";
   if ((typeof currency !== "string" || !["USD", "HNL"].includes(currency))) throw Error("Currency");
   for (const key of ["fields", "formData"]) if (input[key] !== undefined && !object(input[key])) throw Error("Object");
@@ -23,6 +23,17 @@ export function validateLead(input: unknown) {
     for (const key of ["slug", "nombre", "destino", "destination_id"]) get(key, key === "destination_id" ? 36 : 200, key === "slug" && servicio !== "Viaje a medida");
     if (formData.destination_id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(formData.destination_id)) throw Error("UUID");
     for (const key of ["Destino", "Paquete", "Notas"]) fields[key] = str(labels[key], key === "Notas" ? 3000 : 200, key === "Destino" && servicio !== "Viaje a medida");
+  } else if (servicio === "descubrimiento") {
+    const travelerType = get("travelerType", 32, true), experiences = get("experiences", 300, true), budget = get("budget", 32, true), climate = get("climate", 32, true), duration = get("duration", 32, true), interests = get("interests", 300, true), travelers = count("travelers", 1, 20), recommendations = get("recommendations", 500, true);
+    fields.Destino = recommendations;
+    fields["Con quién viaja"] = travelerType;
+    fields.Experiencia = experiences;
+    fields.Presupuesto = budget;
+    fields.Clima = climate;
+    fields.Duración = duration;
+    fields.Intereses = interests;
+    fields.Pasajeros = travelers;
+    fields.Notas = `Recomendaciones personalizadas según sus preferencias: ${recommendations}`;
   } else {
     fields.Nombre = get("name", 120); fields.Notas = get("notes", 3000);
     const adults = count("adults", 1, 20), children = count("children", 0, 20);
