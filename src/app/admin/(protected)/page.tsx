@@ -3,7 +3,7 @@ export const metadata = pageMetadata("/admin", "viatour | Panel de administraciÃ
 import { requireAdmin } from "@/lib/admin";
 export default async function Page() {
     const { client } = await requireAdmin();
-    const specs = [["Opiniones pendientes", "reviews", "estado", "pendiente"], ["Leads totales", "leads"], ["Leads nuevos", "leads", "estado", "nuevo"], ["Paquetes publicados", "packages", "publicado", true], ["Paquetes en borrador", "packages", "publicado", false], ["Destinos publicados", "destinations", "publicado", true], ["Destinos en borrador", "destinations", "publicado", false]] as const;
+    const specs = [["Opiniones pendientes", "reviews", "estado", "pendiente"], ["Leads totales", "leads"], ["Leads nuevos", "leads", "estado", "nuevo"], ["Clientes", "customers"], ["Cotizaciones", "quotations"], ["Cotizaciones en borrador", "quotations", "estado", "borrador"], ["Paquetes publicados", "packages", "publicado", true], ["Paquetes en borrador", "packages", "publicado", false], ["Destinos publicados", "destinations", "publicado", true], ["Destinos en borrador", "destinations", "publicado", false]] as const;
     const counts = await Promise.all(specs.map(async (spec) => { let query = client.from(spec[1]).select("id", { count: "exact", head: true }); if (spec.length === 4)
         query = query.eq(spec[2], spec[3]); const result = await query; if (result.error)
         throw Error("No se pudo cargar el resumen."); return result.count ?? 0; }));
