@@ -10,6 +10,8 @@ export const mainLinks = [
   { label: "Contacto", href: "/contacto" },
 ] as const;
 
+export const reservationLink = { label: "Mi reserva", href: "/mi-reserva" } as const;
+
 export const serviceLinks = [
   { label: "Vuelos", href: "/vuelos" },
   { label: "Hoteles", href: "/hoteles" },

@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { mainLinks } from "@/lib/navigation";
+import { mainLinks, reservationLink } from "@/lib/navigation";
 import blackLogo from "../../../public/logo-black.png";
 
 export function Header() {
@@ -28,6 +28,7 @@ export function Header() {
           const active = href === "/" ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
           return <Link key={href} href={href} aria-current={active ? "page" : undefined} onClick={() => setOpen(false)} className={`t-small rounded-btn py-3 transition-colors duration-(--duration-fast) ease-out hover:text-brand ${mobile ? "px-4" : ""} ${active ? "text-brand" : "text-ink"}`}>{label}</Link>;
         })}
+        <Link href={reservationLink.href} aria-current={pathname === reservationLink.href ? "page" : undefined} onClick={() => setOpen(false)} className={`t-small rounded-btn py-3 transition-colors duration-(--duration-fast) ease-out hover:text-brand ${mobile ? "px-4" : ""} ${pathname === reservationLink.href ? "text-brand" : "text-ink-soft"}`}>{reservationLink.label}</Link>
       </nav>
     );
   }

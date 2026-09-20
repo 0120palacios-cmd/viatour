@@ -1,0 +1,36 @@
+import "server-only";
+
+import { createHmac, timingSafeEqual } from "node:crypto";
+import { validUuid } from "@/lib/quotation-validation";
+
+export const portalCookieName = "viatour-portal";
+export const portalCookieMaxAge = 30 * 60;
+
+function portalSecret() {
+  const secret = process.env.PORTAL_SECRET;
+  if (!secret) throw new Error("PORTAL_SECRET no está configurado.");
+  return secret;
+}
+
+function signatureForReservation(id: string) {
+  return createHmac("sha256", portalSecret()).update(`portal:${id}`).digest("base64url");
+}
+
+export function signPortalReservationId(id: string) {
+  if (!validUuid(id)) throw new Error("Identificador de reserva inválido.");
+  return `${id}.${signatureForReservation(id)}`;
+}
+
+export function verifyPortalCookie(value: string | undefined | null) {
+  if (!value || value.length > 256) return null;
+  const parts = value.split(".");
+  if (parts.length !== 2 || !validUuid(parts[0]) || !parts[1]) return null;
+  try {
+    const received = Buffer.from(parts[1], "base64url");
+    const expected = Buffer.from(signatureForReservation(parts[0]), "base64url");
+    if (received.length !== expected.length || !timingSafeEqual(received, expected)) return null;
+    return parts[0];
+  } catch {
+    return null;
+  }
+}

@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Camera, MessagesSquare, Music2 } from "lucide-react";
-import { legalLinks, mainLinks, serviceLinks } from "@/lib/navigation";
+import { legalLinks, mainLinks, reservationLink, serviceLinks } from "@/lib/navigation";
 import { siteConfig } from "@/lib/site-config";
 import { CurrencyToggle } from "./currency-toggle";
 import { WhatsAppLink } from "./whatsapp-link";
@@ -39,6 +39,7 @@ export function Footer() {
               <ul className="space-y-2">
                 {links.map(({ href, label }) => <li key={href}><Link href={href} className="t-body inline-block rounded-btn py-2 transition-colors duration-(--duration-fast) ease-out hover:text-brand-tint hover:underline underline-offset-4">{label}</Link></li>)}
               </ul>
+              {title === "viatour" ? <Link href={reservationLink.href} className="t-small inline-flex rounded-btn py-2 text-canvas transition-colors duration-(--duration-fast) ease-out hover:text-brand-tint hover:underline underline-offset-4">{reservationLink.label}</Link> : null}
             </nav>
           ))}
         </div>
