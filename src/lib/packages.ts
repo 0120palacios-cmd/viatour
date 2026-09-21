@@ -34,6 +34,17 @@ export async function getPackages(featured = false, destinationId?: string): Pro
   if (error) throw new Error("No se pudieron cargar los paquetes.");
   return data as Package[];
 }
+
+function normalizeDestination(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+export async function getPackagesForDestination(destination: { id: string; slug: string; nombre: string }): Promise<Package[]> {
+  const packages = await getPackages();
+  const destinationNames = new Set([normalizeDestination(destination.slug), normalizeDestination(destination.nombre)]);
+  return packages.filter(item => item.destination_id === destination.id || destinationNames.has(normalizeDestination(item.destino)));
+}
+
 export const getPackage = cache(async (slug: string): Promise<Package | null> => {
   const supabase = await createClient();
   const { data, error } = await supabase.from("packages").select(columns).eq("publicado", true).eq("slug", slug).abortSignal(AbortSignal.timeout(8000)).maybeSingle();

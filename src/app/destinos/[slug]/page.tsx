@@ -4,7 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getDestination } from "@/lib/destinations";
-import { getPackages } from "@/lib/packages";
+import { getPackagesForDestination } from "@/lib/packages";
 import { siteConfig } from "@/lib/site-config";
 import { DestinationImage } from "@/components/destinations/destination-card";
 import { PackageGrid } from "@/components/packages/package-card";
@@ -12,11 +12,11 @@ import { QuoteButton } from "@/components/home/quote-button";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 
 type Props = { params: Promise<{ slug: string }> };
-export async function generateMetadata({ params }: Props): Promise<Metadata> { const item = await getDestination((await params).slug); if (!item) notFound(); return pageMetadata(`/destinos/${item.slug}`, (item.titulo_seo?.trim() && item.titulo_seo.length >= 50 ? item.titulo_seo : [`viatour | Viajes a ${item.nombre} personalizados desde Honduras`, `viatour | Viajes a ${item.nombre} a su medida desde Honduras`, `viatour | Viajes a ${item.nombre} con asesoría desde Honduras`].sort((a, b) => Math.abs(a.length - 58) - Math.abs(b.length - 58))[0]), detailDescription(item.nombre, item.meta_descripcion || item.intro), item.imagen_url, false); }
+export async function generateMetadata({ params }: Props): Promise<Metadata> { const item = await getDestination((await params).slug); if (!item) notFound(); return pageMetadata(`/destinos/${item.slug}`, item.titulo_seo?.trim() || `viatour | Viajes a ${item.nombre} personalizados desde Honduras`, item.meta_descripcion?.trim() || detailDescription(item.nombre, item.intro), item.imagen_url, false); }
 export default async function Page({ params }: Props) {
   const item = await getDestination((await params).slug);
   if (!item) notFound();
-  const packages = await getPackages(false, item.id);
+  const packages = await getPackagesForDestination(item);
   const url = `${siteConfig.url}/destinos/${item.slug}`;
   const structuredData = { "@context": "https://schema.org", "@graph": [
     { "@type": "BreadcrumbList", itemListElement: [
