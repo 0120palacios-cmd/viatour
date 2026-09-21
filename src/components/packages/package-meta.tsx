@@ -1,4 +1,4 @@
-import { MapPin, Tag } from "lucide-react";
+import { Clock3, MapPin, Tag } from "lucide-react";
 import type { Package } from "@/lib/packages";
 
 export function PackageMeta({ item }: { item: Package }) {
@@ -12,6 +12,10 @@ export function PackageMeta({ item }: { item: Package }) {
         <Tag size={16} strokeWidth={1.75} aria-hidden="true" />
         Paquete
       </span>
+      {item.duracion && <span className="inline-flex items-center gap-2">
+        <Clock3 size={16} strokeWidth={1.75} aria-hidden="true" />
+        Duración: {item.duracion}
+      </span>}
     </div>
   );
 }

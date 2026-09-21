@@ -18,6 +18,7 @@ import { HeroBackdrop } from "@/components/home/hero-backdrop";
 import { QuoteButton } from "@/components/home/quote-button";
 
 export { DiscoverTeaser } from "@/components/home/discover-teaser";
+export { SocialReels } from "@/components/home/social-reels";
 
 async function FeaturedDestinationData() {
   let destinationSlugs = new Set<string>();
