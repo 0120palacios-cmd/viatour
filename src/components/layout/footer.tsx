@@ -42,6 +42,11 @@ export function Footer() {
                 </a>
               ))}
             </nav>}
+            <div className="flex items-center gap-3 rounded-card border border-canvas/30 bg-canvas/5 p-4">
+              <div className="flex size-12 shrink-0 items-center justify-center rounded-btn border border-dashed border-canvas/50" aria-hidden="true" />
+              <p className="t-small text-canvas">IATA sales under an accredited host agency.</p>
+              <span className="sr-only">Espacio reservado para el logotipo IATA</span>
+            </div>
             <WhatsAppLink compact placement="footer" />
             <div className="space-y-2">
               <p className="t-small text-canvas/80">Moneda</p>

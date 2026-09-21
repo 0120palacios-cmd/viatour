@@ -9,7 +9,6 @@ import { Checkbox } from "radix-ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-// DRAFT: homepage newsletter copy supplied for UI refinement, pending owner approval.
 export function Newsletter({ compact = false }: { compact?: boolean }) {
   const [turnstileToken, setTurnstileToken] = useState("");
   const [challenge, setChallenge] = useState(0);
@@ -24,8 +23,8 @@ export function Newsletter({ compact = false }: { compact?: boolean }) {
     <section className={compact ? "space-y-4 text-canvas" : "bg-surface py-14 sm:py-24"} aria-labelledby={`${id}-title`}>
       <div className={compact ? "space-y-4" : "container-site grid gap-8 lg:grid-cols-2 lg:gap-12"}>
         <div className="space-y-4">
-          <h2 id={`${id}-title`} className={compact ? "t-h3" : "t-h2"}>Reciba ideas de viaje y ofertas de temporada</h2>
-          <p className={compact ? "t-small text-canvas/80" : "t-body-lg measure text-ink-soft"}>Le enviamos inspiración para su próximo viaje y promociones ocasionales. Puede darse de baja cuando quiera.</p>
+          <h2 id={`${id}-title`} className={compact ? "t-h3" : "t-h2"}>Reciba ideas de viaje y ofertas de temporada.</h2>
+          <p className={compact ? "t-small text-canvas/80" : "t-body-lg measure text-ink-soft"}>Le enviaremos inspiración para su próximo viaje y promociones ocasionales. Puede darse de baja cuando quiera.</p>
         </div>
         <form noValidate className="space-y-4" aria-labelledby={`${id}-title`} onChange={() => { if (state === "success") setState("empty"); }} onSubmit={async (event) => {
           event.preventDefault();
@@ -64,14 +63,14 @@ export function Newsletter({ compact = false }: { compact?: boolean }) {
             <Checkbox.Root id={`${id}-consent`} required checked={consent} onCheckedChange={(value) => { setConsent(value === true); if (state === "success") setState("empty"); }} aria-invalid={consentError} aria-describedby={consentError ? `${id}-consent-error` : undefined} className="flex size-12 shrink-0 items-center justify-center rounded-btn border border-line bg-canvas text-brand data-[state=checked]:bg-brand-tint">
               <Checkbox.Indicator><Check size={16} strokeWidth={2} aria-hidden="true" /></Checkbox.Indicator>
             </Checkbox.Root>
-            <label className="t-small" htmlFor={`${id}-consent`}>Acepto recibir ideas de viaje y ofertas de temporada según la <Link className="underline underline-offset-4" href="/legales/privacidad">política de privacidad</Link>.</label>
+            <label className="t-small" htmlFor={`${id}-consent`}>Acepto recibir ideas de viaje y ofertas de temporada según la <Link className="underline underline-offset-4" href="/legales/privacidad">Política de Privacidad</Link>.</label>
           </div>
           {consentError && <p id={`${id}-consent-error`} className="t-small rounded-btn border border-error bg-canvas p-3 text-error">Para continuar, indique su consentimiento.</p>}
           <Turnstile onToken={setTurnstileToken} resetKey={challenge} />
           <Button type="submit" disabled={busy || !turnstileToken} aria-busy={busy}>Suscribirme</Button>
           <div role="status" aria-live="polite" aria-atomic="true">
-            {state === "success" && <p className="t-small flex items-start gap-3 rounded-btn border border-success bg-canvas p-4 text-ink"><CircleCheck size={24} className="shrink-0 text-brand" aria-hidden="true" />Gracias. Ha quedado suscrito.</p>}
-            {state === "error" && <p className="t-small">Revise los campos indicados.</p>}
+            {state === "success" && <p className="t-small flex items-start gap-3 rounded-btn border border-success bg-canvas p-4 text-ink"><CircleCheck size={24} className="shrink-0 text-brand" aria-hidden="true" />Gracias. Su correo quedó registrado; pronto recibirá nuestras novedades.</p>}
+            {state === "error" && <p className="t-small">No pudimos completar su suscripción. Intente de nuevo en un momento.</p>}
           </div>
         </form>
       </div>
