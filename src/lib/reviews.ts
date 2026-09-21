@@ -11,7 +11,15 @@ export async function getReviews(limit = 30, page = 1) {
   ]);
   if (summary.error || reviews.error) throw new Error("No se pudieron cargar las opiniones.");
   const raw = summary.data;
-  const aggregate = Object.fromEntries(Object.entries(raw).map(([key, value]) => [key, Number(value) || 0])) as ReviewSummary;
+  const aggregate = {
+    total: Number(raw.total) || 0,
+    promedio: raw.promedio == null ? 0 : Number(Number(raw.promedio).toFixed(1)),
+    c5: Number(raw.c5) || 0,
+    c4: Number(raw.c4) || 0,
+    c3: Number(raw.c3) || 0,
+    c2: Number(raw.c2) || 0,
+    c1: Number(raw.c1) || 0,
+  } satisfies ReviewSummary;
   return { summary: aggregate, reviews: reviews.data as PublicReview[] };
 }
 export function reviewPhotoUrl(path: string) {

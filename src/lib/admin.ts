@@ -21,7 +21,7 @@ export async function adminRows(table: "reviews" | "packages" | "destinations" |
 export async function adminPage(table: "reviews" | "packages" | "destinations" | "leads" | "blog_posts" | "faqs", page: number, state?: string) {
   const { client } = await requireAdmin();
   let query = client.from(table).select("*", { count: "exact" });
-  if (table === "reviews" && state && ["pendiente", "aprobada", "rechazada"].includes(state)) query = query.eq("estado", state);
+  if (table === "reviews" && state && ["pendiente", "aprobada", "rechazada", "despublicada"].includes(state)) query = query.eq("estado", state);
   if (table === "blog_posts" && ["true", "false"].includes(state ?? "")) query = query.eq("publicado", state === "true");
   const content = table === "packages" || table === "destinations" || table === "faqs";
   const { data, error, count } = await query.order(content ? "orden" : "created_at", { ascending: content }).order("id").range((page - 1) * 50, page * 50 - 1);

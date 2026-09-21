@@ -7,7 +7,7 @@ import { getBlogPosts } from "@/lib/blog";
 import { BlogCard } from "@/components/blog/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { getFAQs, type FAQ } from "@/lib/faqs";
-import { getReviews } from "@/lib/reviews";
+import { getReviews, reviewSchema } from "@/lib/reviews";
 import { RatingSummary, ReviewCards } from "@/components/reviews/display";
 import { getPackages } from "@/lib/packages";
 import { PackageGrid } from "@/components/packages/package-card";
@@ -100,8 +100,9 @@ async function ReviewTeaserData() {
   let result;
   try { result = await getReviews(3); } catch { return null; }
   const { summary, reviews } = result;
-  if (!summary.total || !reviews.length) return null;
-  return <section className="bg-surface py-14 sm:py-24" aria-labelledby="reviews-title"><div className="container-site grid gap-8 md:grid-cols-2 md:items-center"><div className="space-y-4"><h2 id="reviews-title" className="t-h2">Opiniones</h2><p className="t-body-lg text-ink-soft">Lo que dicen quienes ya viajaron con nosotros.</p><Link href="/opiniones" className="t-small inline-flex items-center gap-2 text-brand underline underline-offset-4">Opiniones<ArrowUpRight size={16} aria-hidden="true" /></Link></div><div className="space-y-8"><RatingSummary summary={summary} compact /><ReviewCards reviews={reviews} /></div></div></section>;
+  if (!summary.total) return <section className="bg-surface py-14 sm:py-24" aria-labelledby="reviews-title"><div className="container-site grid gap-8 md:grid-cols-2 md:items-center"><div className="space-y-4"><h2 id="reviews-title" className="t-h2">Opiniones</h2><p className="t-body-lg text-ink-soft">Lo que dicen quienes ya viajaron con nosotros.</p><Link href="/opiniones/nueva" className="t-small inline-flex items-center gap-2 text-brand underline underline-offset-4">Comparta su opinión<ArrowUpRight size={16} aria-hidden="true" /></Link></div><div className="rounded-panel border border-line bg-canvas p-8 shadow-sm"><p className="t-body">Aún no tenemos opiniones publicadas.</p></div></div></section>;
+  const schema = reviewSchema(summary, reviews);
+  return <section className="bg-surface py-14 sm:py-24" aria-labelledby="reviews-title"><div className="container-site grid gap-8 md:grid-cols-2 md:items-center"><div className="space-y-4"><h2 id="reviews-title" className="t-h2">Opiniones</h2><p className="t-body-lg text-ink-soft">Lo que dicen quienes ya viajaron con nosotros.</p><Link href="/opiniones" className="t-small inline-flex items-center gap-2 text-brand underline underline-offset-4">Opiniones<ArrowUpRight size={16} aria-hidden="true" /></Link></div><div className="space-y-8"><RatingSummary summary={summary} /><ReviewCards reviews={reviews} /></div></div>{schema && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema).replace(/</g, "\\u003c") }} />}</section>;
 }
 
 export function TravelGuides() {

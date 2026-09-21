@@ -5,6 +5,7 @@ export const siteConfig = {
   tagline: "sueña, descubre, sonríe.",
   whatsappNumber: "50488668704", // +504 8866-8704, wa.me link format
   supportEmail: "soporte@miviatour.com",
+  reviewInvitationFrom: "no-reply@miviatour.com",
   helpEmail: "ayuda@miviatour.com",
   defaultCurrency: "USD" as const,
   social: {
