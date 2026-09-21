@@ -38,7 +38,7 @@ async function FeaturedDestinationData() {
 export function Hero() {
   return <HeroBackdrop><div className="container-site">
     <FlightTool compact heading={<div className="space-y-4 border-b border-line p-4 sm:p-8">
-      <h1 id="hero-title" className="t-h1 max-w-3xl">Su próximo viaje empieza con una conversación.</h1><p className="t-body measure text-ink-soft">En viatour lo asesora una persona real, de principio a fin. Cuéntenos qué busca y le preparamos opciones a su medida: vuelos, hoteles, paquetes o un viaje completamente personalizado.</p>
+      <h1 id="hero-title" className="t-display max-w-3xl">Cotice con nosotros.</h1><p className="t-body measure text-ink-soft">En viatour lo asesora una persona real, de principio a fin. Cuéntenos qué busca y le preparamos opciones a su medida: vuelos, hoteles, paquetes o un viaje completamente personalizado.</p>
     </div>} />
   </div></HeroBackdrop>;
 }

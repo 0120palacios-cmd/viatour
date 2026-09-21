@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 // DRAFT: homepage newsletter copy supplied for UI refinement, pending owner approval.
-export function Newsletter() {
+export function Newsletter({ compact = false }: { compact?: boolean }) {
   const [turnstileToken, setTurnstileToken] = useState("");
   const [challenge, setChallenge] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -21,11 +21,11 @@ export function Newsletter() {
   const [consentError, setConsentError] = useState(false);
 
   return (
-    <section className="bg-surface py-14 sm:py-24" aria-labelledby={`${id}-title`}>
-      <div className="container-site grid gap-8 lg:grid-cols-2 lg:gap-12">
+    <section className={compact ? "space-y-4 text-canvas" : "bg-surface py-14 sm:py-24"} aria-labelledby={`${id}-title`}>
+      <div className={compact ? "space-y-4" : "container-site grid gap-8 lg:grid-cols-2 lg:gap-12"}>
         <div className="space-y-4">
-          <h2 id={`${id}-title`} className="t-h2">Reciba ideas de viaje y ofertas de temporada</h2>
-          <p className="t-body-lg measure text-ink-soft">Le enviamos inspiración para su próximo viaje y promociones ocasionales. Puede darse de baja cuando quiera.</p>
+          <h2 id={`${id}-title`} className={compact ? "t-h3" : "t-h2"}>Reciba ideas de viaje y ofertas de temporada</h2>
+          <p className={compact ? "t-small text-canvas/80" : "t-body-lg measure text-ink-soft"}>Le enviamos inspiración para su próximo viaje y promociones ocasionales. Puede darse de baja cuando quiera.</p>
         </div>
         <form noValidate className="space-y-4" aria-labelledby={`${id}-title`} onChange={() => { if (state === "success") setState("empty"); }} onSubmit={async (event) => {
           event.preventDefault();
