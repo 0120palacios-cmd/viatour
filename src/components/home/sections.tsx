@@ -132,7 +132,10 @@ export function TravelRequirements() {
     <div className="space-y-6">
       <h2 id="requirements-title" className="t-h2">Requisitos de viaje</h2>
       <p className="t-body-lg measure text-ink-soft">Cada destino tiene sus propios requisitos de pasaporte, visa y salud.</p>
-      <Button asChild variant="ghost"><a href="https://www.iatatravelcentre.com/" target="_blank" rel="noopener noreferrer">Verificar requisitos de mi viaje<ArrowUpRight size={20} strokeWidth={1.75} className="text-ink-soft" aria-hidden="true" /></a></Button>
+      <div className="flex flex-wrap items-center gap-4">
+        <Button asChild><Link href="/requisitos">Consultar requisitos<ArrowUpRight size={20} strokeWidth={1.75} aria-hidden="true" /></Link></Button>
+        <a className="t-small inline-flex min-h-12 items-center gap-2 text-brand underline underline-offset-4" href="https://www.iatatravelcentre.com/" target="_blank" rel="noopener noreferrer">IATA Travel Centre<ArrowUpRight size={16} strokeWidth={1.75} aria-hidden="true" /></a>
+      </div>
     </div>
   </section>;
 }

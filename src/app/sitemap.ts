@@ -8,7 +8,7 @@ import { siteConfig } from "@/lib/site-config";
 export const dynamic = "force-dynamic";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [destinations, packages, posts] = await Promise.all([getDestinations(), getPackages(), getBlogPosts()]);
-  const routes = new Set([...mainLinks, ...serviceLinks, { href: "/opiniones/nueva" }].map(link => link.href));
+  const routes = new Set([...mainLinks, ...serviceLinks, { href: "/opiniones/nueva" }, { href: "/requisitos" }].map(link => link.href));
   return [
     ...Array.from(routes, route => ({ url: `${siteConfig.url}${route}` })),
     ...destinations.map(item => ({ url: `${siteConfig.url}/destinos/${item.slug}` })),
