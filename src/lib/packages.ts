@@ -3,8 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 
 export type Package = {
   destination_id: string | null; id: string; slug: string; nombre: string; destino: string; resumen: string;
-  descripcion: string; incluye: string[]; duracion: string;
-  precio_desde: number | null; moneda: string; imagen_url: string | null;
+  descripcion: string; incluye: string[]; itinerario: string | null; duracion: string;
+  precio_desde: number | null; moneda: string | null; imagen_url: string | null;
+  galeria: string[] | null; categoria: string | null; etiquetas: string[];
   destacado: boolean; publicado: boolean; orden: number;
 };
 // Public display rule for this phase: pricing remains in the data model but is
@@ -22,7 +23,7 @@ export function hasPublishedPrice(pkg: Pick<Package, "precio_desde" | "moneda">)
     && (pkg.moneda === "USD" || pkg.moneda === "HNL");
 }
 
-const columns = "destination_id,id,slug,nombre,destino,resumen,descripcion,incluye,duracion,precio_desde,moneda,imagen_url,destacado,publicado,orden";
+const columns = "destination_id,id,slug,nombre,destino,resumen,descripcion,incluye,itinerario,duracion,precio_desde,moneda,imagen_url,galeria,categoria,etiquetas,destacado,publicado,orden";
 
 export async function getPackages(featured = false, destinationId?: string): Promise<Package[]> {
   const supabase = await createClient();

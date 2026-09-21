@@ -34,6 +34,7 @@ export function PackageCard({ item }: { item: Package }) {
     <article className="media-card flex h-full flex-col rounded-card border border-line bg-canvas p-6 shadow-sm">
       <Link href={`/paquetes/${item.slug}`} className="block">
         <PackageImage item={item} />
+        {item.categoria && <p className="t-small mt-4 text-ink-soft">{item.categoria}</p>}
         <h3 className="t-h3 mt-6">{item.nombre}</h3>
       </Link>
       <div className="flex flex-1 flex-col gap-4 pt-6">
