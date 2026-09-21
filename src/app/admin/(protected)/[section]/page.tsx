@@ -5,7 +5,7 @@ import { Star } from "lucide-react";
 import { adminPage } from "@/lib/admin";
 import { pageMetadata } from "@/lib/seo";
 import { getAdminReviewInvitations } from "@/lib/review-invitations";
-import { reviewPhotoUrl } from "@/lib/reviews";
+import { getReviewPhotoSignedUrl } from "@/lib/reviews";
 import { ReviewInvitationsPanel } from "@/components/admin/review-invitations";
 import { DeleteForm, StatusForm } from "@/components/admin/forms";
 
@@ -22,13 +22,14 @@ export async function generateMetadata({ params }: { params: Promise<{ section: 
   return pageMetadata(url, "viatour | Administración de " + section + (id ? " — " + id : ""), "Administración privada de " + section + (id ? ". Registro " + id : "") + ". Contenido excluido de la indexación pública.");
 }
 
-function ReviewRecord({ row }: { row: Record<string, unknown> }) {
+async function ReviewRecord({ row }: { row: Record<string, unknown> }) {
+  const photoUrl = typeof row.foto_path === "string" && row.foto_path ? await getReviewPhotoSignedUrl(row.foto_path) : null;
   return <>
     <h2 className="t-h3">{String(row.nombre)}</h2>
     <div className="my-4 flex gap-1" aria-label={`${row.calificacion} de 5 estrellas`}>{Array.from({ length: 5 }, (_, i) => <Star key={i} aria-hidden size={20} strokeWidth={1.75} className={i < Number(row.calificacion) ? "fill-amber text-amber" : "text-ink-soft"} />)}</div>
     <p className="whitespace-pre-wrap">{String(row.texto)}</p>
     <dl className="mt-4 grid gap-4 sm:grid-cols-2">{["email", "destino", "fecha", "fuente", "numero_reserva"].map(key => <div key={key}><dt className="t-small text-ink-soft">{labels[key]}</dt><dd className="break-words">{String(row[key] ?? "—")}</dd></div>)}</dl>
-    {typeof row.foto_path === "string" && row.foto_path && <a href={reviewPhotoUrl(row.foto_path)} target="_blank" rel="noreferrer" className="mt-4 inline-block"><Image unoptimized width={128} height={128} src={reviewPhotoUrl(row.foto_path)} alt={`Foto de la opinión de ${row.nombre}`} className="h-32 w-32 rounded-card object-cover" /></a>}
+    {photoUrl && <a href={photoUrl} target="_blank" rel="noreferrer" className="mt-4 inline-block"><Image unoptimized width={128} height={128} src={photoUrl} alt={`Foto de la opinión de ${row.nombre}`} className="h-32 w-32 rounded-card object-cover" /></a>}
     <StatusForm table="reviews" row={row} />
   </>;
 }

@@ -15,6 +15,9 @@ export type PortalReservation = {
   fecha_fin: string | null;
 };
 
+export type PortalDocument = { name: string; path: string; url: string };
+export type PortalTicket = { id: string; asunto: string; mensaje: string; estado: string; created_at: string; respuesta: string | null };
+
 const portalReservationFields = "id,codigo,destino,moneda,total,estado,fecha_inicio,fecha_fin";
 const portalInvoiceFields = "id,reservation_id,numero,cliente_nombre,cliente_email,cliente_telefono,items,total,moneda,fecha_emision,fecha_vencimiento,estado,notas,created_at,updated_at";
 
@@ -64,4 +67,24 @@ export async function getPortalInvoice(client: SupabaseClient, reservationId: st
     .maybeSingle();
   if (result.error || !result.data) return null;
   return result.data as Invoice;
+}
+
+export async function getPortalDocuments(client: SupabaseClient, reservationId: string) {
+  const listed = await client.storage.from("portal-docs").list(reservationId, { limit: 100, sortBy: { column: "created_at", order: "desc" } });
+  if (listed.error) return [] as PortalDocument[];
+  const documents = await Promise.all((listed.data ?? []).filter(file => file.name).map(async file => {
+    const path = `${reservationId}/${file.name}`;
+    const signed = await client.storage.from("portal-docs").createSignedUrl(path, 300);
+    return signed.data?.signedUrl ? { name: file.name, path, url: signed.data.signedUrl } : null;
+  }));
+  return documents.filter((document): document is PortalDocument => Boolean(document));
+}
+
+export async function getPortalTickets(client: SupabaseClient, reservationId: string) {
+  const result = await client.from("support_tickets")
+    .select("id,asunto,mensaje,estado,created_at,respuesta")
+    .eq("reservation_id", reservationId)
+    .order("created_at", { ascending: false });
+  if (result.error) return [] as PortalTicket[];
+  return (result.data ?? []) as PortalTicket[];
 }

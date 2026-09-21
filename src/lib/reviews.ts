@@ -1,7 +1,8 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
-export type PublicReview = { id: string; nombre: string; calificacion: number; texto: string; destino: string | null; foto_path: string | null; fecha: string; verificada: boolean; created_at: string };
+export type PublicReview = { id: string; nombre: string; calificacion: number; texto: string; destino: string | null; foto_path: string | null; foto_url: string | null; fecha: string; verificada: boolean; created_at: string };
 export type ReviewSummary = { total: number; promedio: number; c5: number; c4: number; c3: number; c2: number; c1: number };
 export async function getReviews(limit = 30, page = 1) {
   const client = await createClient();
@@ -20,10 +21,14 @@ export async function getReviews(limit = 30, page = 1) {
     c2: Number(raw.c2) || 0,
     c1: Number(raw.c1) || 0,
   } satisfies ReviewSummary;
-  return { summary: aggregate, reviews: reviews.data as PublicReview[] };
+  const signedReviews = await Promise.all((reviews.data ?? []).map(async review => ({ ...review, foto_url: review.foto_path ? await getReviewPhotoSignedUrl(review.foto_path) : null })));
+  return { summary: aggregate, reviews: signedReviews as PublicReview[] };
 }
-export function reviewPhotoUrl(path: string) {
-  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/review-photos/${path.split("/").map(encodeURIComponent).join("/")}`;
+
+export async function getReviewPhotoSignedUrl(path: string, expiresIn = 300) {
+  if (!path || path.length > 500 || path.includes("..")) return null;
+  const result = await createAdminClient().storage.from("review-photos").createSignedUrl(path, expiresIn);
+  return result.data?.signedUrl ?? null;
 }
 export function reviewSchema(summary: ReviewSummary, reviews: PublicReview[]) {
   if (!summary.total) return null;
