@@ -17,6 +17,8 @@ import { FlightTool } from "@/components/home/flight-tool";
 import { HeroBackdrop } from "@/components/home/hero-backdrop";
 import { QuoteButton } from "@/components/home/quote-button";
 
+export { DiscoverTeaser } from "@/components/home/discover-teaser";
+
 async function FeaturedDestinationData() {
   let destinationSlugs = new Set<string>();
   try {

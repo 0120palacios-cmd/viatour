@@ -11,6 +11,8 @@ import { launchDestinations } from "@/lib/launch-destinations";
 import { requestQuote } from "@/lib/quote";
 
 const services = [{ name: "Vuelos", icon: Plane }, { name: "Hoteles", icon: Hotel }, { name: "Paquetes", icon: Package }, { name: "Viaje a medida", icon: Compass }];
+export type FlightToolTab = "vuelos" | "hoteles" | "paquetes" | "medida";
+const tabServices: Record<FlightToolTab, string> = { vuelos: "Vuelos", hoteles: "Hoteles", paquetes: "Paquetes", medida: "Viaje a medida" };
 const controlClass = "t-body h-12 w-full min-w-0 rounded-btn border border-line bg-canvas px-3 py-2 text-ink focus-visible:border-brand aria-invalid:border-error";
 
 // Keep the same fields mounted when switching from the compact bar to the tabs.
@@ -140,9 +142,9 @@ function QuoteForm({ service, compact = false, serviceControl, optionsControl, o
   </form>;
 }
 
-export function FlightTool({ compact = false, heading }: { compact?: boolean; heading?: ReactNode }) {
+export function FlightTool({ compact = false, heading, defaultTab = "vuelos" }: { compact?: boolean; heading?: ReactNode; defaultTab?: FlightToolTab }) {
   const [expanded, setExpanded] = useState(!compact);
-  const [service, setService] = useState("Vuelos");
+  const [service, setService] = useState(() => tabServices[defaultTab]);
   const serviceId = useId();
   const panelId = useId();
   const tool = useRef<HTMLDivElement>(null);

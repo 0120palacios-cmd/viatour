@@ -2,12 +2,11 @@ import { siteConfig } from "@/lib/site-config";
 
 export const mainLinks = [
   { label: "Inicio", href: "/" },
+  { label: "Destinos", href: "/destinos" },
   { label: "Descubrir", href: "/descubrir" },
-  { label: "Paquetes", href: "/paquetes" },
-  { label: "Blog", href: "/blog" },
   { label: "Opiniones", href: "/opiniones" },
+  { label: "Blog", href: "/blog" },
   { label: "Nosotros", href: "/nosotros" },
-  { label: "Preguntas frecuentes", href: "/preguntas-frecuentes" },
   { label: "Contacto", href: "/contacto" },
 ] as const;
 
@@ -18,7 +17,6 @@ export const serviceLinks = [
   { label: "Hoteles", href: "/hoteles" },
   { label: "Paquetes", href: "/paquetes" },
   { label: "Viaje a medida", href: "/viaje-a-medida" },
-  { label: "Destinos", href: "/destinos" },
 ] as const;
 
 export const legalLinks = [
