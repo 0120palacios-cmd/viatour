@@ -16,7 +16,7 @@ export default async function Page({ params }: Props) {
   const destination = item.destination_id ? await getDestination(item.destination_id, "id") : null;
   const url = `${siteConfig.url}/paquetes/${item.slug}`;
   const structuredData = { "@context": "https://schema.org", "@graph": [
-    { "@type": "Product", name: item.nombre, description: item.descripcion, url, ...(item.imagen_url ? { image: item.imagen_url } : {}), ...(item.precio_desde !== null && Number.isFinite(item.precio_desde) && item.precio_desde > 0 ? { offers: { "@type": "Offer", url, priceCurrency: item.moneda, price: item.precio_desde, seller: { "@id": "https://miviatour.com/#agency" } } } : {}) },
+    { "@type": "Product", name: item.nombre, description: item.descripcion, url, ...(item.imagen_url ? { image: item.imagen_url } : {}) },
     { "@type": "BreadcrumbList", itemListElement: [ { "@type": "ListItem", position: 1, name: "Inicio", item: siteConfig.url }, { "@type": "ListItem", position: 2, name: "Paquetes", item: `${siteConfig.url}/paquetes` }, { "@type": "ListItem", position: 3, name: item.nombre, item: url } ] },
   ] };
   return <main className="container-site space-y-8 py-14 sm:py-24">

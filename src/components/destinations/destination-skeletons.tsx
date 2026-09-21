@@ -1,0 +1,17 @@
+export function DestinationSkeletons() {
+  return (
+    <div role="status" aria-label="Cargando destinos">
+      <span className="sr-only">Cargando destinos</span>
+      <div aria-hidden="true" className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {[0, 1, 2].map(key => (
+          <div key={key} className="overflow-hidden rounded-card border border-line bg-canvas p-6 shadow-sm motion-safe:animate-pulse">
+            <div className="aspect-[4/3] rounded-card bg-surface" />
+            <div className="pt-6">
+              <div className="h-8 w-2/3 rounded-btn bg-surface" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

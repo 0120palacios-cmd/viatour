@@ -33,11 +33,6 @@ const labels = {
 
 const initialAnswers: DiscoveryAnswers = { travelerType: "pareja", experiences: [], budget: "medio", climate: "indiferente", duration: "media", interests: [], travelers: 1 };
 
-function displayPackagePrice(item: Package) {
-  if (item.precio_desde === null) return "Precio referencial; pida su cotización";
-  const amount = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(item.precio_desde);
-  return `desde ${item.moneda === "USD" ? "$" : item.moneda === "HNL" ? "L " : ""}${amount} ${item.moneda}`;
-}
 
 function slugForDestination(value: string) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -158,5 +153,5 @@ function DiscoveryResults({ recommendations, answers, packages, turnstileToken, 
 function MatchingPackages({ destinationId, destinationName, packages }: { destinationId?: string; destinationName: string; packages: Package[] }) {
   const matches = packages.filter(item => (destinationId && item.destination_id === destinationId) || slugForDestination(item.destino) === slugForDestination(destinationName));
   if (!matches.length) return null;
-  return <div className="border-t border-line bg-surface p-6"><p className="t-small mb-4 text-ink-soft">Paquetes publicados para {destinationName}</p><div className="space-y-4">{matches.map(item => <div key={item.id} className="space-y-2"><Link href={`/paquetes/${item.slug}`} className="t-body inline-flex min-h-12 items-center text-brand underline underline-offset-4">{item.nombre}</Link><p className="t-small text-ink-soft">{item.duracion} · {displayPackagePrice(item)}</p></div>)}</div></div>;
+  return <div className="border-t border-line bg-surface p-6"><p className="t-small mb-4 text-ink-soft">Paquetes publicados para {destinationName}</p><div className="space-y-4">{matches.map(item => <div key={item.id} className="space-y-2"><Link href={`/paquetes/${item.slug}`} className="t-body inline-flex min-h-12 items-center text-brand underline underline-offset-4">{item.nombre}</Link><p className="t-small text-ink-soft">Solicitar cotización</p></div>)}</div></div>;
 }

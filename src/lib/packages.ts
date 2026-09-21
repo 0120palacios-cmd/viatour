@@ -7,6 +7,21 @@ export type Package = {
   precio_desde: number | null; moneda: string; imagen_url: string | null;
   destacado: boolean; publicado: boolean; orden: number;
 };
+// Public display rule for this phase: pricing remains in the data model but is
+// not customer-facing until the display layer is explicitly enabled.
+export const PACKAGE_DISPLAY_RULES = {
+  mostrar_fechas: false,
+  mostrar_precios: false,
+} as const;
+
+export function hasPublishedPrice(pkg: Pick<Package, "precio_desde" | "moneda">): boolean {
+  return PACKAGE_DISPLAY_RULES.mostrar_precios
+    && typeof pkg.precio_desde === "number"
+    && Number.isFinite(pkg.precio_desde)
+    && pkg.precio_desde > 0
+    && (pkg.moneda === "USD" || pkg.moneda === "HNL");
+}
+
 const columns = "destination_id,id,slug,nombre,destino,resumen,descripcion,incluye,duracion,precio_desde,moneda,imagen_url,destacado,publicado,orden";
 
 export async function getPackages(featured = false, destinationId?: string): Promise<Package[]> {
