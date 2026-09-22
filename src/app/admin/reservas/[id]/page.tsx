@@ -5,6 +5,9 @@ import { getAdminReservation } from "@/lib/reservation-data";
 import { formatMoney, paymentMethodLabel, reservationStatusLabel, type ReservationStatus } from "@/lib/reservation-types";
 import { ReservationBuilder } from "@/components/admin/reservation-builder";
 import { InvoiceActions, InvoiceCreateForm, PaymentForm } from "@/components/admin/reservation-actions";
+import { noindexMetadata } from "@/lib/seo";
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) { return noindexMetadata(`viatour | Reserva ${ (await params).id }`, "Detalle privado de una reserva de viatour."); }
 
 function dateLabel(value: string | null) { return value ? new Intl.DateTimeFormat("es-HN", { dateStyle: "medium" }).format(new Date(`${value}T12:00:00`)) : "Sin fecha"; }
 function statusClass(status: ReservationStatus) { return ({ pendiente: "bg-surface text-ink-soft", confirmada: "bg-brand-tint text-brand-deep", en_curso: "bg-brand-tint text-brand-deep", completada: "bg-surface text-success", cancelada: "bg-surface text-error" } as Record<ReservationStatus, string>)[status]; }

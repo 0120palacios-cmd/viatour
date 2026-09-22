@@ -67,7 +67,7 @@ Las cotizaciones reutilizan Stage 3b: `servicio: destino`, nombre en `fields.Des
 
 ## Etapa 6: opiniones
 
-`/opiniones` y el inicio leen exclusivamente `reviews_resumen` y `reviews_publicas`. No hay semillas ni testimonios de ejemplo. Con cero aprobadas se muestra «Aún no hay opiniones publicadas.» y se omite el JSON-LD de valoraciones. La lista tiene paginación de 30 opiniones; el inicio muestra hasta tres. Correo y número de reserva nunca se consultan para la presentación pública.
+`/opiniones` y el inicio leen exclusivamente `reviews_resumen` y `reviews_publicas`. Con cero aprobadas se muestra «Aún no tenemos opiniones publicadas.» y se omite el JSON-LD de valoraciones; el inicio conserva un estado vacío visible. La lista tiene paginación de 30 opiniones; el inicio muestra hasta tres. Correo y número de reserva nunca se consultan para la presentación pública.
 
 `/opiniones/nueva` envía multipart a `/api/reviews`. Configure `SUPABASE_SERVICE_ROLE_KEY` en `.env.local` (solo servidor). El servidor valida campos, honeypot, tamaño y firma de JPG/PNG/WebP (máximo 3 MB), sube a `review-photos` e inserta con `estado=pendiente`, `fuente=formulario`, `verificada=false`. Devuelve únicamente `ok/id`; elimina la foto si falla el INSERT. El límite total del cuerpo se comprueba durante su lectura. El honeypot constituye la protección básica solicitada; no hay captcha ni limitador distribuido de solicitudes.
 
@@ -90,6 +90,12 @@ node --env-file=.env.local scripts/import-reviews.ts data/reviews-import.csv
 ```
 
 El script valida el archivo completo antes de una sola inserción (hasta 500 filas) usando SERVICE ROLE y `estado=aprobada`. No lo ejecute dos veces sobre el mismo archivo: compruebe la tabla antes de reintentar una operación con resultado incierto. Los archivos privados en `data/` están ignorados por Git. La utilidad está fuera de `src/` y `public/`, sin ruta web. Nunca comparta la clave ni importe reseñas ficticias. La plantilla vacía puede validarse sin insertar nada.
+
+## Etapa 7: motor de valoración e invitaciones
+
+Ejecute manualmente `docs/sql/reviews_views_audit.sql` para imprimir las definiciones con `pg_get_viewdef` y aplicar sus correcciones solo si una vista no filtra `estado='aprobada'`. Ejecute `docs/sql/review_invitations.sql` antes de usar el panel de invitaciones en `/admin/opiniones`; la aplicación no ejecuta SQL de esquema.
+
+`scripts/seed-reviews-dev.mjs` exige `SEED_DEV=1`, rechaza `NODE_ENV=production` y el dominio de producción, y solo carga cinco fixtures identificados como `dev-fixture`. Espera promedio `3.4` y distribución `c5=1`, `c4=2`, `c3=1`, `c2=0`, `c1=1`. El script está fuera de la aplicación y nunca se despliega.
 
 ### Verificación realizada
 

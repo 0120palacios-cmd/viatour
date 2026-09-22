@@ -1,13 +1,6 @@
-import Link from "next/link";
-import { pageMetadata } from "@/lib/seo";
-
-// Texto funcional en borrador, pendiente de aprobación editorial.
-export const metadata = {
-  ...pageMetadata("/404", "viatour | Página no disponible", "La página que busca no está disponible. Consulte nuestros servicios de viaje desde Honduras o vuelva al inicio de viatour."),
-  alternates: { canonical: null },
-  robots: { index: false, follow: true },
-};
-
-export default function NotFound() {
-  return <main className="container-site space-y-6 py-14 sm:py-24"><h1 className="t-h1">Página no disponible</h1><Link className="text-brand underline" href="/">Volver al inicio</Link></main>;
-}
+import type { Metadata } from "next";
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
+import { localizedPageMetadata } from "@/lib/seo";
+export async function generateMetadata(): Promise<Metadata> { return { ...(await localizedPageMetadata("/404", "home")), alternates: { canonical: null }, robots: { index: false, follow: true } }; }
+export default function NotFound() { const t = useTranslations("static"); return <main className="container-site space-y-6 py-14 sm:py-24"><h1 className="t-h1">{t("notFound")}</h1><p className="t-body text-ink-soft">{t("notFoundBody")}</p><Link className="text-brand underline" href="/">{t("notFoundHome")}</Link></main>; }

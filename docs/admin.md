@@ -8,7 +8,8 @@ La interfaz usa los tokens, Manrope, componentes shadcn existentes y AlertDialog
 
 1. Sin sesión, visite `/admin` y cada sección: deben redirigir a `/admin/login`.
 2. Inicie sesión con una cuenta administradora: debe ver Resumen, su correo y Cerrar sesión. Una cuenta autenticada fuera de `admins` debe quedar sin acceso. Un error en `is_admin()` también deniega acceso.
-3. En Opiniones, filtre pendientes, apruebe una opinión real y abra `/opiniones`: compruebe la publicación y el promedio derivado de `reviews_resumen`. Rechazarla debe retirarla y recalcular el promedio. Cambie Verificada y guarde.
+3. En Opiniones, filtre pendientes, apruebe una opinión real y abra `/opiniones`: compruebe la publicación y el promedio derivado de `reviews_resumen`. Rechazarla o despublicarla debe retirarla y recalcular el promedio. Cambie Verificada y guarde.
+4. En Invitaciones para opinar, registre un nombre y correo de prueba autorizado. Abra el enlace recibido, compruebe el nombre y correo prefijados, envíe la opinión y confirme que queda pendiente y que la invitación cambia a `usada`.
 4. En Paquetes, cree un borrador, edite todos sus campos y publíquelo. Compruebe `/paquetes` y `/paquetes/[slug]`. Un precio vacío guarda NULL. Cambiar el slug invalida tanto la URL anterior como la nueva. Un slug duplicado muestra un error.
 5. En Destinos, edite contenido, SEO y la lista de preguntas/respuestas, publique y compruebe las páginas públicas. Eliminar paquetes/destinos requiere confirmación; cancelar conserva el registro. Las relaciones que impidan eliminar muestran un error sin destruir otros registros.
 6. En Leads, compruebe los campos completos, presupuesto con moneda y payload. Guarde contactado o cerrado y recargue. No se permite eliminar leads.

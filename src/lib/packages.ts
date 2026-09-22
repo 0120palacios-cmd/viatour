@@ -3,11 +3,27 @@ import { createClient } from "@/lib/supabase/server";
 
 export type Package = {
   destination_id: string | null; id: string; slug: string; nombre: string; destino: string; resumen: string;
-  descripcion: string; incluye: string[]; duracion: string;
-  precio_desde: number | null; moneda: string; imagen_url: string | null;
+  descripcion: string; incluye: string[]; itinerario: string | null; duracion: string;
+  precio_desde: number | null; moneda: string | null; imagen_url: string | null;
+  galeria: string[] | null; categoria: string | null; etiquetas: string[];
   destacado: boolean; publicado: boolean; orden: number;
 };
-const columns = "destination_id,id,slug,nombre,destino,resumen,descripcion,incluye,duracion,precio_desde,moneda,imagen_url,destacado,publicado,orden";
+// Public display rule for this phase: pricing remains in the data model but is
+// not customer-facing until the display layer is explicitly enabled.
+export const PACKAGE_DISPLAY_RULES = {
+  mostrar_fechas: false,
+  mostrar_precios: false,
+} as const;
+
+export function hasPublishedPrice(pkg: Pick<Package, "precio_desde" | "moneda">): boolean {
+  return PACKAGE_DISPLAY_RULES.mostrar_precios
+    && typeof pkg.precio_desde === "number"
+    && Number.isFinite(pkg.precio_desde)
+    && pkg.precio_desde > 0
+    && (pkg.moneda === "USD" || pkg.moneda === "HNL");
+}
+
+const columns = "destination_id,id,slug,nombre,destino,resumen,descripcion,incluye,itinerario,duracion,precio_desde,moneda,imagen_url,galeria,categoria,etiquetas,destacado,publicado,orden";
 
 export async function getPackages(featured = false, destinationId?: string): Promise<Package[]> {
   const supabase = await createClient();
@@ -18,6 +34,17 @@ export async function getPackages(featured = false, destinationId?: string): Pro
   if (error) throw new Error("No se pudieron cargar los paquetes.");
   return data as Package[];
 }
+
+function normalizeDestination(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+export async function getPackagesForDestination(destination: { id: string; slug: string; nombre: string }): Promise<Package[]> {
+  const packages = await getPackages();
+  const destinationNames = new Set([normalizeDestination(destination.slug), normalizeDestination(destination.nombre)]);
+  return packages.filter(item => item.destination_id === destination.id || destinationNames.has(normalizeDestination(item.destino)));
+}
+
 export const getPackage = cache(async (slug: string): Promise<Package | null> => {
   const supabase = await createClient();
   const { data, error } = await supabase.from("packages").select(columns).eq("publicado", true).eq("slug", slug).abortSignal(AbortSignal.timeout(8000)).maybeSingle();

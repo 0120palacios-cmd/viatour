@@ -66,7 +66,7 @@ export async function save(_: Result, form: FormData): Promise<Result> {
             if (existing.data && existing.data.id !== id) return { error: "Ese slug ya existe. Elija otro." };
         }
         else if (table === "reviews" || table === "leads") {
-            const allowed = table === "reviews" ? ["pendiente", "aprobada", "rechazada"] : ["nuevo", "contactado", "cerrado"];
+            const allowed = table === "reviews" ? ["pendiente", "aprobada", "rechazada", "despublicada"] : ["nuevo", "contactado", "cerrado"];
             const state = get("accion_estado") || get("estado");
             if (!id || !allowed.includes(state))
                 return { error: "Seleccione un estado válido." };

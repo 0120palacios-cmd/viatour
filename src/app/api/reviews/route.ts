@@ -3,6 +3,7 @@ import { REVIEW_PHOTO_LIMIT, validateReview } from "@/lib/review-validation";
 
 import { rateLimit, verifyTurnstile } from "@/lib/public-security";
 import { notifySubmission } from "@/lib/notifications";
+import { consumeReviewInvitation, getValidReviewInvitation } from "@/lib/review-invitations";
 
 export const runtime = "nodejs";
 const MAX_BODY = REVIEW_PHOTO_LIMIT + 64 * 1024;
@@ -31,6 +32,9 @@ export async function POST(request: Request) {
   const { data, errors } = validateReview(Object.fromEntries(form));
   if (Object.keys(errors).length) return fail(400, "Revise los campos indicados.", errors);
   if (!await verifyTurnstile(request, form.get("turnstileToken"))) return fail(400, "No se pudo verificar su solicitud. Inténtelo nuevamente.");
+  const invitationToken = String(form.get("token") ?? "").trim();
+  const invitation = invitationToken ? await getValidReviewInvitation(invitationToken) : null;
+  if (invitationToken && !invitation) return fail(400, "El enlace de invitación no es válido o ya fue utilizado.");
   const photo = form.get("foto");
   let bytes: Buffer | undefined;
   let extension = "";
@@ -50,12 +54,17 @@ export async function POST(request: Request) {
       const upload = await client.storage.from("review-photos").upload(path, bytes, { contentType: (photo as File).type, upsert: false });
       if (upload.error) return fail(503, "No se pudo guardar la foto. Inténtelo de nuevo.");
     }
-    const result = await client.from("reviews").insert({ ...data, id, foto_path: path, estado: "pendiente", fuente: "formulario", verificada: false });
+    const result = await client.from("reviews").insert({ ...data, email: invitation?.email ?? data.email, id, foto_path: path, estado: "pendiente", fuente: invitation ? "invitacion" : "formulario", verificada: false });
     if (result.error) {
       if (path) await client.storage.from("review-photos").remove([path]);
       return fail(503, "No se pudo guardar su opinión. Inténtelo de nuevo.");
     }
-    await notifySubmission("review", id, { ...data, foto_path: path });
+    if (invitation && !await consumeReviewInvitation(invitation.id)) {
+      await client.from("reviews").delete().eq("id", id);
+      if (path) await client.storage.from("review-photos").remove([path]);
+      return fail(503, "No se pudo completar la invitación. Inténtelo de nuevo.");
+    }
+    await notifySubmission("review", id, { ...data, foto_path: path, fuente: invitation ? "invitacion" : "formulario" });
     return Response.json({ ok: true, id }, { status: 201 });
   } catch { return fail(503, "No se pudo guardar su opinión. Inténtelo de nuevo."); }
 }

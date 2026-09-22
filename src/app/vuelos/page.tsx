@@ -1,7 +1,6 @@
-import { pageMetadata } from "@/lib/seo";
+import type { Metadata } from "next";
+import { localizedPageMetadata } from "@/lib/seo";
+import { ServicePage } from "@/components/services/service-page";
 
-export const metadata = pageMetadata("/vuelos", "viatour | Vuelos y asesoría para su viaje desde Honduras", "Vuelos y asesoría para su viaje desde Honduras con viatour. Consulte la información disponible y cuéntenos qué busca para recibir asesoría sobre su viaje.");
-
-export default function Page() {
-  return <main className="container-site py-14 sm:py-24"><h1 className="t-h1">Vuelos</h1></main>;
-}
+export function generateMetadata(): Promise<Metadata> { return localizedPageMetadata("/vuelos", "flights"); }
+export default function Page() { return <ServicePage path="/vuelos" breadcrumbKey="flights" titleKey="flightsTitle" introKey="flightsIntro" defaultTab="vuelos" helpKeys={["flightsHelp1", "flightsHelp2", "flightsHelp3"]} />; }

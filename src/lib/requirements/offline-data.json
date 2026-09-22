@@ -1,0 +1,75 @@
+[
+  {
+    "nacionalidad": "HN",
+    "destino": "Punta Cana",
+    "visaRequirement": "Exento de visa para turismo con pasaporte ordinario válido y vigente, conforme al acuerdo bilateral entre Honduras y República Dominicana.",
+    "allowedStay": "Hasta 60 días de permanencia inicial sin visa para fines turísticos, sin actividades remuneradas ni estudios.",
+    "passportRules": [
+      "Pasaporte ordinario válido y vigente.",
+      "Boleto de entrada y regreso.",
+      "Dirección permanente en República Dominicana y prueba de solvencia económica para cubrir la estancia.",
+      "Complete el E-Ticket de entrada y salida cuando corresponda.",
+      "La regla general publicada para turistas indica una vigencia mínima de seis meses; confirme su caso antes de viajar."
+    ],
+    "transitRequirements": "Las escalas pueden tener reglas propias según el aeropuerto, la ruta y su nacionalidad. Verifique cada tránsito por separado.",
+    "notes": [
+      "Información referencial para turismo y pasaporte hondureño ordinario.",
+      "La entrada final y las condiciones de permanencia las determina la autoridad migratoria."
+    ],
+    "ultima_actualizacion": "2026-09-21",
+    "sourceUrl": "https://mirex.gob.do/tratados/acuerdo-entre-la-republica-dominicana-y-la-republica-de-honduras-sobre-la-supresion-de-los-requisitos-de-visa-para-sus-nacionales-en-pasaportes-ordinarios-o-corrientes/"
+  },
+  {
+    "nacionalidad": "HN",
+    "destino": "Europa",
+    "visaRequirement": "No requiere visa para una visita corta al espacio Schengen por turismo, negocios u otros motivos no remunerados, sujeto a las condiciones de entrada.",
+    "allowedStay": "Hasta 90 días dentro de cualquier período de 180 días.",
+    "passportRules": [
+      "Pasaporte válido durante la estancia y por al menos tres meses después de la salida prevista del espacio Schengen.",
+      "El pasaporte debe haber sido emitido dentro de los últimos 10 años.",
+      "Puede solicitarse evidencia del propósito del viaje, alojamiento, boleto de salida y medios económicos suficientes."
+    ],
+    "transitRequirements": "Los requisitos de tránsito aeroportuario pueden variar según el aeropuerto, la ruta y su nacionalidad. Verifique cada escala por separado.",
+    "notes": [
+      "Información referencial para el espacio Schengen; Irlanda y Chipre tienen reglas nacionales propias.",
+      "Una estancia superior a 90 días puede requerir un visado nacional o permiso de residencia."
+    ],
+    "ultima_actualizacion": "2026-09-21",
+    "sourceUrl": "https://europa.eu/youreurope/citizens/travel/entry-exit/non-eu-nationals/index_en.htm"
+  },
+  {
+    "nacionalidad": "HN",
+    "destino": "Dubái",
+    "visaRequirement": "El listado oficial del Gobierno de Emiratos Árabes Unidos marca la entrada sin visa para pasaporte ordinario hondureño; confirme la condición vigente antes de viajar.",
+    "allowedStay": "La duración autorizada depende de la categoría de entrada y de la autorización emitida. Para visas turísticas, las categorías oficiales contemplan 30, 60 o 90 días.",
+    "passportRules": [
+      "Pasaporte válido por al menos seis meses desde la fecha de entrada a Emiratos Árabes Unidos.",
+      "Las listas de elegibilidad pueden cambiar; confirme con la autoridad oficial o la embajada antes de viajar."
+    ],
+    "transitRequirements": "Las escalas pueden tener reglas propias según el aeropuerto, la ruta y su nacionalidad. Verifique cada tránsito por separado.",
+    "notes": [
+      "Información referencial para turismo y pasaporte hondureño ordinario.",
+      "Dubái forma parte de Emiratos Árabes Unidos; pueden aplicar controles federales y locales."
+    ],
+    "ultima_actualizacion": "2026-09-21",
+    "sourceUrl": "https://u.ae/-/media/Information-and-services/Passports-and-travelling/Visa-Exemptions-en-%281%29.pdf"
+  },
+  {
+    "nacionalidad": "HN",
+    "destino": "Cartagena",
+    "visaRequirement": "No requiere visa para una estancia corta por turismo, negocios o actividades culturales que no sean remuneradas en Colombia.",
+    "allowedStay": "Estancia corta; la autoridad migratoria colombiana determina las condiciones y el tiempo autorizado al ingreso.",
+    "passportRules": [
+      "Pasaporte vigente y documento de viaje válido.",
+      "Lleve tiquete de salida y la documentación que acredite el propósito del viaje.",
+      "Puede solicitarse demostrar solvencia económica, según corresponda."
+    ],
+    "transitRequirements": "Los nacionales hondureños no aparecen en el listado de países que requieren visa de tránsito aeroportuario directo en Colombia; verifique la ruta completa y cada escala.",
+    "notes": [
+      "Información referencial para turismo y pasaporte hondureño ordinario.",
+      "La autorización de ingreso y permanencia corresponde a las autoridades colombianas."
+    ],
+    "ultima_actualizacion": "2026-09-21",
+    "sourceUrl": "https://www.cancilleria.gov.co/atencion-y-servicio-al-ciudadano/tramites-y-servicios/visa/necesito-un-visa"
+  }
+]

@@ -43,7 +43,8 @@ for (const item of destinations) {
     assert.ok(html.includes('href="/paquetes/' + pack.slug + '"'), "Linked package: " + pack.slug);
     const detail = await page("/paquetes/" + pack.slug);
     assert.ok(detail.includes('href="' + path + '"'), "Reverse destination link");
-    if (pack.precio_desde === null) assert.ok(html.includes("Precio referencial — pídanos su cotización"));
+    assert.ok(!html.includes("Precio referencial"), "Package price copy is hidden: " + pack.slug);
+    assert.ok(!html.includes("priceCurrency"), "Package price schema is hidden: " + pack.slug);
   }
   if (item.destacado) assert.ok(home.includes('href="' + path + '"'), "Featured destination: " + item.slug);
   console.log("PASS", path, "linked packages:", linked.length, "FAQs:", faqs.length);
