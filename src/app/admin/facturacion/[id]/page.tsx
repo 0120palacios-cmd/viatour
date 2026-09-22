@@ -4,6 +4,9 @@ import { requireAdmin } from "@/lib/admin";
 import { getAdminInvoice } from "@/lib/reservation-data";
 import { formatMoney } from "@/lib/reservation-types";
 import { InvoiceActions } from "@/components/admin/reservation-actions";
+import { noindexMetadata } from "@/lib/seo";
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) { return noindexMetadata(`viatour | Factura ${ (await params).id }`, "Detalle privado de una factura de viatour."); }
 
 function dateLabel(value: string) { return new Intl.DateTimeFormat("es-HN", { dateStyle: "medium" }).format(new Date(`${value}T12:00:00`)); }
 

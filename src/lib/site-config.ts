@@ -1,7 +1,7 @@
 export const siteConfig = {
   name: "viatour",
   domain: "miviatour.com",
-  url: "https://miviatour.com",
+  url: (process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://miviatour.com").replace(/\/$/, ""),
   tagline: "sueña, descubre, sonríe.",
   whatsappNumber: "50488668704", // +504 8866-8704, wa.me link format
   supportEmail: "soporte@miviatour.com",

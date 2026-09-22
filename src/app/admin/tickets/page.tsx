@@ -1,8 +1,10 @@
 import { MessageSquare } from "lucide-react";
 import { requireAdmin } from "@/lib/admin";
 import { TicketResponseForm } from "@/components/admin/ticket-response-form";
+import { noindexMetadata } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
+export const metadata = noindexMetadata("viatour | Solicitudes de soporte", "Gestión privada de solicitudes de soporte vinculadas a reservas de viatour.");
 export default async function TicketsPage() {
   const { client } = await requireAdmin();
   const tickets = await client.from("support_tickets").select("id,reservation_id,asunto,mensaje,estado,respuesta,created_at,responded_at").order("created_at", { ascending: false }).limit(200);

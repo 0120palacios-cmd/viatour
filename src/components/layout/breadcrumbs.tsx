@@ -1,22 +1,14 @@
 import { Link } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { ChevronRight } from "lucide-react";
-import { siteConfig } from "@/lib/site-config";
+import { breadcrumbSchema } from "@/lib/seo";
 
 export type BreadcrumbItem = { label: string; href: string };
 
 export function Breadcrumbs({ items }: { items: readonly BreadcrumbItem[] }) {
   const t = useTranslations("common");
-  const schema = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: items.map((item, index) => ({
-      "@type": "ListItem",
-      position: index + 1,
-      name: item.label,
-      item: `${siteConfig.url}${item.href}`,
-    })),
-  };
+  const locale = useLocale();
+  const schema = breadcrumbSchema(items, locale === "en" ? "en" : "es");
 
   return <>
     <nav aria-label={t("breadcrumbs")} className="t-small text-ink-soft">

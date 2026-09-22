@@ -4,7 +4,7 @@ import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Check } from "lucide-react";
-import { localizedContentMetadata, detailDescription } from "@/lib/seo";
+import { absoluteUrl, breadcrumbSchema, localizedContentMetadata, localizedUrl, detailDescription } from "@/lib/seo";
 import { getPackage } from "@/lib/packages";
 import { getDestination } from "@/lib/destinations";
 import { PackageMeta } from "@/components/packages/package-meta";
@@ -13,6 +13,8 @@ import { PackageImage } from "@/components/packages/package-image";
 import { PackageQuote } from "@/components/packages/package-card";
 import { canOptimizeImage } from "@/lib/image-optimization";
 import type { Package } from "@/lib/packages";
+import { getLocale } from "next-intl/server";
+import type { Locale } from "@/i18n/config";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -27,19 +29,21 @@ function PackageGallery({ item }: { item: Package }) {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const item = await getPackage((await params).slug);
   if (!item) notFound();
-  return localizedContentMetadata("/paquetes/" + item.slug, "viatour | " + item.nombre + " a su medida desde Honduras", detailDescription(item.nombre, item.resumen || item.descripcion), item.imagen_url);
+  const locale = (await getLocale()) as Locale;
+  const english = locale === "en";
+  return localizedContentMetadata("/paquetes/" + item.slug, english ? `viatour | ${item.nombre} travel package from Honduras` : "viatour | " + item.nombre + " a su medida desde Honduras", english ? `Explore the ${item.nombre} travel package from Honduras with viatour and request guidance to adjust dates, services and details to your plans.` : detailDescription(item.nombre, item.resumen || item.descripcion), item.imagen_url);
 }
 
 export default async function Page({ params }: Props) {
   const t = await getTranslations("static");
   const common = await getTranslations("common");
   const packagePage = await getTranslations("packagePage");
+  const locale = (await getLocale()) as Locale;
   const item = await getPackage((await params).slug);
   if (!item) notFound();
   const destination = item.destination_id ? await getDestination(item.destination_id, "id") : null;
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://miviatour.com";
-  const url = siteUrl + "/paquetes/" + item.slug;
-  const structuredData = { "@context": "https://schema.org", "@graph": [{ "@type": "Product", name: item.nombre, description: item.descripcion, url, ...(item.imagen_url ? { image: item.imagen_url } : {}) }, { "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: common("home"), item: siteUrl }, { "@type": "ListItem", position: 2, name: common("packages"), item: siteUrl + "/paquetes" }, { "@type": "ListItem", position: 3, name: item.nombre, item: url }] }] };
+  const url = localizedUrl(`/paquetes/${item.slug}`, locale);
+  const structuredData = { "@context": "https://schema.org", "@graph": [{ "@type": "Product", name: item.nombre, description: item.descripcion, url, ...(item.imagen_url ? { image: absoluteUrl(item.imagen_url) } : {}) }, breadcrumbSchema([{ label: common("home"), href: "/" }, { label: common("packages"), href: "/paquetes" }, { label: item.nombre, href: `/paquetes/${item.slug}` }], locale)] };
   const itinerary = item.itinerario ? item.itinerario.split(/\r?\n/).map(value => value.trim()).filter(Boolean) : [];
   return <main className="container-site space-y-8 py-14 sm:py-24">
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} />

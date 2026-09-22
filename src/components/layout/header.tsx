@@ -41,7 +41,7 @@ export function Header() {
 
   return <header className="sticky top-0 z-30 border-b border-line bg-canvas">
     <div className="container-site flex items-center justify-between gap-4 py-3">
-      <Link href="/" className="shrink-0 rounded-btn p-2" aria-label={t("header.homeLabel")}><Image src={blackLogo} alt="viatour" priority className="h-auto w-32" sizes="128px" /></Link>
+      <Link href="/" className="shrink-0 rounded-btn p-2" aria-label={t("header.homeLabel")}><Image src={blackLogo} alt="viatour" className="h-auto w-32" sizes="128px" /></Link>
       <div className="hidden items-center gap-4 min-[1280px]:flex">{navigation()}<WhatsAppLink compact placement="header" /><LanguageSwitcher pathname={pathname} locale={locale} /></div>
       <div className="min-[1280px]:hidden"><Sheet open={open} onOpenChange={setOpen}><SheetTrigger asChild><Button variant="ghost" aria-label={t("common.openMenu")}><Menu className="text-ink-soft" size={24} strokeWidth={1.75} /></Button></SheetTrigger><SheetContent><div className="container-site flex min-h-full flex-col gap-8 py-6"><div className="flex items-center justify-between gap-4"><SheetTitle className="t-h3">viatour</SheetTitle><SheetClose asChild><Button variant="ghost" aria-label={t("common.close")}><X className="text-ink-soft" size={24} strokeWidth={1.75} /></Button></SheetClose></div>{navigation(true)}<div className="mt-auto space-y-6 border-t border-line pt-6"><LanguageSwitcher pathname={pathname} locale={locale} /><WhatsAppLink compact placement="mobile-menu" onClick={() => setOpen(false)} /></div></div></SheetContent></Sheet></div>
     </div>

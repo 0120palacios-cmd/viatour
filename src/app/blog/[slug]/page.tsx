@@ -7,18 +7,21 @@ import { getBlogPost } from "@/lib/blog";
 import { blogCoverUrl, blogDate } from "@/lib/blog-utils";
 import { Markdown } from "@/components/blog/markdown";
 import { WhatsAppLink } from "@/components/layout/whatsapp-link";
-import { localizedContentMetadata, detailDescription } from "@/lib/seo";
-import { siteConfig } from "@/lib/site-config";
+import { absoluteUrl, breadcrumbSchema, localizedContentMetadata, localizedUrl, detailDescription } from "@/lib/seo";
+import type { Locale } from "@/i18n/config";
+import { getLocale } from "next-intl/server";
 
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const post = await getBlogPost((await params).slug);
   if (!post) notFound();
+  const locale = (await getLocale()) as Locale;
+  const english = locale === "en";
   return localizedContentMetadata(
     `/blog/${post.slug}`,
-    post.meta_titulo?.trim() || `viatour | ${post.titulo} desde Honduras`,
-    detailDescription(post.titulo, post.meta_descripcion || post.extracto),
+    english ? `viatour | ${post.titulo} travel guide from Honduras` : post.meta_titulo?.trim() || `viatour | ${post.titulo} desde Honduras`,
+    english ? `Read viatour’s guide about ${post.titulo} and use the information to plan a trip from Honduras with personal travel advice.` : detailDescription(post.titulo, post.meta_descripcion || post.extracto),
     blogCoverUrl(post.cover_url),
     true,
   );
@@ -27,6 +30,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function Page({ params }: Props) {
   const t = await getTranslations("static");
   const common = await getTranslations("common");
+  const locale = (await getLocale()) as Locale;
   const post = await getBlogPost((await params).slug);
   if (!post) notFound();
   const cover = blogCoverUrl(post.cover_url);
@@ -37,26 +41,14 @@ export default async function Page({ params }: Props) {
         "@type": "BlogPosting",
         headline: post.titulo,
         description: post.extracto,
-        url: siteConfig.url + "/blog/" + post.slug,
-        mainEntityOfPage: siteConfig.url + "/blog/" + post.slug,
+        url: localizedUrl(`/blog/${post.slug}`, locale),
+        mainEntityOfPage: localizedUrl(`/blog/${post.slug}`, locale),
         dateModified: post.updated_at,
         ...(post.publicado_en ? { datePublished: post.publicado_en } : {}),
         ...(post.autor ? { author: { "@type": "Person", name: post.autor } } : {}),
-        ...(cover ? { image: cover } : {}),
+        ...(cover ? { image: absoluteUrl(cover) } : {}),
       },
-      {
-        "@type": "BreadcrumbList",
-        itemListElement: [
-          [t("notFoundHome"), ""],
-          [t("blog"), "/blog"],
-          [post.titulo, "/blog/" + post.slug],
-        ].map(([name, path], i) => ({
-          "@type": "ListItem",
-          position: i + 1,
-          name,
-          item: siteConfig.url + path,
-        })),
-      },
+      breadcrumbSchema([{ label: common("home"), href: "/" }, { label: common("blog"), href: "/blog" }, { label: post.titulo, href: `/blog/${post.slug}` }], locale),
     ],
   };
   return (

@@ -3,24 +3,27 @@ import type { Metadata } from "next";
 import { Link } from "@/i18n/navigation";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { localizedContentMetadata, detailDescription } from "@/lib/seo";
+import { absoluteUrl, breadcrumbSchema, localizedContentMetadata, localizedUrl, detailDescription } from "@/lib/seo";
 import { getDestination } from "@/lib/destinations";
 import { getPackagesForDestination } from "@/lib/packages";
-import { siteConfig } from "@/lib/site-config";
 import { DestinationImage } from "@/components/destinations/destination-card";
 import { PackageGrid } from "@/components/packages/package-card";
 import { QuoteButton } from "@/components/home/quote-button";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { getLocale } from "next-intl/server";
+import type { Locale } from "@/i18n/config";
 
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const item = await getDestination((await params).slug);
   if (!item) notFound();
+  const locale = (await getLocale()) as Locale;
+  const english = locale === "en";
   return localizedContentMetadata(
     `/destinos/${item.slug}`,
-    item.titulo_seo?.trim() || `viatour | Viajes a ${item.nombre} personalizados desde Honduras`,
-    item.meta_descripcion?.trim() || detailDescription(item.nombre, item.intro),
+    english ? `viatour | ${item.nombre} travel destination from Honduras` : item.titulo_seo?.trim() || `viatour | Viajes a ${item.nombre} personalizados desde Honduras`,
+    english ? `Plan a trip to ${item.nombre} from Honduras with viatour. Explore destination information and request personal travel advice for your dates and plans.` : item.meta_descripcion?.trim() || detailDescription(item.nombre, item.intro),
     item.imagen_url,
   );
 }
@@ -28,21 +31,26 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function Page({ params }: Props) {
   const t = await getTranslations("static");
   const common = await getTranslations("common");
+  const locale = (await getLocale()) as Locale;
   const item = await getDestination((await params).slug);
   if (!item) notFound();
   const packages = await getPackagesForDestination(item);
-  const url = `${siteConfig.url}/destinos/${item.slug}`;
+  const url = localizedUrl(`/destinos/${item.slug}`, locale);
   const structuredData = {
     "@context": "https://schema.org",
     "@graph": [
       {
-        "@type": "BreadcrumbList",
-        itemListElement: [
-          { "@type": "ListItem", position: 1, name: common("home"), item: siteConfig.url },
-          { "@type": "ListItem", position: 2, name: common("destinations"), item: `${siteConfig.url}/destinos` },
-          { "@type": "ListItem", position: 3, name: item.nombre, item: url },
-        ],
+        "@type": "TouristDestination",
+        name: item.nombre,
+        description: item.intro || item.nombre,
+        url,
+        ...(item.imagen_url ? { image: absoluteUrl(item.imagen_url) } : {}),
       },
+      breadcrumbSchema([
+        { label: common("home"), href: "/" },
+        { label: common("destinations"), href: "/destinos" },
+        { label: item.nombre, href: `/destinos/${item.slug}` },
+      ], locale),
       ...(item.faqs.length ? [{
         "@type": "FAQPage",
         mainEntity: item.faqs.map(faq => ({
@@ -57,7 +65,7 @@ export default async function Page({ params }: Props) {
           "@type": "ListItem",
           position: index + 1,
           name: pack.nombre,
-          url: `${siteConfig.url}/paquetes/${pack.slug}`,
+          url: localizedUrl(`/paquetes/${pack.slug}`, locale),
         })),
       }] : []),
     ],
