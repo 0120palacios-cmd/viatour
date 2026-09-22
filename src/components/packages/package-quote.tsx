@@ -1,25 +1,25 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { MessageCircle, X } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Turnstile } from "@/components/turnstile";
 import { useCurrency } from "@/components/currency-provider";
 import { requestQuote } from "@/lib/quote";
 import type { Package } from "@/lib/packages";
+import { Link } from "@/i18n/navigation";
 
-export function PackageQuote({ item }: { item: Package }) {
+export function PackageQuote({ item, linkOnly = false }: { item: Package; linkOnly?: boolean }) {
   const t = useTranslations("packageQuote");
   const locale = useLocale() as "es" | "en";
   const { currency } = useCurrency();
-  const [open, setOpen] = useState(false);
   const [token, setToken] = useState("");
   const [challenge, setChallenge] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
   const locked = useRef(false);
+  if (linkOnly) return <Link href={`/paquetes/${item.slug}#solicitar-cotizacion`} className="inline-flex min-h-12 w-full items-center justify-center rounded-btn border border-brand px-5 py-3 font-semibold text-brand hover:bg-brand-tint">{t("open")}</Link>;
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -47,12 +47,8 @@ export function PackageQuote({ item }: { item: Package }) {
     }
   }
 
-  return <>
-    <Button variant="whatsapp" className="h-auto min-h-12 w-full whitespace-normal" onClick={() => setOpen(true)}><MessageCircle size={20} strokeWidth={1.75} aria-hidden="true" />{t("open")}</Button>
-    {open && <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/60 p-0 sm:items-center sm:p-6" onMouseDown={event => { if (event.target === event.currentTarget) setOpen(false); }}>
-      <section role="dialog" aria-modal="true" aria-labelledby={`package-quote-title-${item.id}`} className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-t-panel border border-line bg-canvas p-6 shadow-md sm:rounded-panel sm:p-8">
-        <div className="mb-6 flex items-start justify-between gap-4"><div className="space-y-2"><h2 id={`package-quote-title-${item.id}`} className="t-h2">{t("title")}</h2><p className="t-body text-ink-soft">{item.nombre}</p></div><button type="button" aria-label={t("close")} onClick={() => setOpen(false)} className="flex size-12 shrink-0 items-center justify-center rounded-btn text-ink-soft hover:bg-surface focus-visible:outline-2 focus-visible:outline-brand"><X size={20} aria-hidden="true" /></button></div>
-        <form onSubmit={submit} className="space-y-5">
+  return <form onSubmit={submit} className="space-y-5">
+        <div className="space-y-2"><h2 id={`package-quote-title-${item.id}`} className="t-h3">{t("title")}</h2><p className="t-small text-ink-soft">{item.nombre}</p></div>
           <div className="grid gap-5 sm:grid-cols-2">
             <div className="space-y-2"><label htmlFor={`quote-origin-${item.id}`} className="t-small">{t("origin")}</label><Input id={`quote-origin-${item.id}`} name="origin" required maxLength={120} autoComplete="address-level2" /></div>
             <div className="space-y-2"><label htmlFor={`quote-destination-${item.id}`} className="t-small">{t("destination")}</label><Input id={`quote-destination-${item.id}`} value={item.destino} readOnly aria-readonly="true" /></div>
@@ -63,9 +59,6 @@ export function PackageQuote({ item }: { item: Package }) {
           </div>
           <Turnstile onToken={setToken} resetKey={challenge} />
           {error && <p role="alert" className="t-small text-error">{t("error")}</p>}
-          <Button type="submit" variant="whatsapp" disabled={busy || !token} aria-busy={busy} className="w-full"><MessageCircle size={20} strokeWidth={1.75} aria-hidden="true" />{busy ? t("sending") : t("submit")}</Button>
+          <button type="submit" disabled={busy || !token} aria-busy={busy} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-btn bg-wa px-6 py-3 font-semibold text-ink hover:bg-wa-deep focus-visible:outline-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-60"><MessageCircle size={20} strokeWidth={1.75} aria-hidden="true" />{busy ? t("sending") : t("submit")}</button>
         </form>
-      </section>
-    </div>}
-  </>;
 }

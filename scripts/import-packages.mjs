@@ -1,5 +1,8 @@
+import dotenv from "dotenv";
 import { readFileSync } from "node:fs";
 import { createClient } from "@supabase/supabase-js";
+
+dotenv.config({ path: [".env.local", ".env"] });
 
 const packagesPath = new URL("../data/packages.json", import.meta.url);
 
@@ -31,6 +34,7 @@ function packageRow(item) {
     resumen: item.resumen,
     descripcion: item.descripcion,
     incluye: item.incluye,
+    no_incluye: Array.isArray(item.no_incluye) ? item.no_incluye : [],
     itinerario: item.itinerario,
     duracion: item.duracion,
     imagen_url: item.imagen_url ?? null,

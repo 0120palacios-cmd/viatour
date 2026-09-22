@@ -1,8 +1,11 @@
 // Local owner utility: never import from src/ or expose through a route.
+import dotenv from "dotenv";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { createClient } from "@supabase/supabase-js";
+
+dotenv.config({ path: [".env.local", ".env"] });
 
 export function parseCsv(text: string): string[][] {
   const rows: string[][] = [];
