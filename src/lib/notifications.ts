@@ -1,5 +1,15 @@
 import "server-only";
+import * as Sentry from "@sentry/nextjs";
 import { siteConfig } from "@/lib/site-config";
+
+export function captureNotificationFailure(kind: string, reference: string, error: unknown) {
+  const message = error instanceof Error ? error.message : "Unknown notification error";
+  console.error("Notification email failed", { kind, reference, error: message });
+  Sentry?.captureException?.(error instanceof Error ? error : new Error(message), {
+    tags: { notification_kind: kind },
+    extra: { notification_reference: reference },
+  });
+}
 
 export async function sendResendEmail(input: { idempotencyKey: string; from: string; to: string[]; replyTo?: string; subject: string; text: string }) {
   if (!process.env.RESEND_API_KEY) throw new Error("Missing Resend configuration");
@@ -21,5 +31,5 @@ export async function notifySubmission(kind: "lead" | "review", id: string, fiel
       subject: kind === "lead" ? "Nueva solicitud de cotización — viatour" : "Nueva opinión pendiente de revisión — viatour",
       text: `Registro: ${id}\n\nDatos enviados:\n${JSON.stringify(fields, null, 2)}`,
     });
-  } catch (error) { console.error("Notification email failed", { kind, id, error: error instanceof Error ? error.message : "Unknown error" }); }
+  } catch (error) { captureNotificationFailure(kind, id, error); }
 }

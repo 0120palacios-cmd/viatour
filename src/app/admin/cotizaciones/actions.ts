@@ -6,6 +6,7 @@ import { requireAdmin } from "@/lib/admin";
 import { getAdminQuotation } from "@/lib/quotation-data";
 import { renderQuotationPdf } from "@/lib/quotation-pdf";
 import { clean, isQuotationStatus, validUuid, validateQuotationFields } from "@/lib/quotation-validation";
+import { captureNotificationFailure } from "@/lib/notifications";
 import { siteConfig } from "@/lib/site-config";
 import { convertQuotationToReservation } from "@/app/admin/reservas/actions";
 
@@ -84,7 +85,7 @@ export async function sendQuotation(_: QuotationActionState, form: FormData): Pr
     });
     if (!response.ok) throw new Error(`Resend HTTP ${response.status}`);
   } catch (error) {
-    console.error("Quotation email failed", { quotationId: id, error: error instanceof Error ? error.message : "Unknown error" });
+    captureNotificationFailure("quotation", id, error);
     return { error: "No se pudo enviar el correo. La cotización se conservó sin cambios." };
   }
   const updated = await client.from("quotations").update({ estado: "enviada" }).eq("id", id).select("id").single();

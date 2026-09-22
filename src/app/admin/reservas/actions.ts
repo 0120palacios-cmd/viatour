@@ -9,6 +9,7 @@ import { invoiceStatuses, paymentMethods, reservationStatuses } from "@/lib/rese
 import { validUuid } from "@/lib/quotation-validation";
 import { renderInvoicePdf } from "@/lib/invoice-pdf";
 import { siteConfig } from "@/lib/site-config";
+import { captureNotificationFailure } from "@/lib/notifications";
 
 export type ReservationActionState = { error?: string; success?: string; reservationId?: string };
 export type InvoiceActionState = { error?: string; success?: string; whatsappUrl?: string; invoiceId?: string };
@@ -164,7 +165,7 @@ export async function sendInvoice(_: InvoiceActionState, form: FormData): Promis
     });
     if (!response.ok) throw new Error(`Resend HTTP ${response.status}`);
   } catch (error) {
-    console.error("Invoice email failed", { invoiceId: id, error: error instanceof Error ? error.message : "Unknown error" });
+    captureNotificationFailure("invoice", id, error);
     return { error: "No se pudo enviar el correo. La factura se conservó sin cambios." };
   }
   const updated = await client.from("invoices").update({ estado: "emitida" }).eq("id", id).select("id,reservation_id").single();

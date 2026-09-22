@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getPortalTickets } from "@/lib/portal-data";
 import { clientIP } from "@/lib/public-security";
 import { portalCookieName, verifyPortalCookie } from "@/lib/portal";
-import { sendResendEmail } from "@/lib/notifications";
+import { captureNotificationFailure, sendResendEmail } from "@/lib/notifications";
 import { siteConfig } from "@/lib/site-config";
 
 export const runtime = "nodejs";
@@ -41,8 +41,9 @@ export async function POST(request: Request) {
     const reservation = await client.from("reservations").select("codigo").eq("id", reservationId).maybeSingle();
     try {
       await sendResendEmail({ idempotencyKey: `support-ticket/${inserted.data.id}`, from: siteConfig.supportEmail, to: [siteConfig.supportEmail], subject: `Nueva solicitud de soporte | ${reservation.data?.codigo ?? "reserva"}`, text: `Reserva: ${reservation.data?.codigo ?? reservationId}\nAsunto: ${asunto}\n\n${mensaje}` });
-    } catch {
+    } catch (error) {
       // La solicitud ya quedó guardada; el equipo puede verla en el panel privado.
+      captureNotificationFailure("support_ticket", String(inserted.data.id), error);
     }
     return Response.json({ ok: true }, { headers: { "Cache-Control": "no-store" } });
   } catch {

@@ -1,0 +1,35 @@
+name: Supabase backup
+
+on:
+  # Conservative daily schedule; run manually when a pre-launch snapshot is needed.
+  schedule:
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # Required repository secret: SUPABASE_DB_URL, the direct Postgres connection URL
+      # for the Supabase project. Never commit this value or echo it in workflow logs.
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+    steps:
+      - name: Check backup secret
+        shell: bash
+        run: test -n "$SUPABASE_DB_URL"
+      - name: Dump Supabase database
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p backup
+          pg_dump --no-owner --no-privileges --format=custom \
+            --file="backup/supabase-${GITHUB_RUN_ID}.dump" \
+            "$SUPABASE_DB_URL"
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-backup-${{ github.run_id }}
+          path: backup/*.dump
+          if-no-files-found: error
+          retention-days: 14

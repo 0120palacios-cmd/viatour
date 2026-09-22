@@ -4,6 +4,8 @@ import { defaultLocale } from "@/i18n/config";
 
 export async function middleware(request: NextRequest) {
   const originalPathname = request.nextUrl.pathname;
+  // Uptime monitors must be able to check this public, read-only route without a session.
+  if (originalPathname === "/api/health") return NextResponse.json({ ok: true, status: "ok" }, { headers: { "Cache-Control": "no-store" } });
   const isEnglish = originalPathname === "/en" || originalPathname.startsWith("/en/");
   const pathname = isEnglish ? originalPathname.slice(3) || "/" : originalPathname;
   const requestHeaders = new Headers(request.headers);

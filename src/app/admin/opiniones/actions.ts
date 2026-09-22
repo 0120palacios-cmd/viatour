@@ -3,7 +3,7 @@
 import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin";
-import { sendResendEmail } from "@/lib/notifications";
+import { captureNotificationFailure, sendResendEmail } from "@/lib/notifications";
 import { siteConfig } from "@/lib/site-config";
 
 export type InvitationActionState = { error?: string; success?: string };
@@ -39,7 +39,7 @@ export async function sendReviewInvitation(_: InvitationActionState, form: FormD
       text: `Estimado/a ${nombre}:\n\nNos gustaría conocer su experiencia de viaje. Puede compartir su opinión en el siguiente enlace:\n\n${link.toString()}\n\nSu opinión será revisada antes de publicarse.\n\nSaludos,\nviatour | asesores de viaje`,
     });
   } catch (error) {
-    console.error("Review invitation email failed", { invitationId: invitation.id, error: error instanceof Error ? error.message : "Unknown error" });
+    captureNotificationFailure("review_invitation", invitation.id, error);
     return { error: "La invitación quedó registrada, pero no se pudo enviar el correo." };
   }
   revalidatePath("/admin/opiniones");
