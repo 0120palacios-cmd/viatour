@@ -1,4 +1,7 @@
+import dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
+
+dotenv.config({ path: [".env.local", ".env"] });
 
 if (process.env.NODE_ENV === "production" || process.env.SEED_DEV !== "1") {
   throw new Error("Refusado: use únicamente NODE_ENV distinto de production y SEED_DEV=1.");

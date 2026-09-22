@@ -1,5 +1,8 @@
+import dotenv from "dotenv";
 import { readFileSync } from "node:fs";
 import { createClient } from "@supabase/supabase-js";
+
+dotenv.config({ path: [".env.local", ".env"] });
 
 const destinationsPath = new URL("../data/destinations.json", import.meta.url);
 
