@@ -132,5 +132,170 @@ La documentación y los requisitos los define cada país y pueden cambiar. Le re
 En viatour le ayudamos a armar su viaje europeo a la medida. Explore el [destino Europa](/destinos/europa) o nuestros circuitos como [España, Francia y Suiza](/paquetes/espana-francia-suiza) y [Quinceañeras por Europa](/paquetes/quinceaneras-por-europa).
 
 ¿Sueña con Europa? [Cotice con nosotros](/contacto) y lo hacemos realidad.`
+  },
+  {
+    slug: "dubai-desde-honduras-guia",
+    titulo: "Dubái desde Honduras: guía práctica antes de su viaje",
+    categoria: "Guías de destino",
+    tipo: "guia",
+    autor: "viatour",
+    meta_titulo: "Viajar a Dubái desde Honduras | viatour",
+    meta_descripcion: "Guía para viajar a Dubái desde Honduras: mejor época, qué esperar, requisitos y consejos para disfrutar los Emiratos. Cotice con viatour.",
+    extracto: "Rascacielos, desierto y lujo: lo que el viajero hondureño debe saber antes de viajar a Dubái.",
+    destacado: false,
+    publicado: true,
+    orden: 4,
+    cuerpo: `Dubái combina modernidad, lujo y tradición como pocos destinos en el mundo. Para el viajero hondureño es un viaje de larga distancia que vale la pena planear con calma. Aquí le contamos lo esencial.
+
+### La mejor época para viajar
+
+La temporada ideal va de **noviembre a marzo**, cuando las temperaturas son agradables para recorrer la ciudad y el desierto. Los meses de verano son muy calurosos, aunque los espacios interiores siempre cuentan con aire acondicionado.
+
+### Qué esperar
+
+- Rascacielos icónicos como el Burj Khalifa y vistas espectaculares.
+- Safaris en el desierto con cena y espectáculos.
+- Centros comerciales de gran escala y zonas tradicionales como los zocos.
+- La posibilidad de combinar su viaje con Abu Dhabi.
+
+### Requisitos y consejos
+
+Verifique los requisitos de entrada actualizados en nuestra sección de [Requisitos de viaje](/requisitos) y con la autoridad oficial; la documentación válida es responsabilidad de cada viajero. Lleve ropa fresca y, al visitar sitios religiosos, vestimenta respetuosa. Como es un vuelo largo, conviene planear las conexiones con tiempo.
+
+### Cómo lo organizamos
+
+Descubra el [destino Dubái](/destinos/dubai) y nuestro paquete [Dubái y Abu Dhabi](/paquetes/dubai-abu-dhabi). [Cotice con nosotros](/contacto) y le preparamos el viaje a su medida.`
+  },
+  {
+    slug: "cartagena-y-colombia-mejor-temporada",
+    titulo: "Cartagena y Colombia: mejor temporada y consejos para su viaje",
+    categoria: "Guías de destino",
+    tipo: "guia",
+    autor: "Andrea Villeda",
+    meta_titulo: "Viajar a Cartagena y Colombia desde Honduras | viatour",
+    meta_descripcion: "Guía para viajar a Cartagena y Colombia desde Honduras: mejor temporada, qué hacer y consejos. Cotice su viaje con viatour.",
+    extracto: "La ciudad amurallada, playas e islas: cuándo ir y cómo aprovechar su viaje a Cartagena y Colombia.",
+    destacado: false,
+    publicado: true,
+    orden: 5,
+    cuerpo: `Cartagena de Indias es uno de los destinos más encantadores del Caribe, y Colombia ofrece mucho más para descubrir. Le contamos cómo planear su viaje.
+
+### La mejor temporada
+
+La temporada seca, de **diciembre a abril**, ofrece el clima más agradable, con menos lluvias. Es ideal para recorrer el centro histórico y disfrutar las playas e islas.
+
+### Qué hacer
+
+- Recorrer la ciudad amurallada y el Castillo de San Felipe.
+- Visitar las Islas del Rosario y Playa Blanca.
+- Disfrutar el atardecer en la bahía y la vida nocturna con una chiva rumbera.
+- Complementar con otras ciudades como Medellín o Bogotá.
+
+### Requisitos y consejos
+
+Verifique los requisitos de ingreso en nuestra sección de [Requisitos de viaje](/requisitos) y con la autoridad oficial. Lleve ropa ligera, protector solar y calzado cómodo para caminar por las calles empedradas.
+
+### Cómo lo organizamos
+
+Conozca el [destino Cartagena](/destinos/cartagena) y paquetes como [Cartagena y Panamá](/paquetes/cartagena-y-panama) o [Colombia: Bogotá, Medellín y Cartagena](/paquetes/colombia-bogota-medellin-cartagena). [Cotice con nosotros](/contacto).`
+  },
+  {
+    slug: "cruceros-desde-honduras-como-funcionan",
+    titulo: "Cruceros desde Honduras: cómo funcionan y qué incluyen",
+    categoria: "Consejos de viaje",
+    tipo: "guia",
+    autor: "Carlos Banegas",
+    meta_titulo: "Cruceros desde Honduras: guía completa | viatour",
+    meta_descripcion: "Guía de cruceros para viajeros de Honduras: cómo funcionan, qué incluyen, qué llevar y cómo elegir su ruta. Cotice con viatour.",
+    extracto: "Varias ciudades en un solo viaje: cómo funcionan los cruceros, qué incluyen y cómo elegir el suyo.",
+    destacado: false,
+    publicado: true,
+    orden: 6,
+    cuerpo: `Un crucero es una forma cómoda de conocer varios destinos sin hacer maletas cada día. Si nunca ha viajado en crucero, aquí le explicamos lo esencial.
+
+### Cómo funcionan
+
+Usted se embarca en un puerto de salida y el barco visita distintos puertos según la ruta. A bordo tiene alojamiento, comidas y entretenimiento incluidos, y en cada puerto puede bajar a conocer o tomar excursiones opcionales.
+
+### Qué suele incluir
+
+- Camarote según la categoría elegida.
+- Pensión completa a bordo y entretenimiento.
+- Actividades y espectáculos durante la navegación.
+
+Las **excursiones en puerto**, algunas bebidas premium y las propinas de a bordo suelen ser aparte.
+
+### Cómo elegir su crucero
+
+Piense en la **ruta** (Caribe, Mediterráneo, Alaska), la duración y la temporada. El Caribe es ideal de noviembre a abril; el Mediterráneo, de mayo a octubre.
+
+### Requisitos
+
+Verifique los requisitos de los puertos de su ruta en nuestra sección de [Requisitos de viaje](/requisitos). Le orientamos con gusto.
+
+### Cómo lo organizamos
+
+Explore el [destino Cruceros](/destinos/cruceros) y opciones como [Crucero por el Caribe](/paquetes/crucero-caribe) o [Crucero por el Mediterráneo](/paquetes/crucero-mediterraneo). [Cotice con nosotros](/contacto).`
+  },
+  {
+    slug: "cancun-o-punta-cana-cual-elegir",
+    titulo: "Cancún o Punta Cana: cómo elegir su destino de playa",
+    categoria: "Consejos de viaje",
+    tipo: "guia",
+    autor: "viatour",
+    meta_titulo: "Cancún o Punta Cana: cuál elegir | viatour",
+    meta_descripcion: "¿Cancún o Punta Cana? Comparamos ambos destinos de playa para viajeros de Honduras y le ayudamos a elegir. Cotice con viatour.",
+    extracto: "Dos paraísos del Caribe. Le ayudamos a decidir cuál se ajusta mejor a su viaje.",
+    destacado: false,
+    publicado: true,
+    orden: 7,
+    cuerpo: `Cancún y Punta Cana son dos de los destinos de playa más buscados por los viajeros hondureños. Ambos son excelentes; la elección depende de lo que busque.
+
+### Punta Cana
+
+Ideal si busca **descanso frente al mar** en un resort todo incluido, con playas amplias y un ambiente relajado. Perfecto para parejas, lunas de miel y familias que quieren desconectarse.
+
+### Cancún y la Riviera Maya
+
+Ideal si además de playa quiere **cultura y actividades**: cenotes, ruinas mayas como Chichén Itzá y Tulum, parques temáticos y vida nocturna. Muy completo para familias y grupos.
+
+### ¿Cuál elegir?
+
+- Busca solo playa y todo incluido: **Punta Cana**.
+- Quiere combinar playa con excursiones y cultura: **Cancún**.
+
+Ambos ofrecen su mejor clima de **diciembre a abril**. En cualquier caso, verifique los requisitos en nuestra sección de [Requisitos de viaje](/requisitos).
+
+### Cómo lo organizamos
+
+Vea [Punta Cana Todo Incluido](/paquetes/punta-cana-todo-incluido) y [Cancún y Riviera Maya Todo Incluido](/paquetes/cancun-riviera-maya-todo-incluido). [Cotice con nosotros](/contacto) y le ayudamos a decidir.`
+  },
+  {
+    slug: "a-donde-viajar-temporada-alta-honduras",
+    titulo: "A dónde viajar en temporada alta desde Honduras",
+    categoria: "Consejos de viaje",
+    tipo: "guia",
+    autor: "Andrea Villeda",
+    meta_titulo: "A dónde viajar en temporada alta desde Honduras | viatour",
+    meta_descripcion: "Ideas de destinos para Semana Santa, feriado y fin de año desde Honduras. Planee con tiempo y cotice su viaje con viatour.",
+    extracto: "Semana Santa, feriado y fin de año: ideas de destinos y por qué conviene planear con anticipación.",
+    destacado: false,
+    publicado: true,
+    orden: 8,
+    cuerpo: `En Honduras, las épocas de mayor movimiento para viajar son la Semana Santa, los feriados y el fin de año. Son fechas ideales para descansar, pero también las de mayor demanda, así que conviene planear con anticipación.
+
+### Ideas por temporada
+
+- **Semana Santa:** destinos de playa como Punta Cana, Cancún o Cartagena, donde el clima acompaña.
+- **Feriados largos:** escapadas más cortas a Panamá, San Andrés o un crucero.
+- **Fin de año:** viajes especiales como un tour por Europa o un destino de temporada festiva.
+
+### Por qué planear con tiempo
+
+En temporada alta, los vuelos y hoteles se llenan y los precios suben. Reservar con anticipación le da mejores opciones y más tranquilidad.
+
+### Cómo lo organizamos
+
+Explore todos nuestros [paquetes](/paquetes) y [destinos](/destinos). Si aún no sabe a dónde ir, use nuestra herramienta [Descubra su destino](/descubrir) o [cotice con nosotros](/contacto): le preparamos opciones a su medida.`
   }
 ];
