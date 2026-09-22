@@ -9,7 +9,8 @@ export async function POST(request: Request) {
   catch { return publicError(400, "Revise los datos de su solicitud."); }
   if (!await verifyTurnstile(request, raw.turnstileToken)) return publicError(400, "No se pudo verificar su solicitud. Inténtelo nuevamente.");
   const id = crypto.randomUUID(), fields = payload.fields;
-  const row = { id, servicio: payload.servicio, nombre: fields.Nombre || null, origen: fields.Origen || null, destino: fields.Destino || null, fechas: fields.Fechas || null, pasajeros: fields.Pasajeros || fields.Huéspedes || null, clase: fields.Clase || null, presupuesto: payload.formData.budget ? Number(payload.formData.budget) : null, moneda: payload.currency, notas: fields.Notas || null, payload, user_agent: request.headers.get("user-agent")?.slice(0, 512) || null };
+  const packagePassengers = payload.servicio === "Paquete" ? `Adultos: ${fields.Adultos}; niños: ${fields.Niños}` : null;
+  const row = { id, servicio: payload.servicio, nombre: fields.Nombre || null, origen: fields.Origen || null, destino: fields.Destino || null, fechas: fields.Fechas || null, pasajeros: fields.Pasajeros || fields.Huéspedes || packagePassengers, clase: fields.Clase || null, presupuesto: payload.formData.budget ? Number(payload.formData.budget) : null, moneda: payload.currency, notas: fields.Notas || null, payload, user_agent: request.headers.get("user-agent")?.slice(0, 512) || null };
   try {
     const { error } = await createAdminClient().from("leads").insert(row).abortSignal(AbortSignal.timeout(8000));
     if (error) { console.error("Lead insert failed", { id, code: error.code }); return publicError(502, "No se pudo guardar su solicitud."); }

@@ -82,7 +82,6 @@
   },
   "home": {
     "heroTitle": "Cotice con nosotros.",
-    "heroBody": "En viatour lo asesora una persona real, de principio a fin. Cuéntenos qué busca y le preparamos opciones a su medida: vuelos, hoteles, paquetes o un viaje completamente personalizado.",
     "howTitle": "Cómo funciona",
     "howIntro": "Planificar su viaje con asesoría personal puede ser sencillo.",
     "how1Title": "Cuéntenos qué busca",
@@ -259,6 +258,7 @@
     "reviewing": "Estamos revisando la información indicada.",
     "notice": "Aviso importante",
     "disclaimer": "Información referencial. Verifique siempre con la autoridad oficial.",
+    "lookupError": "No fue posible consultar los requisitos. Inténtelo nuevamente más tarde.",
     "resultFor": "Resultado para {destination}",
     "resultIntro": "Orientación referencial para un pasaporte hondureño en un viaje de turismo.",
     "visa": "Visa",
@@ -426,7 +426,28 @@
   "packagePage": {
     "includes": "Qué incluye",
     "itinerary": "Itinerario",
+    "included": "Incluye",
+    "notIncluded": "No incluye",
+    "detailsOnRequest": "Consulte los detalles con su asesor de viajes.",
+    "destinationInfo": "InformaciÃ³n del destino",
+    "relatedPackages": "Paquetes relacionados",
     "learnDestination": "Conozca más sobre {name}"
+  },
+  "packageQuote": {
+    "open": "Solicitar cotización",
+    "title": "Cuéntenos su plan de viaje",
+    "close": "Cerrar formulario",
+    "origin": "Origen (ciudad en Honduras)",
+    "destination": "Destino",
+    "dates": "Fechas aproximadas",
+    "datesHint": "Por ejemplo, entre julio y agosto",
+    "adults": "Adultos",
+    "children": "Niños",
+    "notes": "Notas",
+    "optional": "opcional",
+    "submit": "Continuar por WhatsApp",
+    "sending": "Guardando solicitud",
+    "error": "No se pudo guardar su solicitud. Inténtelo nuevamente."
   },
   "seo": {
     "home": { "title": "viatour | Agencia de viajes y asesoría desde Honduras", "description": "Agencia de viajes en Honduras para planificar vuelos, hoteles, paquetes y viajes a la medida con asesoría personal de viatour. Solicite su cotización por WhatsApp." },

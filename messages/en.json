@@ -81,8 +81,7 @@
     "unknown": "not selected"
   },
   "home": {
-    "heroTitle": "Request your quote.",
-    "heroBody": "At viatour, a real person advises you from beginning to end. Tell us what you are looking for and we will prepare options tailored to you: flights, hotels, packages or a completely personalized trip.",
+    "heroTitle": "Get a quote.",
     "howTitle": "How it works",
     "howIntro": "Planning your trip with personal advice can be simple.",
     "how1Title": "Tell us what you are looking for",
@@ -259,6 +258,7 @@
     "reviewing": "We are reviewing the information provided.",
     "notice": "Important notice",
     "disclaimer": "Reference information. Always verify with the official authority.",
+    "lookupError": "We could not check the requirements. Please try again later.",
     "resultFor": "Result for {destination}",
     "resultIntro": "Reference guidance for a Honduran passport on a tourist trip.",
     "visa": "Visa",
@@ -426,7 +426,28 @@
   "packagePage": {
     "includes": "What is included",
     "itinerary": "Itinerary",
-    "learnDestination": "Learn more about {name}"
+    "learnDestination": "Learn more about {name}",
+    "included": "Included",
+    "notIncluded": "Not included",
+    "detailsOnRequest": "Ask your travel advisor for details.",
+    "destinationInfo": "Destination information",
+    "relatedPackages": "Related packages"
+  },
+  "packageQuote": {
+    "open": "Request a quote",
+    "title": "Tell us about your travel plans",
+    "close": "Close form",
+    "origin": "Origin (city in Honduras)",
+    "destination": "Destination",
+    "dates": "Approximate dates",
+    "datesHint": "For example, between July and August",
+    "adults": "Adults",
+    "children": "Children",
+    "notes": "Notes",
+    "optional": "optional",
+    "submit": "Continue on WhatsApp",
+    "sending": "Saving request",
+    "error": "We could not save your request. Please try again."
   },
   "seo": {
     "home": { "title": "viatour | Travel agency and advice from Honduras", "description": "Travel agency in Honduras for flights, hotels, packages and custom trips with personal guidance from viatour. Request your quote on WhatsApp." },
