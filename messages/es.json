@@ -429,7 +429,8 @@
     "included": "Incluye",
     "notIncluded": "No incluye",
     "detailsOnRequest": "Consulte los detalles con su asesor de viajes.",
-    "destinationInfo": "InformaciÃ³n del destino",
+    "destinationInfo": "Información del destino",
+    "day": "Día",
     "relatedPackages": "Paquetes relacionados",
     "learnDestination": "Conozca más sobre {name}"
   },

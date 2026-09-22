@@ -31,6 +31,7 @@ function packageRow(item) {
     resumen: item.resumen,
     descripcion: item.descripcion,
     incluye: item.incluye,
+    no_incluye: Array.isArray(item.no_incluye) ? item.no_incluye : [],
     itinerario: item.itinerario,
     duracion: item.duracion,
     imagen_url: item.imagen_url ?? null,
