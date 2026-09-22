@@ -1,546 +1,1056 @@
- [
+[
   {
     "slug": "punta-cana-todo-incluido",
     "nombre": "Punta Cana Todo Incluido",
     "destino": "Punta Cana",
     "categoria": "Caribe",
-    "etiquetas": ["parejas", "familias"],
+    "etiquetas": [
+      "parejas",
+      "familias"
+    ],
     "resumen": "Resort 5★ frente al mar, todo incluido, en una de las mejores playas del Caribe.",
     "descripcion": "Despierte frente al mar Caribe, camine sobre arena blanca y descanse en un resort 5★ con todo incluido. La forma más sencilla de vivir Punta Cana.",
-    "incluye": ["4 noches en resort 5★ frente al mar o categoría similar", "Régimen todo incluido (comidas y bebidas)", "Traslados aeropuerto–hotel–aeropuerto", "Asistencia"],
+    "incluye": [
+      "4 noches en resort 5★ frente al mar o categoría similar",
+      "Régimen todo incluido (comidas y bebidas)",
+      "Traslados aeropuerto–hotel–aeropuerto",
+      "Asistencia"
+    ],
     "itinerario": "Llegada y traslado al resort.\nDías libres con todo incluido (comidas y bebidas).\nPresentación de bienvenida.\nTraslado de salida.",
     "duracion": "5 días / 4 noches",
     "imagen_url": "/destinos/punta-cana.jpg",
     "destacado": true,
     "publicado": true,
-    "orden": 1
+    "orden": 1,
+    "no_incluye": [
+      "Boleto aéreo desde Honduras (cotización personalizada)",
+      "Propinas",
+      "Gastos personales",
+      "Excursiones opcionales"
+    ]
   },
   {
     "slug": "cartagena-y-panama",
     "nombre": "Cartagena y Panamá",
     "destino": "Cartagena y Ciudad de Panamá",
     "categoria": "Caribe",
-    "etiquetas": ["parejas", "grupos"],
+    "etiquetas": [
+      "parejas",
+      "grupos"
+    ],
     "resumen": "Dos joyas en un viaje: la Cartagena amurallada y la Ciudad de Panamá con su Canal.",
     "descripcion": "Descubra el encanto colonial de Cartagena y la energía cosmopolita de Panamá, con murallas, atardeceres en la bahía y una visita al Canal, todo coordinado y con guías en español.",
-    "incluye": ["3 noches en Cartagena y 3 en Ciudad de Panamá (hoteles de categoría turística superior o similar)", "Traslados aeropuerto–hotel–aeropuerto en cada ciudad", "City tour de Cartagena con Castillo de San Felipe", "Chiva Rumbera", "Atardecer en catamarán", "City tour de Panamá con entrada al Canal", "Desayuno diario", "Guía de habla hispana en las excursiones", "Tarjeta de asistencia médica"],
+    "incluye": [
+      "3 noches en Cartagena y 3 en Ciudad de Panamá (hoteles de categoría turística superior o similar)",
+      "Traslados aeropuerto–hotel–aeropuerto en cada ciudad",
+      "City tour de Cartagena con Castillo de San Felipe",
+      "Chiva Rumbera",
+      "Atardecer en catamarán",
+      "City tour de Panamá con entrada al Canal",
+      "Desayuno diario",
+      "Guía de habla hispana en las excursiones",
+      "Tarjeta de asistencia médica"
+    ],
     "itinerario": "Día 1 — Cartagena. Recepción y traslado privado al hotel.\nDía 2 — Cartagena. City tour con entrada al Castillo de San Felipe. Por la noche, Chiva Rumbera.\nDía 3 — Cartagena. Atardecer por la bahía en catamarán, con barra libre seleccionada.\nDía 4 — Cartagena a Panamá. Traslado, vuelo y recepción en Ciudad de Panamá.\nDía 5 — Panamá. City tour (Casco Antiguo, Calzada de Amador) y visita al Canal de Panamá (Miraflores).\nDía 6 — Panamá. Día libre. Excursión opcional a San Blas.\nDía 7 — Traslado al aeropuerto y fin de los servicios.",
     "duracion": "7 días / 6 noches",
     "imagen_url": "/destinos/cartagena.jpg",
     "destacado": true,
     "publicado": true,
-    "orden": 2
+    "orden": 2,
+    "no_incluye": [
+      "Boleto aéreo desde Honduras (cotización personalizada)",
+      "Excursiones opcionales (p. ej. San Blas)",
+      "Comidas no indicadas",
+      "Propinas",
+      "Gastos personales",
+      "Impuestos locales pagaderos en destino"
+    ]
   },
   {
     "slug": "cancun-riviera-maya-todo-incluido",
     "nombre": "Cancún y Riviera Maya Todo Incluido",
     "destino": "Cancún",
     "categoria": "Caribe",
-    "etiquetas": ["familias", "parejas"],
+    "etiquetas": [
+      "familias",
+      "parejas"
+    ],
     "resumen": "Playas turquesa, resort todo incluido y cultura maya a un paso.",
     "descripcion": "Disfrute del Caribe mexicano en un resort frente al mar, con la opción de conocer cenotes, Chichén Itzá y la Riviera Maya. Un destino cómodo y completo para familias y parejas.",
-    "incluye": ["Alojamiento todo incluido", "Traslados aeropuerto–hotel–aeropuerto", "Asistencia"],
+    "incluye": [
+      "Alojamiento todo incluido",
+      "Traslados aeropuerto–hotel–aeropuerto",
+      "Asistencia"
+    ],
     "itinerario": "Llegada y traslado.\nDías libres en resort todo incluido.\nExcursión opcional a Chichén Itzá o Tulum.\nTraslado de salida.",
     "duracion": "5 días / 4 noches",
     "imagen_url": "/destinos/cancun.jpg",
     "destacado": true,
     "publicado": true,
-    "orden": 3
+    "orden": 3,
+    "no_incluye": [
+      "Boleto aéreo desde Honduras (cotización personalizada)",
+      "Excursiones opcionales",
+      "Propinas",
+      "Gastos personales"
+    ]
   },
   {
     "slug": "peru-cusco-machu-picchu",
     "nombre": "Perú Mágico: Cusco y Machu Picchu",
     "destino": "Perú",
     "categoria": "Suramérica",
-    "etiquetas": ["cultura", "bucket-list"],
+    "etiquetas": [
+      "cultura",
+      "bucket-list"
+    ],
     "resumen": "La ciudadela inca de Machu Picchu y el Valle Sagrado.",
     "descripcion": "Recorra Cusco, el Valle Sagrado y la maravilla del mundo Machu Picchu, con la mejor gastronomía de la región. Una experiencia cultural inolvidable.",
-    "incluye": ["Alojamiento con desayuno", "Tren y entradas a Machu Picchu", "Tours con guía en español", "Traslados"],
+    "incluye": [
+      "Alojamiento con desayuno",
+      "Tren y entradas a Machu Picchu",
+      "Tours con guía en español",
+      "Traslados"
+    ],
     "itinerario": "Lima.\nCusco y aclimatación.\nValle Sagrado.\nMachu Picchu.\nRegreso.",
     "duracion": "Consulte con su asesor",
     "imagen_url": null,
     "destacado": true,
     "publicado": true,
-    "orden": 4
+    "orden": 4,
+    "no_incluye": [
+      "Boleto aéreo desde Honduras (cotización personalizada)",
+      "Comidas no indicadas",
+      "Excursiones opcionales",
+      "Propinas",
+      "Gastos personales"
+    ]
   },
   {
     "slug": "dubai-abu-dhabi",
     "nombre": "Dubái y Abu Dhabi",
     "destino": "Dubái",
     "categoria": "Medio Oriente",
-    "etiquetas": ["lujo", "familias"],
+    "etiquetas": [
+      "lujo",
+      "familias"
+    ],
     "resumen": "Rascacielos, desierto y lujo en los Emiratos.",
     "descripcion": "Suba al Burj Khalifa, viva un safari en el desierto y descubra la Gran Mezquita de Abu Dhabi. Modernidad y tradición.",
-    "incluye": ["Alojamiento con desayuno", "Tours y safari en el desierto", "Traslados"],
+    "incluye": [
+      "Alojamiento con desayuno",
+      "Tours y safari en el desierto",
+      "Traslados"
+    ],
     "itinerario": "Dubái (city tour, Burj Khalifa).\nSafari en el desierto.\nAbu Dhabi.\nRegreso.",
     "duracion": "Consulte con su asesor",
     "imagen_url": "/destinos/dubai.jpg",
     "destacado": true,
     "publicado": true,
-    "orden": 5
+    "orden": 5,
+    "no_incluye": [
+      "Boleto aéreo desde Honduras (cotización personalizada)",
+      "Comidas no indicadas",
+      "Excursiones opcionales",
+      "Propinas",
+      "Gastos personales"
+    ]
   },
   {
     "slug": "espana-francia-suiza",
     "nombre": "España, Francia y Suiza",
     "destino": "España, Francia y Suiza",
     "categoria": "Europa",
-    "etiquetas": ["parejas", "grupos"],
+    "etiquetas": [
+      "parejas",
+      "grupos"
+    ],
     "resumen": "De Barcelona a los Alpes suizos, entre lagos, chocolate y paisajes de altura.",
     "descripcion": "Un recorrido que combina la Barcelona mediterránea, la Provenza francesa y los grandes paisajes suizos, con visitas emblemáticas y guía en español.",
-    "incluye": ["6 noches con desayuno buffet en hoteles 3★/4★ o categoría similar", "Guía en español, traslados, visitas y entradas indicadas", "Panorámica de Barcelona y Gerona", "Fábrica Cailler y Castillo de Chillón", "Teleférico a Glacier 3000", "Cena en Leysin"],
+    "incluye": [
+      "6 noches con desayuno buffet en hoteles 3★/4★ o categoría similar",
+      "Guía en español, traslados, visitas y entradas indicadas",
+      "Panorámica de Barcelona y Gerona",
+      "Fábrica Cailler y Castillo de Chillón",
+      "Teleférico a Glacier 3000",
+      "Cena en Leysin"
+    ],
     "itinerario": "Día 1 — Salida en vuelo con destino a Barcelona.\nDía 2 — Barcelona. Recepción y tiempo libre.\nDía 3 — Barcelona y Gerona.\nDía 4 — Arles, Carrières de Lumières y Chambéry.\nDía 5 — Ginebra, Gruyères y Leysin.\nDía 6 — Glacier 3000, Interlaken, Lucerna y Zúrich.\nDía 7 — Zúrich. Día libre.\nDía 8 — Traslado al aeropuerto.",
     "duracion": "8 días / 6 noches",
     "imagen_url": "/destinos/europa.jpg",
     "destacado": true,
     "publicado": true,
-    "orden": 6
+    "orden": 6,
+    "no_incluye": [
+      "Boleto aéreo desde Honduras (cotización personalizada)",
+      "Propinas para guía y chófer",
+      "Maleteros y bebidas no indicadas",
+      "Comidas no especificadas",
+      "Gastos personales"
+    ]
   },
   {
     "slug": "quinceaneras-por-europa",
     "nombre": "Quinceañeras por Europa",
     "destino": "España, Francia, Mónaco, Italia y Suiza",
     "categoria": "Europa",
-    "etiquetas": ["quinceaneras", "grupos"],
+    "etiquetas": [
+      "quinceaneras",
+      "grupos"
+    ],
     "resumen": "El gran tour europeo para celebrar los quince: de Madrid a París pasando por la Costa Azul e Italia.",
     "descripcion": "Una experiencia inolvidable por las capitales y ciudades más bellas de Europa, con guía en español, pensada para celebrar los quince años con toda la magia del viejo continente.",
-    "incluye": ["13 noches con desayuno en hoteles 3★/4★ o categoría similar", "Visitas y entradas donde el itinerario indica", "Guía en español durante toda la estancia", "Traslados"],
+    "incluye": [
+      "13 noches con desayuno en hoteles 3★/4★ o categoría similar",
+      "Visitas y entradas donde el itinerario indica",
+      "Guía en español durante toda la estancia",
+      "Traslados"
+    ],
     "itinerario": "Madrid, Toledo y flamenco opcional.\nZaragoza y Barcelona.\nCosta Azul, Niza y Mónaco.\nGénova, Venecia y Murano.\nFlorencia y Roma (Vaticano).\nPisa, Turín y Ginebra.\nParís, Versalles y Montmartre.",
     "duracion": "15 días / 13 noches",
     "imagen_url": "/destinos/europa.jpg",
     "destacado": true,
     "publicado": true,
-    "orden": 7
+    "orden": 7,
+    "no_incluye": [
+      "Boleto aéreo desde Honduras (cotización personalizada)",
+      "Propinas",
+      "Maleteros y bebidas",
+      "Comidas no especificadas",
+      "Gastos personales",
+      "Traslados adicionales"
+    ]
   },
   {
     "slug": "fin-de-ano-londres-belgica-amsterdam",
     "nombre": "Fin de Año en Londres con Bélgica y Ámsterdam",
     "destino": "Reino Unido, Bélgica y Países Bajos",
     "categoria": "Europa",
-    "etiquetas": ["grupos", "parejas"],
+    "etiquetas": [
+      "grupos",
+      "parejas"
+    ],
     "resumen": "Reciba el Año Nuevo en Londres y descubra Brujas, Gante y Ámsterdam.",
     "descripcion": "Un circuito festivo por tres países: la energía de Londres en Fin de Año, la magia medieval de Flandes y los canales de Ámsterdam, con guía en español durante toda la estancia.",
-    "incluye": ["6 noches con desayuno buffet en hoteles 3★/4★ o categoría similar", "Traslados", "Visitas y entradas donde el itinerario indica", "Cena de Fin de Año", "Guía en español"],
+    "incluye": [
+      "6 noches con desayuno buffet en hoteles 3★/4★ o categoría similar",
+      "Traslados",
+      "Visitas y entradas donde el itinerario indica",
+      "Cena de Fin de Año",
+      "Guía en español"
+    ],
     "itinerario": "Día 1 — Salida en vuelo internacional con destino a Londres.\nDía 2 — Londres. Llegada y tarde libre.\nDía 3 — Londres. Panorámica y paseo nocturno. Cena de Fin de Año.\nDía 4 — Londres. Día libre.\nDía 5 — Brujas y Gante (ferry Dover–Calais).\nDía 6 — Gante, La Haya y Ámsterdam.\nDía 7 — Ámsterdam. Visita guiada y tarde libre.\nDía 8 — Traslado al aeropuerto.",
     "duracion": "8 días / 6 noches",
     "imagen_url": "/destinos/europa.jpg",
     "destacado": false,
     "publicado": true,
-    "orden": 8
+    "orden": 8,
+    "no_incluye": [
+      "Boleto aéreo desde Honduras (cotización personalizada)",
+      "Propinas para guía y chófer",
+      "Maleteros",
+      "Bebidas (excepto agua en las cenas)",
+      "Comidas no especificadas",
+      "Gastos personales",
+      "Traslados adicionales"
+    ]
   },
   {
     "slug": "italia-roma-florencia-venecia",
     "nombre": "Italia Clásica: Roma, Florencia y Venecia",
     "destino": "Italia",
     "categoria": "Europa",
-    "etiquetas": ["parejas", "cultura"],
+    "etiquetas": [
+      "parejas",
+      "cultura"
+    ],
     "resumen": "El arte de Florencia, los canales de Venecia y la Roma eterna.",
     "descripcion": "Un viaje por las tres joyas de Italia, con guías locales y las visitas imprescindibles. Historia, arte y gastronomía en cada parada.",
-    "incluye": ["Alojamiento con desayuno", "Guías locales", "Traslados y tren entre ciudades"],
+    "incluye": [
+      "Alojamiento con desayuno",
+      "Guías locales",
+      "Traslados y tren entre ciudades"
+    ],
     "itinerario": "Roma (Coliseo, Vaticano).\nFlorencia.\nVenecia.\nRegreso.",
     "duracion": "Consulte con su asesor",
     "imagen_url": null,
     "destacado": false,
     "publicado": true,
-    "orden": 9
+    "orden": 9,
+    "no_incluye": [
+      "Boleto aéreo desde Honduras (cotización personalizada)",
+      "Comidas no indicadas",
+      "Excursiones opcionales",
+      "Propinas",
+      "Gastos personales"
+    ]
   },
   {
     "slug": "espana-madrid-andalucia-barcelona",
     "nombre": "España al Completo: Madrid, Andalucía y Barcelona",
     "destino": "España",
     "categoria": "Europa",
-    "etiquetas": ["parejas", "familias"],
+    "etiquetas": [
+      "parejas",
+      "familias"
+    ],
     "resumen": "De la capital al sur andaluz y la modernista Barcelona.",
     "descripcion": "Un circuito completo por España con sus ciudades más emblemáticas, cultura, tapas y arquitectura única.",
-    "incluye": ["Alojamiento con desayuno", "Guía y visitas", "Traslados"],
+    "incluye": [
+      "Alojamiento con desayuno",
+      "Guía y visitas",
+      "Traslados"
+    ],
     "itinerario": "Madrid y Toledo.\nCórdoba, Sevilla y Granada.\nValencia.\nBarcelona.\nRegreso.",
     "duracion": "Consulte con su asesor",
     "imagen_url": null,
     "destacado": false,
     "publicado": true,
-    "orden": 10
+    "orden": 10,
+    "no_incluye": [
+      "Boleto aéreo desde Honduras (cotización personalizada)",
+      "Comidas no indicadas",
+      "Excursiones opcionales",
+      "Propinas",
+      "Gastos personales"
+    ]
   },
   {
     "slug": "paris-disneyland",
     "nombre": "París y Disneyland París",
     "destino": "París",
     "categoria": "Europa",
-    "etiquetas": ["familias", "parejas"],
+    "etiquetas": [
+      "familias",
+      "parejas"
+    ],
     "resumen": "La Ciudad Luz y la magia de Disneyland en un solo viaje.",
     "descripcion": "Combine los íconos de París con días de diversión en Disneyland París. Perfecto para familias y para quienes celebran una ocasión especial.",
-    "incluye": ["Alojamiento con desayuno", "Entradas a Disneyland París", "Traslados"],
+    "incluye": [
+      "Alojamiento con desayuno",
+      "Entradas a Disneyland París",
+      "Traslados"
+    ],
     "itinerario": "París y city tour.\nVersalles y Montmartre.\nDías en Disneyland París.\nRegreso.",
     "duracion": "Consulte con su asesor",
     "imagen_url": null,
     "destacado": false,
     "publicado": true,
-    "orden": 11
+    "orden": 11,
+    "no_incluye": [
+      "Boleto aéreo desde Honduras (cotización personalizada)",
+      "Comidas no indicadas",
+      "Gastos personales",
+      "Propinas"
+    ]
   },
   {
     "slug": "grecia-atenas-santorini",
     "nombre": "Grecia: Atenas y Santorini",
     "destino": "Grecia",
     "categoria": "Europa",
-    "etiquetas": ["parejas", "luna-de-miel"],
+    "etiquetas": [
+      "parejas",
+      "luna-de-miel"
+    ],
     "resumen": "La historia de Atenas y los atardeceres de Santorini.",
     "descripcion": "Recorra la Acrópolis y relájese en las islas del Egeo. Un clásico para parejas y lunas de miel.",
-    "incluye": ["Alojamiento con desayuno", "Traslados y tours", "Transporte entre islas"],
+    "incluye": [
+      "Alojamiento con desayuno",
+      "Traslados y tours",
+      "Transporte entre islas"
+    ],
     "itinerario": "Atenas y Acrópolis.\nFerry o vuelo a Santorini.\nDías de isla.\nRegreso.",
     "duracion": "Consulte con su asesor",
     "imagen_url": null,
     "destacado": false,
     "publicado": true,
-    "orden": 12
+    "orden": 12,
+    "no_incluye": [
+      "Boleto aéreo desde Honduras (cotización personalizada)",
+      "Comidas no indicadas",
+      "Excursiones opcionales",
+      "Propinas",
+      "Gastos personales"
+    ]
   },
   {
     "slug": "turquia-estambul-capadocia",
     "nombre": "Turquía: Estambul y Capadocia",
     "destino": "Turquía",
     "categoria": "Europa",
-    "etiquetas": ["cultura", "bucket-list"],
+    "etiquetas": [
+      "cultura",
+      "bucket-list"
+    ],
     "resumen": "Dos continentes, bazares milenarios y globos al amanecer.",
     "descripcion": "De la majestuosa Estambul a los paisajes de Capadocia y su vuelo en globo. Un viaje de contrastes inolvidable.",
-    "incluye": ["Alojamiento con desayuno", "Guía en español", "Vuelos internos y traslados"],
+    "incluye": [
+      "Alojamiento con desayuno",
+      "Guía en español",
+      "Vuelos internos y traslados"
+    ],
     "itinerario": "Estambul (Santa Sofía, Gran Bazar).\nVuelo a Capadocia.\nGlobo aerostático (opcional).\nRegreso.",
     "duracion": "Consulte con su asesor",
     "imagen_url": null,
     "destacado": false,
     "publicado": true,
-    "orden": 13
+    "orden": 13,
+    "no_incluye": [
+      "Boleto aéreo desde Honduras (cotización personalizada)",
+      "Vuelo en globo (opcional)",
+      "Comidas no indicadas",
+      "Propinas",
+      "Gastos personales"
+    ]
   },
   {
     "slug": "egipto-cairo-crucero-nilo",
     "nombre": "Egipto: El Cairo y Crucero por el Nilo",
     "destino": "Egipto",
     "categoria": "Medio Oriente",
-    "etiquetas": ["cultura", "bucket-list"],
+    "etiquetas": [
+      "cultura",
+      "bucket-list"
+    ],
     "resumen": "Pirámides de Giza y un crucero por el Nilo entre templos milenarios.",
     "descripcion": "Descubra la civilización de los faraones: la Esfinge, los templos de Luxor y Asuán y un crucero por el Nilo con todo organizado y guía en español.",
-    "incluye": ["Hoteles y crucero con pensión", "Guía egiptólogo en español", "Entradas principales", "Traslados"],
+    "incluye": [
+      "Hoteles y crucero con pensión",
+      "Guía egiptólogo en español",
+      "Entradas principales",
+      "Traslados"
+    ],
     "itinerario": "El Cairo y pirámides.\nVuelo a Luxor.\nCrucero por el Nilo (templos).\nAsuán.\nRegreso.",
     "duracion": "Consulte con su asesor",
     "imagen_url": null,
     "destacado": false,
     "publicado": true,
-    "orden": 14
+    "orden": 14,
+    "no_incluye": [
+      "Boleto aéreo desde Honduras (cotización personalizada)",
+      "Comidas no indicadas",
+      "Excursiones opcionales",
+      "Propinas",
+      "Gastos personales"
+    ]
   },
   {
     "slug": "tierra-santa-israel",
     "nombre": "Tierra Santa (Israel)",
     "destino": "Tierra Santa",
     "categoria": "Medio Oriente",
-    "etiquetas": ["tierra-santa", "religioso", "grupos"],
+    "etiquetas": [
+      "tierra-santa",
+      "religioso",
+      "grupos"
+    ],
     "resumen": "Un recorrido de fe por Jerusalén, Belén y Galilea.",
     "descripcion": "Camine por los lugares santos con acompañamiento y logística resuelta. Ideal para grupos parroquiales y familias.",
-    "incluye": ["Alojamiento con media pensión", "Guía en español", "Entradas y traslados"],
+    "incluye": [
+      "Alojamiento con media pensión",
+      "Guía en español",
+      "Entradas y traslados"
+    ],
     "itinerario": "Tel Aviv.\nGalilea (Nazaret, Mar de Galilea).\nBelén.\nJerusalén (Vía Dolorosa, Santo Sepulcro).\nRegreso.",
     "duracion": "Consulte con su asesor",
     "imagen_url": null,
     "destacado": false,
     "publicado": true,
-    "orden": 15
+    "orden": 15,
+    "no_incluye": [
+      "Boleto aéreo desde Honduras (cotización personalizada)",
+      "Comidas no indicadas",
+      "Propinas",
+      "Gastos personales"
+    ]
   },
   {
     "slug": "tailandia-bangkok-phuket",
     "nombre": "Tailandia: Bangkok y Phuket",
     "destino": "Tailandia",
     "categoria": "Asia",
-    "etiquetas": ["parejas", "exotico"],
+    "etiquetas": [
+      "parejas",
+      "exotico"
+    ],
     "resumen": "Templos dorados y playas paradisíacas del sudeste asiático.",
     "descripcion": "Combine la vibrante Bangkok con las playas de Phuket y sus islas. Exotismo, gastronomía y descanso.",
-    "incluye": ["Alojamiento con desayuno", "Tours", "Vuelos internos y traslados"],
+    "incluye": [
+      "Alojamiento con desayuno",
+      "Tours",
+      "Vuelos internos y traslados"
+    ],
     "itinerario": "Bangkok (templos, mercados).\nVuelo a Phuket.\nIslas (Phi Phi).\nRegreso.",
     "duracion": "Consulte con su asesor",
     "imagen_url": null,
     "destacado": false,
     "publicado": true,
-    "orden": 16
+    "orden": 16,
+    "no_incluye": [
+      "Boleto aéreo desde Honduras (cotización personalizada)",
+      "Comidas no indicadas",
+      "Excursiones opcionales",
+      "Propinas",
+      "Gastos personales"
+    ]
   },
   {
     "slug": "japon-tokio-kioto-osaka",
     "nombre": "Japón Esencial: Tokio, Kioto y Osaka",
     "destino": "Japón",
     "categoria": "Asia",
-    "etiquetas": ["cultura", "bucket-list"],
+    "etiquetas": [
+      "cultura",
+      "bucket-list"
+    ],
     "resumen": "Tradición milenaria y tecnología de vanguardia.",
     "descripcion": "De los templos de Kioto a las luces de Tokio, un viaje por el Japón imprescindible con tren bala incluido.",
-    "incluye": ["Alojamiento con desayuno", "Japan Rail (tramos)", "Tours", "Traslados"],
+    "incluye": [
+      "Alojamiento con desayuno",
+      "Japan Rail (tramos)",
+      "Tours",
+      "Traslados"
+    ],
     "itinerario": "Tokio.\nMonte Fuji.\nKioto y Nara.\nOsaka.\nRegreso.",
     "duracion": "Consulte con su asesor",
     "imagen_url": null,
     "destacado": false,
     "publicado": true,
-    "orden": 17
+    "orden": 17,
+    "no_incluye": [
+      "Boleto aéreo desde Honduras (cotización personalizada)",
+      "Comidas no indicadas",
+      "Excursiones opcionales",
+      "Propinas",
+      "Gastos personales"
+    ]
   },
   {
     "slug": "bali-indonesia",
     "nombre": "Bali, Indonesia",
     "destino": "Bali",
     "categoria": "Asia",
-    "etiquetas": ["luna-de-miel", "exotico"],
+    "etiquetas": [
+      "luna-de-miel",
+      "exotico"
+    ],
     "resumen": "Templos, arrozales y playas para desconectar.",
     "descripcion": "La isla de los dioses ofrece bienestar, cultura y playas de ensueño. Ideal para lunas de miel y viajeros que buscan algo distinto.",
-    "incluye": ["Alojamiento con desayuno", "Tours", "Traslados"],
+    "incluye": [
+      "Alojamiento con desayuno",
+      "Tours",
+      "Traslados"
+    ],
     "itinerario": "Ubud (templos, arrozales).\nPlayas del sur.\nExperiencias de bienestar.\nRegreso.",
     "duracion": "Consulte con su asesor",
     "imagen_url": null,
     "destacado": false,
     "publicado": true,
-    "orden": 18
+    "orden": 18,
+    "no_incluye": [
+      "Boleto aéreo desde Honduras (cotización personalizada)",
+      "Comidas no indicadas",
+      "Excursiones opcionales",
+      "Propinas",
+      "Gastos personales"
+    ]
   },
   {
     "slug": "maldivas-luna-de-miel",
     "nombre": "Maldivas Luna de Miel",
     "destino": "Maldivas",
     "categoria": "Asia",
-    "etiquetas": ["luna-de-miel", "lujo"],
+    "etiquetas": [
+      "luna-de-miel",
+      "lujo"
+    ],
     "resumen": "Villas sobre el agua en el océano Índico.",
     "descripcion": "El destino de luna de miel por excelencia: aguas turquesa, villas privadas y total intimidad.",
-    "incluye": ["Villa con régimen seleccionado", "Traslados internos", "Detalle de luna de miel"],
+    "incluye": [
+      "Villa con régimen seleccionado",
+      "Traslados internos",
+      "Detalle de luna de miel"
+    ],
     "itinerario": "Traslado en hidroavión o lancha al resort.\nEstancia todo incluido.\nExperiencias para parejas.\nRegreso.",
     "duracion": "Consulte con su asesor",
     "imagen_url": null,
     "destacado": false,
     "publicado": true,
-    "orden": 19
+    "orden": 19,
+    "no_incluye": [
+      "Boleto aéreo desde Honduras (cotización personalizada)",
+      "Comidas no indicadas según régimen",
+      "Excursiones opcionales",
+      "Propinas",
+      "Gastos personales"
+    ]
   },
   {
     "slug": "punta-cana-luna-de-miel",
     "nombre": "Punta Cana Luna de Miel",
     "destino": "Punta Cana",
     "categoria": "Caribe",
-    "etiquetas": ["luna-de-miel"],
+    "etiquetas": [
+      "luna-de-miel"
+    ],
     "resumen": "Una escapada romántica todo incluido para recién casados.",
     "descripcion": "Resort de lujo frente al mar, cena romántica y detalles pensados para parejas. La forma más sencilla de comenzar su vida juntos frente al Caribe.",
-    "incluye": ["Alojamiento todo incluido categoría superior", "Traslados", "Detalle de luna de miel"],
+    "incluye": [
+      "Alojamiento todo incluido categoría superior",
+      "Traslados",
+      "Detalle de luna de miel"
+    ],
     "itinerario": "Llegada y recepción.\nEstancia romántica todo incluido.\nExperiencia especial para parejas.\nSalida.",
     "duracion": "Consulte con su asesor",
     "imagen_url": "/destinos/punta-cana.jpg",
     "destacado": false,
     "publicado": true,
-    "orden": 20
+    "orden": 20,
+    "no_incluye": [
+      "Boleto aéreo desde Honduras (cotización personalizada)",
+      "Propinas",
+      "Gastos personales",
+      "Excursiones opcionales"
+    ]
   },
   {
     "slug": "cartagena-all-inclusive",
     "nombre": "Cartagena All Inclusive (Bocagrande)",
     "destino": "Cartagena",
     "categoria": "Caribe",
-    "etiquetas": ["parejas", "grupos"],
+    "etiquetas": [
+      "parejas",
+      "grupos"
+    ],
     "resumen": "Hotel todo incluido frente a Bocagrande y cinco tours para vivir Cartagena.",
     "descripcion": "Unas vacaciones completas frente al mar Caribe: hotel todo incluido y las mejores experiencias de Cartagena ya organizadas, desde Playa Blanca hasta el atardecer en la bahía.",
-    "incluye": ["5 noches en hotel frente a Bocagrande, todo incluido (buffet y snacks) o categoría similar", "Traslados aeropuerto–hotel–aeropuerto", "Equipaje personal + maleta de 10 kg", "Tour a Playa Blanca (Barú) con almuerzo", "Tour a Islas del Rosario con entrada al Acuario", "Chiva Rumbera", "City Tour con Castillo de San Felipe", "Atardecer por la bahía"],
+    "incluye": [
+      "5 noches en hotel frente a Bocagrande, todo incluido (buffet y snacks) o categoría similar",
+      "Traslados aeropuerto–hotel–aeropuerto",
+      "Equipaje personal + maleta de 10 kg",
+      "Tour a Playa Blanca (Barú) con almuerzo",
+      "Tour a Islas del Rosario con entrada al Acuario",
+      "Chiva Rumbera",
+      "City Tour con Castillo de San Felipe",
+      "Atardecer por la bahía"
+    ],
     "itinerario": "Llegada y traslado.\nDías de estancia con los tours incluidos.\nTraslado de salida.",
     "duracion": "6 días / 5 noches",
     "imagen_url": "/destinos/cartagena.jpg",
     "destacado": false,
     "publicado": true,
-    "orden": 21
+    "orden": 21,
+    "no_incluye": [
+      "Boleto aéreo desde Honduras (cotización personalizada)",
+      "Propinas",
+      "Gastos personales",
+      "Comidas no indicadas"
+    ]
   },
   {
     "slug": "rio-de-janeiro-clasico",
     "nombre": "Río de Janeiro",
     "destino": "Río de Janeiro",
     "categoria": "Suramérica",
-    "etiquetas": ["parejas", "grupos"],
+    "etiquetas": [
+      "parejas",
+      "grupos"
+    ],
     "resumen": "El Cristo Redentor, el Pan de Azúcar y las playas de Copacabana e Ipanema.",
     "descripcion": "Conozca la Ciudad Maravillosa con lo esencial ya incluido y días libres para disfrutar sus playas y excursiones opcionales.",
-    "incluye": ["Traslados", "5 noches de alojamiento con desayuno", "1 almuerzo", "Excursión de día completo a Cristo Redentor y Pan de Azúcar con guía en español", "Tarjeta de asistencia médica"],
+    "incluye": [
+      "Traslados",
+      "5 noches de alojamiento con desayuno",
+      "1 almuerzo",
+      "Excursión de día completo a Cristo Redentor y Pan de Azúcar con guía en español",
+      "Tarjeta de asistencia médica"
+    ],
     "itinerario": "Día 1 — Salida en vuelo con destino a Río de Janeiro. Noche a bordo.\nDía 2 — Llegada y traslado al hotel.\nDía 3 — City tour: Cristo Redentor, panorámica, almuerzo y Pan de Azúcar.\nDía 4 — Día libre. Excursión opcional a Angra dos Reis.\nDía 5 — Día libre. Excursión opcional a la Favela da Rocinha.\nDía 6 — Día libre. Excursión opcional a Búzios.\nDía 7 — Traslado al aeropuerto.",
     "duracion": "7 días / 5 noches",
     "imagen_url": "/destinos/rio-de-janeiro.jpg",
     "destacado": false,
     "publicado": true,
-    "orden": 22
+    "orden": 22,
+    "no_incluye": [
+      "Boleto aéreo desde Honduras (cotización personalizada)",
+      "Excursiones opcionales",
+      "Propinas",
+      "Gastos personales",
+      "Comidas no indicadas"
+    ]
   },
   {
     "slug": "carnaval-de-rio",
     "nombre": "Carnaval de Río",
     "destino": "Río de Janeiro",
     "categoria": "Suramérica",
-    "etiquetas": ["grupos"],
+    "etiquetas": [
+      "grupos"
+    ],
     "resumen": "Viva el Carnaval de Río desde el Sambódromo, con entrada incluida.",
     "descripcion": "La fiesta más famosa del mundo, con alojamiento, traslados y entrada al Sambódromo ya coordinados para que solo se preocupe por disfrutar.",
-    "incluye": ["Traslados", "4 noches con desayuno", "Traslado hotel–Sambódromo–hotel", "Entrada en Grada (Sector 09) al Carnaval de Río", "Tarjeta de asistencia médica"],
+    "incluye": [
+      "Traslados",
+      "4 noches con desayuno",
+      "Traslado hotel–Sambódromo–hotel",
+      "Entrada en Grada (Sector 09) al Carnaval de Río",
+      "Tarjeta de asistencia médica"
+    ],
     "itinerario": "Día 1 — Salida en vuelo con destino a Río. Noche a bordo.\nDía 2 — Llegada, traslado y salida al Sambódromo para el Carnaval.\nDía 3 a 5 — Días libres.\nDía 6 — Traslado al aeropuerto.",
     "duracion": "6 días / 4 noches",
     "imagen_url": "/destinos/rio-de-janeiro.jpg",
     "destacado": false,
     "publicado": true,
-    "orden": 23
+    "orden": 23,
+    "no_incluye": [
+      "Boleto aéreo desde Honduras (cotización personalizada)",
+      "Alimentación fuera del hotel",
+      "Tours opcionales",
+      "Propinas",
+      "Gastos personales",
+      "Suplementos por early check-in o late check-out"
+    ]
   },
   {
     "slug": "buenos-aires-bariloche",
     "nombre": "Buenos Aires y Bariloche",
     "destino": "Argentina",
     "categoria": "Suramérica",
-    "etiquetas": ["parejas", "naturaleza"],
+    "etiquetas": [
+      "parejas",
+      "naturaleza"
+    ],
     "resumen": "El tango de Buenos Aires y los lagos de Bariloche.",
     "descripcion": "Combine la elegancia porteña con los paisajes de la Patagonia lacustre. Ciudad, naturaleza y buena mesa en un solo viaje.",
-    "incluye": ["Alojamiento con desayuno", "Tours principales", "Traslados internos"],
+    "incluye": [
+      "Alojamiento con desayuno",
+      "Tours principales",
+      "Traslados internos"
+    ],
     "itinerario": "Buenos Aires y city tour.\nShow de tango.\nVuelo a Bariloche.\nCircuito de lagos.\nRegreso.",
     "duracion": "Consulte con su asesor",
     "imagen_url": "/destinos/argentina.jpg",
     "destacado": false,
     "publicado": true,
-    "orden": 24
+    "orden": 24,
+    "no_incluye": [
+      "Boleto aéreo desde Honduras (cotización personalizada)",
+      "Comidas no indicadas",
+      "Excursiones opcionales",
+      "Propinas",
+      "Gastos personales"
+    ]
   },
   {
     "slug": "medellin-y-santa-marta",
     "nombre": "Colombia: Medellín y Santa Marta (Tayrona)",
     "destino": "Medellín y Santa Marta",
     "categoria": "Suramérica",
-    "etiquetas": ["parejas", "naturaleza"],
+    "etiquetas": [
+      "parejas",
+      "naturaleza"
+    ],
     "resumen": "La eterna primavera de Medellín y las playas del Parque Tayrona.",
     "descripcion": "Combine la creatividad de Medellín y Guatapé con la naturaleza del Caribe colombiano en Santa Marta y Playa Cristal, dentro del Parque Tayrona.",
-    "incluye": ["Equipaje permitido", "Traslados", "3 noches en Medellín con desayuno", "Excursión a Guatapé y Piedra del Peñol con almuerzo (sin entradas)", "3 noches en Santa Marta con desayuno", "Tour a Playa Cristal en el Parque Tayrona (sin almuerzo)", "e-SIM de cortesía (1 por reserva)", "Tarjeta de asistencia médica"],
+    "incluye": [
+      "Equipaje permitido",
+      "Traslados",
+      "3 noches en Medellín con desayuno",
+      "Excursión a Guatapé y Piedra del Peñol con almuerzo (sin entradas)",
+      "3 noches en Santa Marta con desayuno",
+      "Tour a Playa Cristal en el Parque Tayrona (sin almuerzo)",
+      "e-SIM de cortesía (1 por reserva)",
+      "Tarjeta de asistencia médica"
+    ],
     "itinerario": "Día 1 — Medellín. Recepción y traslado.\nDía 2 — Medellín. City tour.\nDía 3 — Guatapé. Excursión con almuerzo.\nDía 4 — Santa Marta. Traslado y vuelo.\nDía 5 — Playa Cristal (Parque Tayrona).\nDía 6 — Santa Marta. Día libre.\nDía 7 — Traslado al aeropuerto.",
     "duracion": "7 días / 6 noches",
     "imagen_url": null,
     "destacado": false,
     "publicado": true,
-    "orden": 25
+    "orden": 25,
+    "no_incluye": [
+      "Boleto aéreo desde Honduras (cotización personalizada)",
+      "Bebidas en el almuerzo",
+      "Entrada a la Piedra del Peñol (se paga en taquilla)",
+      "Excursiones opcionales",
+      "Propinas",
+      "Gastos personales",
+      "Suplementos por early check-in o late check-out"
+    ]
   },
   {
     "slug": "medellin-y-san-andres",
     "nombre": "Medellín y San Andrés",
     "destino": "Medellín y San Andrés",
     "categoria": "Suramérica",
-    "etiquetas": ["parejas", "familias"],
+    "etiquetas": [
+      "parejas",
+      "familias"
+    ],
     "resumen": "La ciudad de la eterna primavera y el mar de siete colores de San Andrés.",
     "descripcion": "Combine la vibrante Medellín con el Caribe de San Andrés y sus cayos de aguas cristalinas, con vuelo interno incluido.",
-    "incluye": ["Vuelo interno Medellín–San Andrés", "Traslados", "Noches de alojamiento en Medellín y San Andrés con desayuno", "Cenas en el hotel en San Andrés", "Tarjeta de asistencia médica"],
+    "incluye": [
+      "Vuelo interno Medellín–San Andrés",
+      "Traslados",
+      "Noches de alojamiento en Medellín y San Andrés con desayuno",
+      "Cenas en el hotel en San Andrés",
+      "Tarjeta de asistencia médica"
+    ],
     "itinerario": "Día 1 — Medellín. Recepción y traslado.\nDía 2 — Medellín. City tour.\nDía 3 — San Andrés. Vuelo interno y alojamiento.\nDía 4 — San Andrés. Día libre; opcional Johnny Cay. Cena en el hotel.\nDía 5 — San Andrés. Día libre; opcional vuelta a la isla. Cena en el hotel.\nDía 6 — Traslado al aeropuerto.",
     "duracion": "6 días / 5 noches",
     "imagen_url": null,
     "destacado": false,
     "publicado": true,
-    "orden": 26
+    "orden": 26,
+    "no_incluye": [
+      "Boleto aéreo desde Honduras (cotización personalizada)",
+      "Excursiones opcionales (Johnny Cay, Vuelta a la Isla)",
+      "Impuestos locales pagaderos en destino",
+      "Propinas",
+      "Gastos personales"
+    ]
   },
   {
     "slug": "colombia-bogota-medellin-cartagena",
     "nombre": "Colombia Completa: Bogotá, Medellín y Cartagena",
     "destino": "Colombia",
     "categoria": "Suramérica",
-    "etiquetas": ["parejas", "grupos"],
+    "etiquetas": [
+      "parejas",
+      "grupos"
+    ],
     "resumen": "Tres caras de Colombia: capital, eterna primavera y Caribe.",
     "descripcion": "De la altura de Bogotá a la calidez de Medellín y el encanto amurallado de Cartagena. Un recorrido completo y variado.",
-    "incluye": ["Alojamiento con desayuno", "Tours", "Vuelos internos y traslados"],
+    "incluye": [
+      "Alojamiento con desayuno",
+      "Tours",
+      "Vuelos internos y traslados"
+    ],
     "itinerario": "Bogotá (Monserrate).\nMedellín (Guatapé, Comuna 13).\nCartagena (ciudad amurallada).\nRegreso.",
     "duracion": "Consulte con su asesor",
     "imagen_url": "/destinos/cartagena.jpg",
     "destacado": false,
     "publicado": true,
-    "orden": 27
+    "orden": 27,
+    "no_incluye": [
+      "Boleto aéreo desde Honduras (cotización personalizada)",
+      "Comidas no indicadas",
+      "Excursiones opcionales",
+      "Propinas",
+      "Gastos personales"
+    ]
   },
   {
     "slug": "costa-rica-aventura",
     "nombre": "Costa Rica Aventura",
     "destino": "Costa Rica",
     "categoria": "Centroamérica",
-    "etiquetas": ["familias", "naturaleza"],
+    "etiquetas": [
+      "familias",
+      "naturaleza"
+    ],
     "resumen": "Volcanes, aguas termales y playas del Pacífico, sin visa.",
     "descripcion": "Naturaleza pura: el volcán Arenal, bosques nubosos y las playas de Manuel Antonio. Aventura cómoda y cercana.",
-    "incluye": ["Alojamiento con desayuno", "Tours", "Traslados"],
+    "incluye": [
+      "Alojamiento con desayuno",
+      "Tours",
+      "Traslados"
+    ],
     "itinerario": "Arenal (termales).\nMonteverde.\nManuel Antonio.\nRegreso.",
     "duracion": "Consulte con su asesor",
     "imagen_url": null,
     "destacado": false,
     "publicado": true,
-    "orden": 28
+    "orden": 28,
+    "no_incluye": [
+      "Boleto aéreo desde Honduras (cotización personalizada)",
+      "Comidas no indicadas",
+      "Entradas a parques no indicadas",
+      "Propinas",
+      "Gastos personales"
+    ]
   },
   {
     "slug": "marruecos-marrakech-desierto",
     "nombre": "Marruecos: Marrakech y el Desierto",
     "destino": "Marruecos",
     "categoria": "África",
-    "etiquetas": ["cultura", "aventura"],
+    "etiquetas": [
+      "cultura",
+      "aventura"
+    ],
     "resumen": "Medinas, zocos y una noche entre dunas.",
     "descripcion": "Piérdase en los colores de Marrakech y viva una noche en campamento en el desierto. Una aventura llena de contrastes.",
-    "incluye": ["Alojamiento", "Guía en español", "Tours y traslados"],
+    "incluye": [
+      "Alojamiento",
+      "Guía en español",
+      "Tours y traslados"
+    ],
     "itinerario": "Marrakech (medina, jardines).\nAlto Atlas.\nDesierto y campamento.\nRegreso.",
     "duracion": "Consulte con su asesor",
     "imagen_url": null,
     "destacado": false,
     "publicado": true,
-    "orden": 29
+    "orden": 29,
+    "no_incluye": [
+      "Boleto aéreo desde Honduras (cotización personalizada)",
+      "Comidas no indicadas",
+      "Excursiones opcionales",
+      "Propinas",
+      "Gastos personales"
+    ]
   },
   {
     "slug": "safari-kenia-tanzania",
     "nombre": "Safari en Kenia y Tanzania",
     "destino": "Kenia y Tanzania",
     "categoria": "África",
-    "etiquetas": ["aventura", "bucket-list"],
+    "etiquetas": [
+      "aventura",
+      "bucket-list"
+    ],
     "resumen": "La gran migración y los cinco grandes en su hábitat.",
     "descripcion": "Recorra el Masái Mara y el Serengeti en safaris fotográficos guiados. Una experiencia única en la naturaleza.",
-    "incluye": ["Lodges con pensión", "Safaris con guía", "Vuelos internos y traslados"],
+    "incluye": [
+      "Lodges con pensión",
+      "Safaris con guía",
+      "Vuelos internos y traslados"
+    ],
     "itinerario": "Nairobi.\nMasái Mara.\nSerengeti y Ngorongoro.\nRegreso.",
     "duracion": "Consulte con su asesor",
     "imagen_url": null,
     "destacado": false,
     "publicado": true,
-    "orden": 30
+    "orden": 30,
+    "no_incluye": [
+      "Boleto aéreo desde Honduras (cotización personalizada)",
+      "Visados y tasas de parques no indicadas",
+      "Bebidas",
+      "Propinas",
+      "Gastos personales"
+    ]
   },
   {
     "slug": "orlando-disney-universal",
     "nombre": "Orlando: Disney y Universal",
     "destino": "Orlando",
     "categoria": "Norteamérica",
-    "etiquetas": ["familias"],
+    "etiquetas": [
+      "familias"
+    ],
     "resumen": "Los mejores parques temáticos del mundo para toda la familia.",
     "descripcion": "Días de magia en Walt Disney World y aventura en Universal, con alojamiento y entradas coordinadas. El viaje familiar por excelencia. Requiere visa; le orientamos.",
-    "incluye": ["Alojamiento", "Entradas a parques (según elección)", "Traslados"],
+    "incluye": [
+      "Alojamiento",
+      "Entradas a parques (según elección)",
+      "Traslados"
+    ],
     "itinerario": "Días en parques Disney.\nDías en Universal.\nCompras.\nRegreso.",
     "duracion": "Consulte con su asesor",
     "imagen_url": null,
     "destacado": false,
     "publicado": true,
-    "orden": 31
+    "orden": 31,
+    "no_incluye": [
+      "Boleto aéreo desde Honduras (cotización personalizada)",
+      "Visa estadounidense (le orientamos)",
+      "Comidas no indicadas",
+      "Gastos personales",
+      "Propinas"
+    ]
   },
   {
     "slug": "nueva-york-city-break",
     "nombre": "Nueva York",
     "destino": "Nueva York",
     "categoria": "Norteamérica",
-    "etiquetas": ["parejas", "grupos"],
+    "etiquetas": [
+      "parejas",
+      "grupos"
+    ],
     "resumen": "La ciudad que nunca duerme: íconos, compras y espectáculos.",
     "descripcion": "Times Square, la Estatua de la Libertad, Central Park y Broadway. Un city break lleno de energía. Requiere visa; le orientamos.",
-    "incluye": ["Alojamiento", "City tour", "Traslados"],
+    "incluye": [
+      "Alojamiento",
+      "City tour",
+      "Traslados"
+    ],
     "itinerario": "City tour.\nAtracciones principales.\nDía libre de compras o espectáculos.\nRegreso.",
     "duracion": "Consulte con su asesor",
     "imagen_url": null,
     "destacado": false,
     "publicado": true,
-    "orden": 32
+    "orden": 32,
+    "no_incluye": [
+      "Boleto aéreo desde Honduras (cotización personalizada)",
+      "Visa estadounidense (le orientamos)",
+      "Comidas no indicadas",
+      "Excursiones opcionales",
+      "Gastos personales",
+      "Propinas"
+    ]
   },
   {
     "slug": "crucero-caribe",
     "nombre": "Crucero por el Caribe",
     "destino": "Crucero por el Caribe",
     "categoria": "Cruceros",
-    "etiquetas": ["cruceros", "familias", "parejas"],
+    "etiquetas": [
+      "cruceros",
+      "familias",
+      "parejas"
+    ],
     "resumen": "Varias islas del Caribe en un solo viaje, sin hacer maletas cada día.",
     "descripcion": "Navegue por el Caribe visitando distintos puertos, con alojamiento, comidas y entretenimiento a bordo incluidos.",
-    "incluye": ["Camarote seleccionado", "Pensión completa a bordo", "Entretenimiento a bordo"],
+    "incluye": [
+      "Camarote seleccionado",
+      "Pensión completa a bordo",
+      "Entretenimiento a bordo"
+    ],
     "itinerario": "Embarque.\nPuertos del Caribe (según ruta).\nDías de navegación.\nDesembarque.",
     "duracion": "Consulte con su asesor",
     "imagen_url": "/destinos/cruceros.jpg",
     "destacado": false,
     "publicado": true,
-    "orden": 33
+    "orden": 33,
+    "no_incluye": [
+      "Boleto aéreo desde Honduras (cotización personalizada)",
+      "Excursiones en puerto opcionales",
+      "Propinas de a bordo",
+      "Bebidas premium",
+      "Gastos personales"
+    ]
   },
   {
     "slug": "crucero-mediterraneo",
     "nombre": "Crucero por el Mediterráneo",
     "destino": "Crucero por el Mediterráneo",
     "categoria": "Cruceros",
-    "etiquetas": ["cruceros", "parejas", "cultura"],
+    "etiquetas": [
+      "cruceros",
+      "parejas",
+      "cultura"
+    ],
     "resumen": "Europa por mar: Italia, España, Francia y más en un solo viaje.",
     "descripcion": "Descubra las joyas del Mediterráneo desde el confort de un crucero, con puertos llenos de historia.",
-    "incluye": ["Camarote seleccionado", "Pensión completa a bordo", "Entretenimiento a bordo"],
+    "incluye": [
+      "Camarote seleccionado",
+      "Pensión completa a bordo",
+      "Entretenimiento a bordo"
+    ],
     "itinerario": "Embarque.\nPuertos (según ruta).\nDías de navegación.\nDesembarque.",
     "duracion": "Consulte con su asesor",
     "imagen_url": "/destinos/cruceros.jpg",
     "destacado": false,
     "publicado": true,
-    "orden": 34
+    "orden": 34,
+    "no_incluye": [
+      "Boleto aéreo desde Honduras (cotización personalizada)",
+      "Excursiones en puerto opcionales",
+      "Propinas de a bordo",
+      "Bebidas premium",
+      "Gastos personales"
+    ]
   }
 ]
