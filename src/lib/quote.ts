@@ -1,10 +1,14 @@
 import { trackEvent } from "@/lib/analytics";
 import { siteConfig } from "@/lib/site-config";
 
-export type QuotePayload = { turnstileToken?: string; website?: string; service: string; servicio?: string; fields: Record<string, string>; currency?: "USD" | "HNL"; formData?: Record<string, string> };
+export type QuotePayload = { turnstileToken?: string; website?: string; service: string; servicio?: string; locale?: "es" | "en"; fields: Record<string, string>; currency?: "USD" | "HNL"; formData?: Record<string, string> };
 
 // Copy pendiente de aprobación final
 export function composeQuote(payload: QuotePayload) {
+  if (payload.locale === "en" && payload.servicio === "Paquete") {
+    const labels: Record<string, string> = { Paquete: "Package", Origen: "Origin", Destino: "Destination", Fechas: "Dates", Adultos: "Adults", Niños: "Children", Notas: "Notes" };
+    return ["I would like to request a quote. Please advise me on these options.", "Service: Package", ...Object.entries(payload.fields).filter(([, value]) => value.trim()).map(([label, value]) => `${labels[label] ?? label}: ${value}`)].join("\n");
+  }
   return ["Me gustaría solicitar una cotización. Por favor, asesóreme con estas opciones.", `Servicio: ${payload.service}`,
     ...Object.entries(payload.fields).filter(([, value]) => value.trim()).map(([label, value]) => `${label}: ${value}`),
   ].join("\n");

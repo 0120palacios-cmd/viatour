@@ -25,8 +25,8 @@ function field(section: string, label: string) {
 
 function body(section: string, label: string, endLabel?: string) {
   const pattern = endLabel
-    ? `^${label}:\\n([\\s\\S]*?)(?=^${endLabel}:)`
-    : `^${label}:\\n([\\s\\S]*)`;
+    ? `^${label}:\\r?\\n([\\s\\S]*?)(?=^${endLabel}:)`
+    : `^${label}:\\r?\\n([\\s\\S]*)`;
   const match = section.match(new RegExp(pattern, "m"));
   if (!match) throw new Error(`Missing ${label} in city copy`);
   return match[1].trim().split(/\r?\n/).filter(Boolean);
