@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { RequirementsProvider, RequirementsQuery, RequirementsResult } from "./types";
+import { destinationCountryMap, normalizeDestination, regionDestinationKeys } from "./country-map";
 
 const endpoint = "https://visa-requirement.p.rapidapi.com/v2/visa/check";
 const host = "visa-requirement.p.rapidapi.com";
@@ -26,26 +27,11 @@ type TravelBuddyPayload = {
   meta?: { confidence?: unknown; is_demo?: unknown; data_mode?: unknown; generated_at?: unknown };
 };
 
-const destinationCodes: Record<string, string> = {
-  "punta cana": "DO",
-  "republica dominicana": "DO",
-  "dominican republic": "DO",
-  cartagena: "CO",
-  colombia: "CO",
-  dubai: "AE",
-  "emiratos arabes unidos": "AE",
-  uae: "AE",
-};
-
-function normalize(value: string) {
-  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
-}
-
 function countryCode(value: string, kind: "nationality" | "destination") {
   const trimmed = value.trim().toUpperCase();
   if (/^[A-Z]{2}$/.test(trimmed)) return trimmed;
-  if (kind === "nationality" && normalize(value) === "honduras") return "HN";
-  return destinationCodes[normalize(value)] || null;
+  if (kind === "nationality" && normalizeDestination(value) === "honduras") return "HN";
+  return kind === "destination" ? destinationCountryMap[normalizeDestination(value)] || null : null;
 }
 
 function text(value: unknown) {
@@ -119,7 +105,10 @@ export const travelBuddyProvider: RequirementsProvider = {
     const apiKey = process.env.RAPIDAPI_VISA_KEY;
     const passport = countryCode(query.nacionalidad, "nationality");
     const destination = countryCode(query.destino, "destination");
-    if (!apiKey || !passport || !destination) return { status: "unknown", provider: "travelbuddy" };
+    const normalizedDestination = normalizeDestination(query.destino);
+    if (regionDestinationKeys.has(normalizedDestination)) return { status: "region", provider: "travelbuddy" };
+    if (!destination) return { status: "default", provider: "travelbuddy" };
+    if (!apiKey || !passport) return { status: "unknown", provider: "travelbuddy" };
 
     try {
       const response = await fetch(endpoint, {
@@ -133,10 +122,11 @@ export const travelBuddyProvider: RequirementsProvider = {
         signal: AbortSignal.timeout(8000),
         cache: "no-store",
       });
-      if (!response.ok) return { status: "unknown", provider: "travelbuddy" };
-      return mapPayload((await response.json()) as TravelBuddyPayload, query);
+      if (!response.ok) return { status: "default", provider: "travelbuddy" };
+      const result = mapPayload((await response.json()) as TravelBuddyPayload, query);
+      return result.status === "unknown" ? { ...result, status: "default" } : result;
     } catch {
-      return { status: "unknown", provider: "travelbuddy" };
+      return { status: "default", provider: "travelbuddy" };
     }
   },
 };
