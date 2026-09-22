@@ -1,15 +1,6 @@
-import { pageMetadata } from "@/lib/seo";
+import type { Metadata } from "next";
+import { localizedPageMetadata } from "@/lib/seo";
 import { ServicePage } from "@/components/services/service-page";
 
-export const metadata = pageMetadata("/hoteles", "viatour | Hoteles para su viaje", "Reserve el hotel ideal para su viaje con la asesoría de viatour: le proponemos opciones según destino, fechas, huéspedes y presupuesto.");
-
-export default function Page() {
-  return <ServicePage
-    path="/hoteles"
-    breadcrumbLabel="Hoteles"
-    title="Hoteles en su destino"
-    intro="Reserve el hotel perfecto para su viaje. Le asesoramos según su destino, fechas, número de huéspedes y presupuesto, y le proponemos opciones que se ajustan a lo que busca."
-    defaultTab="hoteles"
-    help={["Seleccionamos hoteles según su presupuesto y ubicación.", "Le explicamos cada opción con claridad.", "Coordinamos su reserva por WhatsApp con una persona real."]}
-  />;
-}
+export function generateMetadata(): Promise<Metadata> { return localizedPageMetadata("/hoteles", "hotels"); }
+export default function Page() { return <ServicePage path="/hoteles" breadcrumbKey="hotels" titleKey="hotelsTitle" introKey="hotelsIntro" defaultTab="hoteles" helpKeys={["hotelsHelp1", "hotelsHelp2", "hotelsHelp3"]} />; }

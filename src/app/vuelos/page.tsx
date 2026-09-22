@@ -1,15 +1,6 @@
-import { pageMetadata } from "@/lib/seo";
+import type { Metadata } from "next";
+import { localizedPageMetadata } from "@/lib/seo";
 import { ServicePage } from "@/components/services/service-page";
 
-export const metadata = pageMetadata("/vuelos", "viatour | Vuelos desde Honduras", "Le asesoramos para encontrar y reservar el mejor vuelo desde Honduras: ida y vuelta, solo ida o multidestino, en la clase que prefiera. Cotice con nosotros.");
-
-export default function Page() {
-  return <ServicePage
-    path="/vuelos"
-    breadcrumbLabel="Vuelos"
-    title="Vuelos desde Honduras"
-    intro="En viatour le ayudamos a encontrar y reservar el vuelo ideal para su viaje: ida y vuelta, solo ida o multidestino, en la clase que prefiera. Cuéntenos su ruta y le preparamos opciones a su medida."
-    defaultTab="vuelos"
-    help={["Comparamos rutas y tarifas de distintas aerolíneas.", "Le asesoramos según su presupuesto, sus fechas y su clase preferida.", "Coordinamos todo por WhatsApp con una persona real."]}
-  />;
-}
+export function generateMetadata(): Promise<Metadata> { return localizedPageMetadata("/vuelos", "flights"); }
+export default function Page() { return <ServicePage path="/vuelos" breadcrumbKey="flights" titleKey="flightsTitle" introKey="flightsIntro" defaultTab="vuelos" helpKeys={["flightsHelp1", "flightsHelp2", "flightsHelp3"]} />; }

@@ -1,37 +1,18 @@
 "use client";
+
 import { Turnstile } from "@/components/turnstile";
 import { trackEvent } from "@/lib/analytics";
+import { useTranslations } from "next-intl";
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { captureLead, composeQuote } from "@/lib/quote";
 import { validateContact } from "@/lib/contact-validation";
 import { siteConfig } from "@/lib/site-config";
-// Copy funcional en borrador pendiente de aprobación.
-export function ContactForm() {
-  const [turnstileToken, setTurnstileToken] = useState("");
-  const [challenge, setChallenge] = useState(0);
-    const [errors, setErrors] = useState<Record<string, string>>({});
-    const [busy, setBusy] = useState(false);
-    const [status, setStatus] = useState("");
-    const [href, setHref] = useState("");
-    async function submit(e: FormEvent<HTMLFormElement>) { e.preventDefault(); if (busy)
-        return; const form = e.currentTarget; const { values, errors } = validateContact(Object.fromEntries(new FormData(form))); setErrors(errors); if (Object.keys(errors).length) {
-        form.querySelector<HTMLElement>('[name="' + Object.keys(errors)[0] + '"]')?.focus();
-        return;
-    } setBusy(true); setStatus(""); const payload = { turnstileToken, service: "Contacto", servicio: "contacto", fields: { Nombre: values.nombre, Email: values.email, Teléfono: values.telefono, Notas: values.mensaje }, formData: values }; try {
-        await captureLead(payload);
-        trackEvent("contact_submit", { service: "contacto", status: "saved" });
-        setHref('https://wa.me/' + siteConfig.whatsappNumber + '?text=' + encodeURIComponent(composeQuote(payload)));
-        setStatus("Su mensaje se ha guardado. Puede continuar por WhatsApp.");
-    }
-    catch {
-        setStatus("No se pudo guardar su mensaje. Inténtelo nuevamente.");
-    }
-    finally {
-        setBusy(false); setChallenge(n => n + 1);
-    } }
-    if (href)
-        return <div className="space-y-6 rounded-panel border bg-surface p-6"><p role="status">{status}</p><Button asChild variant="whatsapp"><a href={href} onClick={() => trackEvent("whatsapp_click", { service: "contacto" })}>Escríbanos por WhatsApp</a></Button></div>;
-    return <form onSubmit={submit} noValidate className="space-y-6" aria-busy={busy}><p className="t-small text-ink-soft">Los campos con * son obligatorios.</p><fieldset disabled={busy} className="space-y-6"><div hidden aria-hidden="true"><label htmlFor="contact-website">Sitio web</label><input id="contact-website" name="website" tabIndex={-1} autoComplete="off"/></div>{([['nombre', 'Nombre', 'text', 120], ['email', 'Correo electrónico', 'email', 254], ['telefono', 'Teléfono (opcional)', 'tel', 40], ['mensaje', 'Mensaje', 'textarea', 3000]] as const).map(([name, label, type, max]) => <div key={name} className="space-y-2"><label className="t-small block" htmlFor={'contact-' + name}>{label}{name !== "telefono" ? " *" : ""}</label>{type === "textarea" ? <textarea id={'contact-' + name} name={name} required rows={6} maxLength={max} className="t-body w-full resize-y rounded-btn border border-line bg-canvas px-3 py-2 focus-visible:border-brand aria-invalid:border-error" aria-invalid={!!errors[name]} aria-describedby={errors[name] ? 'contact-' + name + '-error' : undefined}/> : <Input id={'contact-' + name} name={name} type={type} required={name !== "telefono"} maxLength={max} autoComplete={name === "nombre" ? "name" : name === "telefono" ? "tel" : "email"} aria-invalid={!!errors[name]} aria-describedby={errors[name] ? 'contact-' + name + '-error' : undefined}/>} {errors[name] && <p id={'contact-' + name + '-error'} className="t-small text-error">{errors[name]}</p>}</div>)}<Turnstile onToken={setTurnstileToken} resetKey={challenge} /><Button type="submit" disabled={busy || !turnstileToken}>{busy ? "Guardando…" : "Enviar mensaje"}</Button></fieldset><p role="alert" className="text-error">{status}</p></form>;
+
+export function ContactForm() { const t = useTranslations("contact"); const [turnstileToken, setTurnstileToken] = useState(""); const [challenge, setChallenge] = useState(0); const [errors, setErrors] = useState<Record<string, string>>({}); const [busy, setBusy] = useState(false); const [status, setStatus] = useState(""); const [href, setHref] = useState(""); const errorMessages: Record<string, string> = { nombre: t("nameError"), email: t("emailError"), mensaje: t("messageError"), telefono: t("phoneError") };
+  async function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); if (busy) return; const form = event.currentTarget; const result = validateContact(Object.fromEntries(new FormData(form))); const localizedErrors = Object.fromEntries(Object.keys(result.errors).map(key => [key, errorMessages[key] || t("error")])); setErrors(localizedErrors); if (Object.keys(localizedErrors).length) { form.querySelector<HTMLElement>(`[name="${Object.keys(localizedErrors)[0]}"]`)?.focus(); return; } setBusy(true); setStatus(""); const payload = { turnstileToken, service: "Contacto", servicio: "contacto", fields: { Nombre: result.values.nombre, Email: result.values.email, Teléfono: result.values.telefono, Notas: result.values.mensaje }, formData: result.values }; try { await captureLead(payload); trackEvent("contact_submit", { service: "contacto", status: "saved" }); setHref(`https://wa.me/${siteConfig.whatsappNumber}?text=${encodeURIComponent(composeQuote(payload))}`); setStatus(t("saved")); } catch { setStatus(t("error")); } finally { setBusy(false); setChallenge(value => value + 1); } }
+  if (href) return <div className="space-y-6 rounded-panel border bg-surface p-6"><p role="status">{status}</p><Button asChild variant="whatsapp"><a href={href} onClick={() => trackEvent("whatsapp_click", { service: "contacto" })}>{t("whatsapp")}</a></Button></div>;
+  const fields = [{ name: "nombre", label: t("name"), type: "text", max: 120 }, { name: "email", label: t("email"), type: "email", max: 254 }, { name: "telefono", label: t("phone"), type: "tel", max: 40 }, { name: "mensaje", label: t("message"), type: "textarea", max: 3000 }] as const;
+  return <form onSubmit={submit} noValidate className="space-y-6" aria-busy={busy}><p className="t-small text-ink-soft">{t("requiredFields")}</p><fieldset disabled={busy} className="space-y-6"><div hidden aria-hidden="true"><label htmlFor="contact-website">{t("website")}</label><input id="contact-website" name="website" tabIndex={-1} autoComplete="off" /></div>{fields.map(({ name, label, type, max }) => <div key={name} className="space-y-2"><label className="t-small block" htmlFor={`contact-${name}`}>{label}{name !== "telefono" ? " *" : ""}</label>{type === "textarea" ? <textarea id={`contact-${name}`} name={name} required rows={6} maxLength={max} className="t-body w-full resize-y rounded-btn border border-line bg-canvas px-3 py-2 focus-visible:border-brand aria-invalid:border-error" aria-invalid={!!errors[name]} aria-describedby={errors[name] ? `contact-${name}-error` : undefined} /> : <Input id={`contact-${name}`} name={name} type={type} required={name !== "telefono"} maxLength={max} autoComplete={name === "nombre" ? "name" : name === "telefono" ? "tel" : "email"} aria-invalid={!!errors[name]} aria-describedby={errors[name] ? `contact-${name}-error` : undefined} />}{errors[name] && <p id={`contact-${name}-error`} className="t-small text-error">{errors[name]}</p>}</div>)}<Turnstile onToken={setTurnstileToken} resetKey={challenge} /><Button type="submit" disabled={busy || !turnstileToken}>{busy ? t("saving") : t("send")}</Button></fieldset>{status && <p role="alert" className="text-error">{status}</p>}</form>;
 }
