@@ -4,7 +4,7 @@ import { dirname, resolve } from 'node:path';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const packagesPath = resolve(root, 'data/packages.json');
-const updatesPath = resolve(root, 'data/itinerarios-batch1.json');
+const updatesPath = resolve(root, 'data/itinerarios-batch2.json');
 
 const packages = JSON.parse(await readFile(packagesPath, 'utf8'));
 const updates = JSON.parse(await readFile(updatesPath, 'utf8'));
