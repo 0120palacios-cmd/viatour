@@ -11,10 +11,14 @@
     "resumen": "Resort 5★ frente al mar, todo incluido, en una de las mejores playas del Caribe.",
     "descripcion": "Despierte frente al mar Caribe, camine sobre arena blanca y descanse en un resort 5★ con todo incluido. La forma más sencilla de vivir Punta Cana.",
     "incluye": [
-      "4 noches en resort 5★ frente al mar o categoría similar",
-      "Régimen todo incluido (comidas y bebidas)",
+      "4 noches de alojamiento en resort 5★ frente al mar (o categoría similar)",
+      "Régimen TODO INCLUIDO: desayuno, almuerzo y cena tipo buffet y à la carte",
+      "Bebidas ilimitadas: alcohólicas y no alcohólicas nacionales durante toda la estancia",
+      "Snacks y bocadillos disponibles durante el día",
+      "Actividades y entretenimiento del resort (piscinas, deportes acuáticos no motorizados, shows nocturnos)",
       "Traslados aeropuerto–hotel–aeropuerto",
-      "Asistencia"
+      "Impuestos hoteleros",
+      "Asistencia de nuestro equipo antes y durante el viaje"
     ],
     "itinerario": "Llegada y traslado al resort.\nDías libres con todo incluido (comidas y bebidas).\nPresentación de bienvenida.\nTraslado de salida.",
     "duracion": "5 días / 4 noches",
@@ -41,15 +45,16 @@
     "resumen": "Dos joyas en un viaje: la Cartagena amurallada y la Ciudad de Panamá con su Canal.",
     "descripcion": "Descubra el encanto colonial de Cartagena y la energía cosmopolita de Panamá, con murallas, atardeceres en la bahía y una visita al Canal, todo coordinado y con guías en español.",
     "incluye": [
-      "3 noches en Cartagena y 3 en Ciudad de Panamá (hoteles de categoría turística superior o similar)",
+      "3 noches en Cartagena y 3 noches en Ciudad de Panamá (hoteles de categoría turística superior o similar)",
+      "Desayuno diario incluido",
       "Traslados aeropuerto–hotel–aeropuerto en cada ciudad",
-      "City tour de Cartagena con Castillo de San Felipe",
-      "Chiva Rumbera",
-      "Atardecer en catamarán",
-      "City tour de Panamá con entrada al Canal",
-      "Desayuno diario",
+      "City tour de Cartagena con entrada al Castillo de San Felipe",
+      "Chiva Rumbera (recorrido nocturno en Cartagena)",
+      "Atardecer en catamarán por la bahía con barra libre seleccionada",
+      "City tour de Panamá con visita y entrada al Canal (Miraflores)",
       "Guía de habla hispana en las excursiones",
-      "Tarjeta de asistencia médica"
+      "Tarjeta de asistencia médica",
+      "Asistencia de nuestro equipo antes y durante el viaje"
     ],
     "itinerario": "Día 1 — Cartagena. Recepción y traslado privado al hotel.\nDía 2 — Cartagena. City tour con entrada al Castillo de San Felipe. Por la noche, Chiva Rumbera.\nDía 3 — Cartagena. Atardecer por la bahía en catamarán, con barra libre seleccionada.\nDía 4 — Cartagena a Panamá. Traslado, vuelo y recepción en Ciudad de Panamá.\nDía 5 — Panamá. City tour (Casco Antiguo, Calzada de Amador) y visita al Canal de Panamá (Miraflores).\nDía 6 — Panamá. Día libre. Excursión opcional a San Blas.\nDía 7 — Traslado al aeropuerto y fin de los servicios.",
     "duracion": "7 días / 6 noches",
@@ -78,9 +83,13 @@
     "resumen": "Playas turquesa, resort todo incluido y cultura maya a un paso.",
     "descripcion": "Disfrute del Caribe mexicano en un resort frente al mar, con la opción de conocer cenotes, Chichén Itzá y la Riviera Maya. Un destino cómodo y completo para familias y parejas.",
     "incluye": [
-      "Alojamiento todo incluido",
+      "Alojamiento en resort todo incluido frente al mar en la Riviera Maya (o similar)",
+      "Régimen TODO INCLUIDO: desayuno, almuerzo y cena (buffet y restaurantes à la carte)",
+      "Bebidas ilimitadas: alcohólicas y no alcohólicas nacionales",
+      "Snacks durante el día y entretenimiento del resort",
+      "Actividades del resort (piscinas, deportes acuáticos no motorizados, shows)",
       "Traslados aeropuerto–hotel–aeropuerto",
-      "Asistencia"
+      "Asistencia de nuestro equipo antes y durante el viaje"
     ],
     "itinerario": "Llegada y traslado.\nDías libres en resort todo incluido.\nExcursión opcional a Chichén Itzá o Tulum.\nTraslado de salida.",
     "duracion": "5 días / 4 noches",
@@ -107,10 +116,12 @@
     "resumen": "La ciudadela inca de Machu Picchu y el Valle Sagrado.",
     "descripcion": "Recorra Cusco, el Valle Sagrado y la maravilla del mundo Machu Picchu, con la mejor gastronomía de la región. Una experiencia cultural inolvidable.",
     "incluye": [
-      "Alojamiento con desayuno",
+      "Alojamiento con desayuno diario en Cusco y el Valle Sagrado",
       "Tren y entradas a Machu Picchu",
-      "Tours con guía en español",
-      "Traslados"
+      "Excursión guiada al Valle Sagrado y a la ciudadela de Machu Picchu",
+      "Traslados y transportes internos indicados",
+      "Guía de habla hispana en las visitas",
+      "Asistencia de nuestro equipo antes y durante el viaje"
     ],
     "itinerario": "Lima.\nCusco y aclimatación.\nValle Sagrado.\nMachu Picchu.\nRegreso.",
     "duracion": "Consulte con su asesor",
@@ -138,9 +149,12 @@
     "resumen": "Rascacielos, desierto y lujo en los Emiratos.",
     "descripcion": "Suba al Burj Khalifa, viva un safari en el desierto y descubra la Gran Mezquita de Abu Dhabi. Modernidad y tradición.",
     "incluye": [
-      "Alojamiento con desayuno",
-      "Tours y safari en el desierto",
-      "Traslados"
+      "Alojamiento con desayuno diario en Dubái",
+      "City tour de Dubái con parada fotográfica en el Burj Khalifa",
+      "Safari en el desierto con cena y espectáculo",
+      "Excursión a Abu Dhabi con visita a la Gran Mezquita",
+      "Traslados aeropuerto–hotel–aeropuerto",
+      "Asistencia de nuestro equipo antes y durante el viaje"
     ],
     "itinerario": "Dubái (city tour, Burj Khalifa).\nSafari en el desierto.\nAbu Dhabi.\nRegreso.",
     "duracion": "Consulte con su asesor",
@@ -168,12 +182,15 @@
     "resumen": "De Barcelona a los Alpes suizos, entre lagos, chocolate y paisajes de altura.",
     "descripcion": "Un recorrido que combina la Barcelona mediterránea, la Provenza francesa y los grandes paisajes suizos, con visitas emblemáticas y guía en español.",
     "incluye": [
-      "6 noches con desayuno buffet en hoteles 3★/4★ o categoría similar",
-      "Guía en español, traslados, visitas y entradas indicadas",
-      "Panorámica de Barcelona y Gerona",
-      "Fábrica Cailler y Castillo de Chillón",
-      "Teleférico a Glacier 3000",
-      "Cena en Leysin"
+      "6 noches con desayuno buffet en hoteles 3★/4★ (o similar)",
+      "Traslados y transporte en autocar durante el circuito",
+      "Guía de habla hispana durante todo el recorrido",
+      "Visita panorámica de Barcelona y recorrido por Gerona",
+      "Espectáculo Carrières de Lumières (o visita alternativa a Pont du Gard)",
+      "Visita a la fábrica de chocolate Cailler y al Castillo de Chillón",
+      "Subida en teleférico a Glacier 3000 (según clima)",
+      "Cena incluida en Leysin",
+      "Asistencia de nuestro equipo antes y durante el viaje"
     ],
     "itinerario": "Día 1 — Salida en vuelo con destino a Barcelona.\nDía 2 — Barcelona. Recepción y tiempo libre.\nDía 3 — Barcelona y Gerona.\nDía 4 — Arles, Carrières de Lumières y Chambéry.\nDía 5 — Ginebra, Gruyères y Leysin.\nDía 6 — Glacier 3000, Interlaken, Lucerna y Zúrich.\nDía 7 — Zúrich. Día libre.\nDía 8 — Traslado al aeropuerto.",
     "duracion": "8 días / 6 noches",
@@ -201,10 +218,13 @@
     "resumen": "El gran tour europeo para celebrar los quince: de Madrid a París pasando por la Costa Azul e Italia.",
     "descripcion": "Una experiencia inolvidable por las capitales y ciudades más bellas de Europa, con guía en español, pensada para celebrar los quince años con toda la magia del viejo continente.",
     "incluye": [
-      "13 noches con desayuno en hoteles 3★/4★ o categoría similar",
-      "Visitas y entradas donde el itinerario indica",
-      "Guía en español durante toda la estancia",
-      "Traslados"
+      "13 noches con desayuno en hoteles 3★/4★ (o similar)",
+      "Traslados y transporte en autocar durante todo el circuito",
+      "Guía de habla hispana durante toda la estancia",
+      "Visitas y entradas indicadas en el itinerario (Madrid, Toledo, Zaragoza, Barcelona, Costa Azul, Mónaco, Venecia, Florencia, Roma, Pisa, París y más)",
+      "Barco privado a la plaza de San Marcos y visita a una fábrica de cristal en Venecia",
+      "Programa especial pensado para la celebración de quince años",
+      "Asistencia de nuestro equipo antes y durante el viaje"
     ],
     "itinerario": "Madrid, Toledo y flamenco opcional.\nZaragoza y Barcelona.\nCosta Azul, Niza y Mónaco.\nGénova, Venecia y Murano.\nFlorencia y Roma (Vaticano).\nPisa, Turín y Ginebra.\nParís, Versalles y Montmartre.",
     "duracion": "15 días / 13 noches",
@@ -233,11 +253,14 @@
     "resumen": "Reciba el Año Nuevo en Londres y descubra Brujas, Gante y Ámsterdam.",
     "descripcion": "Un circuito festivo por tres países: la energía de Londres en Fin de Año, la magia medieval de Flandes y los canales de Ámsterdam, con guía en español durante toda la estancia.",
     "incluye": [
-      "6 noches con desayuno buffet en hoteles 3★/4★ o categoría similar",
-      "Traslados",
-      "Visitas y entradas donde el itinerario indica",
-      "Cena de Fin de Año",
-      "Guía en español"
+      "6 noches con desayuno buffet en hoteles 3★/4★ (o similar)",
+      "Traslados y transporte en autocar durante el circuito, incluida la travesía en ferry Dover–Calais",
+      "Guía de habla hispana durante todo el recorrido",
+      "Recorrido panorámico por Londres y paseo nocturno",
+      "Cena especial de Fin de Año",
+      "Visitas indicadas en Brujas, Gante, La Haya y Ámsterdam",
+      "Almuerzo incluido en La Haya",
+      "Asistencia de nuestro equipo antes y durante el viaje"
     ],
     "itinerario": "Día 1 — Salida en vuelo internacional con destino a Londres.\nDía 2 — Londres. Llegada y tarde libre.\nDía 3 — Londres. Panorámica y paseo nocturno. Cena de Fin de Año.\nDía 4 — Londres. Día libre.\nDía 5 — Brujas y Gante (ferry Dover–Calais).\nDía 6 — Gante, La Haya y Ámsterdam.\nDía 7 — Ámsterdam. Visita guiada y tarde libre.\nDía 8 — Traslado al aeropuerto.",
     "duracion": "8 días / 6 noches",
@@ -267,9 +290,11 @@
     "resumen": "El arte de Florencia, los canales de Venecia y la Roma eterna.",
     "descripcion": "Un viaje por las tres joyas de Italia, con guías locales y las visitas imprescindibles. Historia, arte y gastronomía en cada parada.",
     "incluye": [
-      "Alojamiento con desayuno",
-      "Guías locales",
-      "Traslados y tren entre ciudades"
+      "Alojamiento con desayuno diario en Roma, Florencia y Venecia",
+      "Trenes entre ciudades y traslados indicados",
+      "Visitas guiadas con guías locales (Coliseo y Vaticano en Roma; centro histórico de Florencia; San Marcos en Venecia)",
+      "Guía de habla hispana en las visitas indicadas",
+      "Asistencia de nuestro equipo antes y durante el viaje"
     ],
     "itinerario": "Roma (Coliseo, Vaticano).\nFlorencia.\nVenecia.\nRegreso.",
     "duracion": "Consulte con su asesor",
@@ -297,9 +322,11 @@
     "resumen": "De la capital al sur andaluz y la modernista Barcelona.",
     "descripcion": "Un circuito completo por España con sus ciudades más emblemáticas, cultura, tapas y arquitectura única.",
     "incluye": [
-      "Alojamiento con desayuno",
-      "Guía y visitas",
-      "Traslados"
+      "Alojamiento con desayuno diario durante el circuito por España",
+      "Transporte en autocar y traslados indicados",
+      "Guía de habla hispana durante el recorrido",
+      "Visitas indicadas en Madrid, Toledo, Andalucía (Córdoba, Sevilla, Granada), Valencia y Barcelona",
+      "Asistencia de nuestro equipo antes y durante el viaje"
     ],
     "itinerario": "Madrid y Toledo.\nCórdoba, Sevilla y Granada.\nValencia.\nBarcelona.\nRegreso.",
     "duracion": "Consulte con su asesor",
@@ -327,9 +354,11 @@
     "resumen": "La Ciudad Luz y la magia de Disneyland en un solo viaje.",
     "descripcion": "Combine los íconos de París con días de diversión en Disneyland París. Perfecto para familias y para quienes celebran una ocasión especial.",
     "incluye": [
-      "Alojamiento con desayuno",
-      "Entradas a Disneyland París",
-      "Traslados"
+      "Alojamiento con desayuno diario en París",
+      "Entradas a Disneyland París (según los días elegidos)",
+      "City tour de París y visitas indicadas (Versalles / Montmartre según itinerario)",
+      "Traslados aeropuerto–hotel–aeropuerto",
+      "Asistencia de nuestro equipo antes y durante el viaje"
     ],
     "itinerario": "París y city tour.\nVersalles y Montmartre.\nDías en Disneyland París.\nRegreso.",
     "duracion": "Consulte con su asesor",
@@ -356,9 +385,11 @@
     "resumen": "La historia de Atenas y los atardeceres de Santorini.",
     "descripcion": "Recorra la Acrópolis y relájese en las islas del Egeo. Un clásico para parejas y lunas de miel.",
     "incluye": [
-      "Alojamiento con desayuno",
-      "Traslados y tours",
-      "Transporte entre islas"
+      "Alojamiento con desayuno diario en Atenas y Santorini",
+      "Transporte entre islas (ferry o vuelo) y traslados indicados",
+      "Visita guiada de Atenas con la Acrópolis",
+      "Tiempo para disfrutar Santorini y sus atardeceres",
+      "Asistencia de nuestro equipo antes y durante el viaje"
     ],
     "itinerario": "Atenas y Acrópolis.\nFerry o vuelo a Santorini.\nDías de isla.\nRegreso.",
     "duracion": "Consulte con su asesor",
@@ -386,9 +417,11 @@
     "resumen": "Dos continentes, bazares milenarios y globos al amanecer.",
     "descripcion": "De la majestuosa Estambul a los paisajes de Capadocia y su vuelo en globo. Un viaje de contrastes inolvidable.",
     "incluye": [
-      "Alojamiento con desayuno",
-      "Guía en español",
-      "Vuelos internos y traslados"
+      "Alojamiento con desayuno diario en Estambul y Capadocia",
+      "Vuelos internos y traslados indicados",
+      "Visitas guiadas en Estambul (Santa Sofía, Gran Bazar) y en Capadocia",
+      "Guía de habla hispana en las visitas",
+      "Asistencia de nuestro equipo antes y durante el viaje"
     ],
     "itinerario": "Estambul (Santa Sofía, Gran Bazar).\nVuelo a Capadocia.\nGlobo aerostático (opcional).\nRegreso.",
     "duracion": "Consulte con su asesor",
@@ -416,10 +449,12 @@
     "resumen": "Pirámides de Giza y un crucero por el Nilo entre templos milenarios.",
     "descripcion": "Descubra la civilización de los faraones: la Esfinge, los templos de Luxor y Asuán y un crucero por el Nilo con todo organizado y guía en español.",
     "incluye": [
-      "Hoteles y crucero con pensión",
-      "Guía egiptólogo en español",
-      "Entradas principales",
-      "Traslados"
+      "Alojamiento en El Cairo y crucero por el Nilo con pensión a bordo",
+      "Vuelo interno El Cairo–Luxor y traslados indicados",
+      "Visitas guiadas a las pirámides de Giza, la Esfinge y los templos de Luxor y Asuán",
+      "Guía egiptólogo de habla hispana",
+      "Entradas principales incluidas según itinerario",
+      "Asistencia de nuestro equipo antes y durante el viaje"
     ],
     "itinerario": "El Cairo y pirámides.\nVuelo a Luxor.\nCrucero por el Nilo (templos).\nAsuán.\nRegreso.",
     "duracion": "Consulte con su asesor",
@@ -448,9 +483,11 @@
     "resumen": "Un recorrido de fe por Jerusalén, Belén y Galilea.",
     "descripcion": "Camine por los lugares santos con acompañamiento y logística resuelta. Ideal para grupos parroquiales y familias.",
     "incluye": [
-      "Alojamiento con media pensión",
-      "Guía en español",
-      "Entradas y traslados"
+      "Alojamiento con media pensión (desayuno y cena) durante el recorrido",
+      "Traslados y transporte durante el circuito",
+      "Guía de habla hispana en los lugares santos (Nazaret, Mar de Galilea, Belén, Jerusalén)",
+      "Entradas indicadas en el itinerario",
+      "Asistencia de nuestro equipo antes y durante el viaje"
     ],
     "itinerario": "Tel Aviv.\nGalilea (Nazaret, Mar de Galilea).\nBelén.\nJerusalén (Vía Dolorosa, Santo Sepulcro).\nRegreso.",
     "duracion": "Consulte con su asesor",
@@ -477,9 +514,11 @@
     "resumen": "Templos dorados y playas paradisíacas del sudeste asiático.",
     "descripcion": "Combine la vibrante Bangkok con las playas de Phuket y sus islas. Exotismo, gastronomía y descanso.",
     "incluye": [
-      "Alojamiento con desayuno",
-      "Tours",
-      "Vuelos internos y traslados"
+      "Alojamiento con desayuno diario en Bangkok y Phuket",
+      "Vuelo interno Bangkok–Phuket y traslados indicados",
+      "Visitas guiadas en Bangkok (templos y mercados) y excursión a las islas (Phi Phi)",
+      "Guía de habla hispana en las visitas indicadas",
+      "Asistencia de nuestro equipo antes y durante el viaje"
     ],
     "itinerario": "Bangkok (templos, mercados).\nVuelo a Phuket.\nIslas (Phi Phi).\nRegreso.",
     "duracion": "Consulte con su asesor",
@@ -507,10 +546,11 @@
     "resumen": "Tradición milenaria y tecnología de vanguardia.",
     "descripcion": "De los templos de Kioto a las luces de Tokio, un viaje por el Japón imprescindible con tren bala incluido.",
     "incluye": [
-      "Alojamiento con desayuno",
-      "Japan Rail (tramos)",
-      "Tours",
-      "Traslados"
+      "Alojamiento con desayuno diario en Tokio, Kioto y Osaka",
+      "Tren bala (tramos indicados) y traslados",
+      "Visitas guiadas en Tokio, Monte Fuji, Kioto y Nara",
+      "Guía de habla hispana en las visitas indicadas",
+      "Asistencia de nuestro equipo antes y durante el viaje"
     ],
     "itinerario": "Tokio.\nMonte Fuji.\nKioto y Nara.\nOsaka.\nRegreso.",
     "duracion": "Consulte con su asesor",
@@ -538,9 +578,11 @@
     "resumen": "Templos, arrozales y playas para desconectar.",
     "descripcion": "La isla de los dioses ofrece bienestar, cultura y playas de ensueño. Ideal para lunas de miel y viajeros que buscan algo distinto.",
     "incluye": [
-      "Alojamiento con desayuno",
-      "Tours",
-      "Traslados"
+      "Alojamiento con desayuno diario en Ubud y la zona de playas",
+      "Traslados y transporte durante las excursiones",
+      "Visitas a templos, arrozales y experiencias de bienestar",
+      "Guía de habla local en las excursiones indicadas",
+      "Asistencia de nuestro equipo antes y durante el viaje"
     ],
     "itinerario": "Ubud (templos, arrozales).\nPlayas del sur.\nExperiencias de bienestar.\nRegreso.",
     "duracion": "Consulte con su asesor",
@@ -568,9 +610,11 @@
     "resumen": "Villas sobre el agua en el océano Índico.",
     "descripcion": "El destino de luna de miel por excelencia: aguas turquesa, villas privadas y total intimidad.",
     "incluye": [
-      "Villa con régimen seleccionado",
-      "Traslados internos",
-      "Detalle de luna de miel"
+      "Alojamiento en villa (según categoría elegida) en resort de Maldivas",
+      "Régimen seleccionado (desayuno, media pensión o todo incluido, según reserva)",
+      "Traslado en hidroavión o lancha rápida desde el aeropuerto al resort",
+      "Detalle especial de luna de miel (según el resort)",
+      "Asistencia personalizada de nuestro equipo"
     ],
     "itinerario": "Traslado en hidroavión o lancha al resort.\nEstancia todo incluido.\nExperiencias para parejas.\nRegreso.",
     "duracion": "Consulte con su asesor",
@@ -597,9 +641,13 @@
     "resumen": "Una escapada romántica todo incluido para recién casados.",
     "descripcion": "Resort de lujo frente al mar, cena romántica y detalles pensados para parejas. La forma más sencilla de comenzar su vida juntos frente al Caribe.",
     "incluye": [
-      "Alojamiento todo incluido categoría superior",
-      "Traslados",
-      "Detalle de luna de miel"
+      "Alojamiento en resort de categoría superior frente al mar (o similar), en habitación para parejas",
+      "Régimen TODO INCLUIDO: comidas ilimitadas (buffet y à la carte)",
+      "Bebidas ilimitadas: alcohólicas y no alcohólicas nacionales",
+      "Detalle especial de luna de miel (según el resort: decoración, botella de bienvenida u similar)",
+      "Actividades y entretenimiento del resort",
+      "Traslados aeropuerto–hotel–aeropuerto",
+      "Asistencia personalizada de nuestro equipo"
     ],
     "itinerario": "Llegada y recepción.\nEstancia romántica todo incluido.\nExperiencia especial para parejas.\nSalida.",
     "duracion": "Consulte con su asesor",
@@ -626,14 +674,17 @@
     "resumen": "Hotel todo incluido frente a Bocagrande y cinco tours para vivir Cartagena.",
     "descripcion": "Unas vacaciones completas frente al mar Caribe: hotel todo incluido y las mejores experiencias de Cartagena ya organizadas, desde Playa Blanca hasta el atardecer en la bahía.",
     "incluye": [
-      "5 noches en hotel frente a Bocagrande, todo incluido (buffet y snacks) o categoría similar",
+      "5 noches en hotel frente a Bocagrande con régimen TODO INCLUIDO (o similar)",
+      "Alimentación tipo buffet: desayuno, almuerzo y cena, más snacks de mañana y tarde",
+      "Bebidas ilimitadas: alcohólicas y no alcohólicas nacionales durante la estancia",
       "Traslados aeropuerto–hotel–aeropuerto",
-      "Equipaje personal + maleta de 10 kg",
+      "Equipaje personal + una maleta de hasta 10 kg",
       "Tour a Playa Blanca (Barú) con almuerzo",
-      "Tour a Islas del Rosario con entrada al Acuario",
-      "Chiva Rumbera",
-      "City Tour con Castillo de San Felipe",
-      "Atardecer por la bahía"
+      "Tour a las Islas del Rosario con entrada al Acuario",
+      "Chiva Rumbera (recorrido nocturno)",
+      "City Tour con entrada al Castillo de San Felipe",
+      "Atardecer por la bahía",
+      "Asistencia de nuestro equipo antes y durante el viaje"
     ],
     "itinerario": "Llegada y traslado.\nDías de estancia con los tours incluidos.\nTraslado de salida.",
     "duracion": "6 días / 5 noches",
@@ -660,11 +711,14 @@
     "resumen": "El Cristo Redentor, el Pan de Azúcar y las playas de Copacabana e Ipanema.",
     "descripcion": "Conozca la Ciudad Maravillosa con lo esencial ya incluido y días libres para disfrutar sus playas y excursiones opcionales.",
     "incluye": [
-      "Traslados",
-      "5 noches de alojamiento con desayuno",
-      "1 almuerzo",
-      "Excursión de día completo a Cristo Redentor y Pan de Azúcar con guía en español",
-      "Tarjeta de asistencia médica"
+      "5 noches de alojamiento con desayuno diario",
+      "Traslados aeropuerto–hotel–aeropuerto",
+      "Excursión de día completo al Cristo Redentor (Corcovado) y al Pan de Azúcar en teleférico",
+      "Recorrido panorámico por la ciudad y las playas de Copacabana e Ipanema",
+      "1 almuerzo incluido durante la excursión",
+      "Guía de habla hispana en las visitas",
+      "Tarjeta de asistencia médica",
+      "Asistencia de nuestro equipo antes y durante el viaje"
     ],
     "itinerario": "Día 1 — Salida en vuelo con destino a Río de Janeiro. Noche a bordo.\nDía 2 — Llegada y traslado al hotel.\nDía 3 — City tour: Cristo Redentor, panorámica, almuerzo y Pan de Azúcar.\nDía 4 — Día libre. Excursión opcional a Angra dos Reis.\nDía 5 — Día libre. Excursión opcional a la Favela da Rocinha.\nDía 6 — Día libre. Excursión opcional a Búzios.\nDía 7 — Traslado al aeropuerto.",
     "duracion": "7 días / 5 noches",
@@ -691,11 +745,12 @@
     "resumen": "Viva el Carnaval de Río desde el Sambódromo, con entrada incluida.",
     "descripcion": "La fiesta más famosa del mundo, con alojamiento, traslados y entrada al Sambódromo ya coordinados para que solo se preocupe por disfrutar.",
     "incluye": [
-      "Traslados",
-      "4 noches con desayuno",
-      "Traslado hotel–Sambódromo–hotel",
-      "Entrada en Grada (Sector 09) al Carnaval de Río",
-      "Tarjeta de asistencia médica"
+      "4 noches de alojamiento con desayuno diario",
+      "Traslados aeropuerto–hotel–aeropuerto",
+      "Traslado hotel–Sambódromo–hotel la noche del Carnaval",
+      "Entrada en Grada (Sector 09) para vivir el desfile del Carnaval de Río",
+      "Tarjeta de asistencia médica",
+      "Asistencia de nuestro equipo antes y durante el viaje"
     ],
     "itinerario": "Día 1 — Salida en vuelo con destino a Río. Noche a bordo.\nDía 2 — Llegada, traslado y salida al Sambódromo para el Carnaval.\nDía 3 a 5 — Días libres.\nDía 6 — Traslado al aeropuerto.",
     "duracion": "6 días / 4 noches",
@@ -724,9 +779,12 @@
     "resumen": "El tango de Buenos Aires y los lagos de Bariloche.",
     "descripcion": "Combine la elegancia porteña con los paisajes de la Patagonia lacustre. Ciudad, naturaleza y buena mesa en un solo viaje.",
     "incluye": [
-      "Alojamiento con desayuno",
-      "Tours principales",
-      "Traslados internos"
+      "Alojamiento en Buenos Aires y Bariloche con desayuno diario",
+      "Vuelo interno Buenos Aires–Bariloche y traslados aeropuerto–hotel–aeropuerto",
+      "City tour de Buenos Aires y show de tango",
+      "Circuito de los lagos en Bariloche",
+      "Guía de habla hispana en las excursiones",
+      "Asistencia de nuestro equipo antes y durante el viaje"
     ],
     "itinerario": "Buenos Aires y city tour.\nShow de tango.\nVuelo a Bariloche.\nCircuito de lagos.\nRegreso.",
     "duracion": "Consulte con su asesor",
@@ -754,14 +812,14 @@
     "resumen": "La eterna primavera de Medellín y las playas del Parque Tayrona.",
     "descripcion": "Combine la creatividad de Medellín y Guatapé con la naturaleza del Caribe colombiano en Santa Marta y Playa Cristal, dentro del Parque Tayrona.",
     "incluye": [
-      "Equipaje permitido",
-      "Traslados",
-      "3 noches en Medellín con desayuno",
-      "Excursión a Guatapé y Piedra del Peñol con almuerzo (sin entradas)",
-      "3 noches en Santa Marta con desayuno",
-      "Tour a Playa Cristal en el Parque Tayrona (sin almuerzo)",
-      "e-SIM de cortesía (1 por reserva)",
-      "Tarjeta de asistencia médica"
+      "3 noches en Medellín y 3 noches en Santa Marta, con desayuno diario",
+      "Traslados aeropuerto–hotel–aeropuerto y vuelo interno Medellín–Santa Marta",
+      "Excursión de día completo a Guatapé y la Piedra del Peñol, con almuerzo",
+      "Tour a Playa Cristal en el Parque Nacional Tayrona",
+      "Guía de habla hispana en las excursiones",
+      "e-SIM de cortesía (1 por reserva) para mantenerse conectado",
+      "Tarjeta de asistencia médica",
+      "Asistencia de nuestro equipo antes y durante el viaje"
     ],
     "itinerario": "Día 1 — Medellín. Recepción y traslado.\nDía 2 — Medellín. City tour.\nDía 3 — Guatapé. Excursión con almuerzo.\nDía 4 — Santa Marta. Traslado y vuelo.\nDía 5 — Playa Cristal (Parque Tayrona).\nDía 6 — Santa Marta. Día libre.\nDía 7 — Traslado al aeropuerto.",
     "duracion": "7 días / 6 noches",
@@ -791,11 +849,13 @@
     "resumen": "La ciudad de la eterna primavera y el mar de siete colores de San Andrés.",
     "descripcion": "Combine la vibrante Medellín con el Caribe de San Andrés y sus cayos de aguas cristalinas, con vuelo interno incluido.",
     "incluye": [
+      "Alojamiento en Medellín y en San Andrés con desayuno diario",
       "Vuelo interno Medellín–San Andrés",
-      "Traslados",
-      "Noches de alojamiento en Medellín y San Andrés con desayuno",
-      "Cenas en el hotel en San Andrés",
-      "Tarjeta de asistencia médica"
+      "Traslados aeropuerto–hotel–aeropuerto en cada destino",
+      "Cenas incluidas en el hotel durante la estancia en San Andrés",
+      "City tour de Medellín",
+      "Tarjeta de asistencia médica",
+      "Asistencia de nuestro equipo antes y durante el viaje"
     ],
     "itinerario": "Día 1 — Medellín. Recepción y traslado.\nDía 2 — Medellín. City tour.\nDía 3 — San Andrés. Vuelo interno y alojamiento.\nDía 4 — San Andrés. Día libre; opcional Johnny Cay. Cena en el hotel.\nDía 5 — San Andrés. Día libre; opcional vuelta a la isla. Cena en el hotel.\nDía 6 — Traslado al aeropuerto.",
     "duracion": "6 días / 5 noches",
@@ -823,9 +883,11 @@
     "resumen": "Tres caras de Colombia: capital, eterna primavera y Caribe.",
     "descripcion": "De la altura de Bogotá a la calidez de Medellín y el encanto amurallado de Cartagena. Un recorrido completo y variado.",
     "incluye": [
-      "Alojamiento con desayuno",
-      "Tours",
-      "Vuelos internos y traslados"
+      "Alojamiento en Bogotá, Medellín y Cartagena con desayuno diario",
+      "Vuelos internos entre las ciudades y traslados aeropuerto–hotel–aeropuerto",
+      "City tour en cada ciudad (Monserrate en Bogotá; Comuna 13 y Guatapé en Medellín; ciudad amurallada en Cartagena)",
+      "Guía de habla hispana en las visitas",
+      "Asistencia de nuestro equipo antes y durante el viaje"
     ],
     "itinerario": "Bogotá (Monserrate).\nMedellín (Guatapé, Comuna 13).\nCartagena (ciudad amurallada).\nRegreso.",
     "duracion": "Consulte con su asesor",
@@ -853,9 +915,11 @@
     "resumen": "Volcanes, aguas termales y playas del Pacífico, sin visa.",
     "descripcion": "Naturaleza pura: el volcán Arenal, bosques nubosos y las playas de Manuel Antonio. Aventura cómoda y cercana.",
     "incluye": [
-      "Alojamiento con desayuno",
-      "Tours",
-      "Traslados"
+      "Alojamiento con desayuno diario en Arenal, Monteverde y Manuel Antonio",
+      "Traslados terrestres entre destinos y aeropuerto",
+      "Actividades de naturaleza incluidas (según itinerario): aguas termales en Arenal y visita al Parque Manuel Antonio",
+      "Guía de habla hispana en las excursiones indicadas",
+      "Asistencia de nuestro equipo antes y durante el viaje"
     ],
     "itinerario": "Arenal (termales).\nMonteverde.\nManuel Antonio.\nRegreso.",
     "duracion": "Consulte con su asesor",
@@ -883,9 +947,11 @@
     "resumen": "Medinas, zocos y una noche entre dunas.",
     "descripcion": "Piérdase en los colores de Marrakech y viva una noche en campamento en el desierto. Una aventura llena de contrastes.",
     "incluye": [
-      "Alojamiento",
-      "Guía en español",
-      "Tours y traslados"
+      "Alojamiento en Marrakech y una noche en campamento en el desierto",
+      "Transporte durante el recorrido y traslados",
+      "Visitas guiadas en Marrakech (medina, jardines) y experiencia en el desierto",
+      "Guía de habla hispana en las visitas indicadas",
+      "Asistencia de nuestro equipo antes y durante el viaje"
     ],
     "itinerario": "Marrakech (medina, jardines).\nAlto Atlas.\nDesierto y campamento.\nRegreso.",
     "duracion": "Consulte con su asesor",
@@ -913,9 +979,11 @@
     "resumen": "La gran migración y los cinco grandes en su hábitat.",
     "descripcion": "Recorra el Masái Mara y el Serengeti en safaris fotográficos guiados. Una experiencia única en la naturaleza.",
     "incluye": [
-      "Lodges con pensión",
-      "Safaris con guía",
-      "Vuelos internos y traslados"
+      "Alojamiento en lodges con pensión durante el safari",
+      "Safaris fotográficos con guía en el Masái Mara, Serengeti y Ngorongoro",
+      "Vuelos internos y transporte en vehículo 4x4",
+      "Guía especializado durante los safaris",
+      "Asistencia de nuestro equipo antes y durante el viaje"
     ],
     "itinerario": "Nairobi.\nMasái Mara.\nSerengeti y Ngorongoro.\nRegreso.",
     "duracion": "Consulte con su asesor",
@@ -942,9 +1010,11 @@
     "resumen": "Los mejores parques temáticos del mundo para toda la familia.",
     "descripcion": "Días de magia en Walt Disney World y aventura en Universal, con alojamiento y entradas coordinadas. El viaje familiar por excelencia. Requiere visa; le orientamos.",
     "incluye": [
-      "Alojamiento",
-      "Entradas a parques (según elección)",
-      "Traslados"
+      "Alojamiento en Orlando",
+      "Entradas a los parques (Disney y Universal, según los días elegidos)",
+      "Traslados indicados",
+      "Asistencia de nuestro equipo antes y durante el viaje",
+      "Orientación sobre el trámite de visa estadounidense"
     ],
     "itinerario": "Días en parques Disney.\nDías en Universal.\nCompras.\nRegreso.",
     "duracion": "Consulte con su asesor",
@@ -972,9 +1042,11 @@
     "resumen": "La ciudad que nunca duerme: íconos, compras y espectáculos.",
     "descripcion": "Times Square, la Estatua de la Libertad, Central Park y Broadway. Un city break lleno de energía. Requiere visa; le orientamos.",
     "incluye": [
-      "Alojamiento",
-      "City tour",
-      "Traslados"
+      "Alojamiento en Nueva York",
+      "City tour con los puntos icónicos de la ciudad",
+      "Traslados aeropuerto–hotel–aeropuerto",
+      "Asistencia de nuestro equipo antes y durante el viaje",
+      "Orientación sobre el trámite de visa estadounidense"
     ],
     "itinerario": "City tour.\nAtracciones principales.\nDía libre de compras o espectáculos.\nRegreso.",
     "duracion": "Consulte con su asesor",
@@ -1004,9 +1076,11 @@
     "resumen": "Varias islas del Caribe en un solo viaje, sin hacer maletas cada día.",
     "descripcion": "Navegue por el Caribe visitando distintos puertos, con alojamiento, comidas y entretenimiento a bordo incluidos.",
     "incluye": [
-      "Camarote seleccionado",
-      "Pensión completa a bordo",
-      "Entretenimiento a bordo"
+      "Camarote seleccionado a bordo (según categoría elegida)",
+      "Pensión completa a bordo: desayuno, almuerzo y cena en los restaurantes incluidos",
+      "Entretenimiento y actividades a bordo (shows, piscinas, instalaciones)",
+      "Visita a varios puertos del Caribe según la ruta",
+      "Asistencia de nuestro equipo antes y durante el viaje"
     ],
     "itinerario": "Embarque.\nPuertos del Caribe (según ruta).\nDías de navegación.\nDesembarque.",
     "duracion": "Consulte con su asesor",
@@ -1035,9 +1109,11 @@
     "resumen": "Europa por mar: Italia, España, Francia y más en un solo viaje.",
     "descripcion": "Descubra las joyas del Mediterráneo desde el confort de un crucero, con puertos llenos de historia.",
     "incluye": [
-      "Camarote seleccionado",
-      "Pensión completa a bordo",
-      "Entretenimiento a bordo"
+      "Camarote seleccionado a bordo (según categoría elegida)",
+      "Pensión completa a bordo: desayuno, almuerzo y cena en los restaurantes incluidos",
+      "Entretenimiento y actividades a bordo (shows, piscinas, instalaciones)",
+      "Visita a varios puertos del Mediterráneo según la ruta",
+      "Asistencia de nuestro equipo antes y durante el viaje"
     ],
     "itinerario": "Embarque.\nPuertos (según ruta).\nDías de navegación.\nDesembarque.",
     "duracion": "Consulte con su asesor",
