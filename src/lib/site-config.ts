@@ -14,6 +14,7 @@ export const siteConfig = {
     instagram: "https://www.instagram.com/viatour.inc/",
     tiktok: "https://www.tiktok.com/@miviatour",
   },
+  socialVideos: [] as { platform: "tiktok" | "instagram" | "youtube"; url: string }[],
   // Add approved, public post URLs here before publishing social embeds.
   socialReels: {
     instagram: [] as string[],
