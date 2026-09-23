@@ -297,5 +297,50 @@ En temporada alta, los vuelos y hoteles se llenan y los precios suben. Reservar 
 ### Cómo lo organizamos
 
 Explore todos nuestros [paquetes](/paquetes) y [destinos](/destinos). Si aún no sabe a dónde ir, use nuestra herramienta [Descubra su destino](/descubrir) o [cotice con nosotros](/contacto): le preparamos opciones a su medida.`
+  },
+  {
+    slug: "semana-morazanica-a-donde-viajar",
+    titulo: "Semana Morazánica: a dónde viajar y cómo aprovecharla al máximo",
+    categoria: "Consejos de viaje",
+    tipo: "guia",
+    autor: "viatour",
+    meta_titulo: "Semana Morazánica: a dónde viajar desde Honduras | viatour",
+    meta_descripcion: "Ideas de destinos para la Semana Morazánica desde Honduras: playa, escapadas regionales y viajes especiales. Planee con tiempo y cotice con viatour.",
+    extracto: "La Semana Morazánica es la oportunidad perfecta para viajar. Le damos ideas de destinos y le explicamos por qué conviene planear con anticipación.",
+    destacado: true,
+    publicado: true,
+    orden: 9,
+    cover_url: "/blog/semana-morazanica-a-donde-viajar.jpg",
+    cuerpo: `La Semana Morazánica, el feriado nacional de inicios de octubre, es una de las mejores oportunidades del año para que los hondureños viajen. Al reunir varios días festivos en una sola semana, es el momento ideal para descansar, reconectar en familia o vivir esa experiencia que tenía pendiente. Aquí le damos ideas y algunos consejos para aprovecharla al máximo.
+
+### Escapadas de playa
+
+Si busca sol y mar sin complicarse, los destinos de playa del Caribe son la opción favorita:
+
+- **Punta Cana**, con sus resorts todo incluido frente al mar, ideal para parejas y familias.
+- **Cancún y la Riviera Maya**, que combinan playa con cultura y actividades.
+- **San Andrés**, el mar de siete colores, cómodo y en español.
+
+### Escapadas regionales
+
+Si prefiere un viaje más corto y cercano, hay excelentes opciones a poca distancia:
+
+- **Panamá**, ideal para compras, ciudad y las islas de San Blas.
+- **Cartagena**, con su encanto colonial y sus islas.
+- Un **crucero** por el Caribe, para conocer varios destinos en un solo viaje.
+
+### Viajes para quienes quieren algo diferente
+
+La Semana Morazánica también es un buen momento para un viaje más ambicioso si planea con tiempo: un circuito por **Europa**, una experiencia en **Dubái** o una aventura cultural en **Perú**. Son viajes que se disfrutan más cuando se organizan con anticipación.
+
+### Por qué conviene planear con anticipación
+
+La Semana Morazánica es temporada alta: muchos hondureños viajan en las mismas fechas, por lo que los vuelos y hoteles se llenan y los precios tienden a subir conforme se acerca el feriado. Reservar con tiempo le da **más opciones, mejores tarifas y más tranquilidad**. Nuestro consejo es empezar a planear su viaje con varias semanas de anticipación.
+
+### Cómo lo organizamos
+
+En viatour le preparamos su viaje a la medida para la Semana Morazánica, según su presupuesto y lo que busca. Explore todos nuestros [paquetes](/paquetes) y [destinos](/destinos), o si aún no sabe a dónde ir, use nuestra herramienta [Descubra su destino](/descubrir).
+
+¿Ya sabe a dónde quiere viajar esta Semana Morazánica? [Cotice con nosotros](/contacto) y empecemos a planear.`
   }
 ];

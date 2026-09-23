@@ -6,6 +6,7 @@ import { pageMetadata } from "@/lib/seo";
 import { CITY_SEO_PAGES, getCitySeoPage } from "@/lib/city-seo";
 import { serviceLinks } from "@/lib/navigation";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
+import { absoluteUrl, breadcrumbSchema, localizedUrl } from "@/lib/seo";
 import type { Locale } from "@/i18n/config";
 
 type Props = { params: Promise<{ city: string }> };
@@ -35,8 +36,10 @@ export default async function CityLandingPage({ params }: Props) {
   const locale = (await getLocale()) as Locale;
   const common = await getTranslations("common");
   const copy = city[locale];
+  const structuredData = { "@context": "https://schema.org", "@graph": [{ "@type": "TravelAgency", "@id": absoluteUrl("/#agency"), name: "viatour", url: localizedUrl(`/agencia-de-viajes/${city.slug}`, locale), areaServed: { "@type": "City", name: city.name, containedInPlace: { "@type": "Country", name: "Honduras" } }, parentOrganization: { "@id": absoluteUrl("/#agency") } }, breadcrumbSchema([{ label: common("home"), href: "/" }, { label: city.name, href: `/agencia-de-viajes/${city.slug}` }], locale)] };
   const crossLinks = [...serviceLinks, { key: "destinations", href: "/destinos" }];
   return <main className="container-site space-y-12 py-14 sm:py-24">
+    {city.published && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} />}
     <Breadcrumbs items={[{ label: common("home"), href: "/" }, { label: city.name, href: `/agencia-de-viajes/${city.slug}` }]} />
     <header className="max-w-3xl space-y-6">
       <h1 className="t-h1">{copy.h1}</h1>

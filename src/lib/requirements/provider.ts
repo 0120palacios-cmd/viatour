@@ -8,7 +8,7 @@ export function getRequirementsProvider(): RequirementsProvider {
   return {
     async check(query) {
       const live = await travelBuddyProvider.check(query);
-      if (live.status === "ok") return live;
+      if (live.status === "ok" || live.status === "region" || live.status === "default") return live;
       return offlineProvider.check(query);
     },
   };

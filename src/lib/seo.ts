@@ -70,7 +70,7 @@ export async function localizedContentMetadata(path: string, title: string, desc
   return pageMetadata(path, title, description, image, article, locale);
 }
 
-export const agencySchema = { "@context": "https://schema.org", "@type": "TravelAgency", "@id": absoluteUrl("/#agency"), name: "viatour", url: absoluteUrl("/"), areaServed: "Honduras", contactPoint: { "@type": "ContactPoint", telephone: "+50488668704", contactType: "customer service", availableLanguage: ["es", "en"] }, sameAs: [siteConfig.social.facebook, siteConfig.social.instagram, siteConfig.social.tiktok] };
+export const agencySchema = { "@context": "https://schema.org", "@type": "TravelAgency", "@id": absoluteUrl("/#agency"), name: "viatour", description: "Asesores de viaje en Honduras para viajes al exterior. viatour ofrece servicios de viaje desde 2018.", url: absoluteUrl("/"), logo: absoluteUrl("/logo-black.png"), areaServed: { "@type": "Country", name: "Honduras" }, contactPoint: { "@type": "ContactPoint", telephone: "+50488668704", contactType: "customer service", url: "https://wa.me/50488668704", availableLanguage: ["es", "en"] }, sameAs: [siteConfig.social.facebook, siteConfig.social.instagram, siteConfig.social.tiktok] };
 
 export function noindexMetadata(title: string, description: string): Metadata {
   return { title: { absolute: title }, description, robots: { index: false, follow: false } };

@@ -37,13 +37,13 @@ export function HeroBackdrop({ children }: { children: ReactNode }) {
     onFocusCapture={() => setFocused(true)} onBlurCapture={event => {
       if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
     }}>
-    <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 aspect-video overflow-hidden rounded-card bg-surface">
+    <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden bg-surface">
       {heroImages.map((photo, index) => !failed.includes(index) && (!reducedMotion || index === 0) && <Image
         key={`${index}-${photo.src}`} src={photo.src} alt={photo.alt} fill sizes="100vw"
         // Next.js 16 replaces the deprecated priority prop with preload.
         preload={index === 0}
         aria-hidden={index !== visible}
-        className={`object-cover transition-opacity duration-(--duration-reveal) ease-out motion-reduce:transition-none ${index === visible && loaded.includes(index) ? "opacity-100" : "opacity-0"}`}
+        className={`object-cover object-[center_38%] sm:object-center transition-opacity duration-(--duration-reveal) ease-out motion-reduce:transition-none ${index === visible && loaded.includes(index) ? "opacity-100" : "opacity-0"}`}
         onLoad={() => setLoaded(previous => previous.includes(index) ? previous : [...previous, index])}
         onError={() => setFailed(previous => previous.includes(index) ? previous : [...previous, index])}
       />)}

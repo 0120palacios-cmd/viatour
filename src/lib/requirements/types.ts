@@ -16,7 +16,7 @@ export type RequirementsData = {
 };
 
 export type RequirementsResult = {
-  status: "ok" | "unknown" | "error";
+  status: "ok" | "unknown" | "error" | "region" | "default";
   data?: RequirementsData;
   sourceUrl?: string;
   provider: string;

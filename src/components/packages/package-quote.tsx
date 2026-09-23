@@ -18,6 +18,7 @@ export function PackageQuote({ item, linkOnly = false }: { item: Package; linkOn
   const [challenge, setChallenge] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
+  const [otherDestination, setOtherDestination] = useState(false);
   const locked = useRef(false);
   if (linkOnly) return <Link href={`/paquetes/${item.slug}#solicitar-cotizacion`} className="inline-flex min-h-12 w-full items-center justify-center rounded-btn border border-brand px-5 py-3 font-semibold text-brand hover:bg-brand-tint">{t("open")}</Link>;
 
@@ -26,6 +27,7 @@ export function PackageQuote({ item, linkOnly = false }: { item: Package; linkOn
     if (locked.current || !token) return;
     const form = new FormData(event.currentTarget);
     const origin = String(form.get("origin") ?? "");
+    const destination = otherDestination ? String(form.get("destination") ?? "").trim() : item.destino;
     const dates = String(form.get("dates") ?? "");
     const adults = String(form.get("adults") ?? "");
     const children = String(form.get("children") ?? "");
@@ -34,8 +36,8 @@ export function PackageQuote({ item, linkOnly = false }: { item: Package; linkOn
     setBusy(true);
     setError(false);
     try {
-      await requestQuote({ service: "Paquete", servicio: "Paquete", locale, currency, turnstileToken: token, fields: { Paquete: item.nombre, Origen: origin, Destino: item.destino, Fechas: dates, Adultos: adults, Niños: children, Notas: notes }, formData: {
-        slug: item.slug, nombre: item.nombre, destino: item.destino,
+      await requestQuote({ service: "Paquete", servicio: "Paquete", locale, currency, turnstileToken: token, fields: { Paquete: item.nombre, Origen: origin, Destino: destination, Fechas: dates, Adultos: adults, Niños: children, Notas: notes }, formData: {
+        slug: item.slug, nombre: item.nombre, destino: destination,
         origin, dates, adults, children, notes,
       } });
     } catch {
@@ -51,7 +53,7 @@ export function PackageQuote({ item, linkOnly = false }: { item: Package; linkOn
         <div className="space-y-2"><h2 id={`package-quote-title-${item.id}`} className="t-h3">{t("title")}</h2><p className="t-small text-ink-soft">{item.nombre}</p></div>
           <div className="grid gap-5 sm:grid-cols-2">
             <div className="space-y-2"><label htmlFor={`quote-origin-${item.id}`} className="t-small">{t("origin")}</label><Input id={`quote-origin-${item.id}`} name="origin" required maxLength={120} autoComplete="address-level2" /></div>
-            <div className="space-y-2"><label htmlFor={`quote-destination-${item.id}`} className="t-small">{t("destination")}</label><Input id={`quote-destination-${item.id}`} value={item.destino} readOnly aria-readonly="true" /></div>
+            <div className="space-y-2"><label htmlFor={`quote-destination-${item.id}`} className="t-small">{t("destination")}</label><select id={`quote-destination-${item.id}`} name="destination-choice" className="t-body h-12 w-full min-w-0 rounded-btn border border-line bg-canvas px-3 py-2 text-ink focus-visible:border-brand" defaultValue={item.destino} onChange={event => setOtherDestination(event.target.value === "__other__")}><option value={item.destino}>{item.destino}</option><option value="__other__">{t("otherDestination")}</option></select>{otherDestination && <Input name="destination" required maxLength={120} placeholder={t("enterDestination")} />}<p className="t-small text-ink-soft">{t("otherDestinationHint")}</p></div>
             <div className="space-y-2 sm:col-span-2"><label htmlFor={`quote-dates-${item.id}`} className="t-small">{t("dates")}</label><Input id={`quote-dates-${item.id}`} name="dates" required maxLength={120} placeholder={t("datesHint")} /></div>
             <div className="space-y-2"><label htmlFor={`quote-adults-${item.id}`} className="t-small">{t("adults")}</label><Input id={`quote-adults-${item.id}`} name="adults" type="number" min={1} max={20} step={1} defaultValue={1} required /></div>
             <div className="space-y-2"><label htmlFor={`quote-children-${item.id}`} className="t-small">{t("children")}</label><Input id={`quote-children-${item.id}`} name="children" type="number" min={0} max={20} step={1} defaultValue={0} required /></div>
