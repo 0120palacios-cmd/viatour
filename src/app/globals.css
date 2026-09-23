@@ -198,3 +198,19 @@ body:has([aria-labelledby="cookie-title"]) .whatsapp-float { display: none; }
 .blog-markdown table { display: block; overflow-x: auto; border-collapse: collapse; }
 .blog-markdown :is(th,td) { border: 1px solid var(--color-line); padding: 8px 16px; }
 .blog-markdown { overflow-wrap: anywhere; }
+
+@media (max-width: 639px) {
+  .featured-package-list {
+    grid-auto-columns: minmax(0, 86%);
+    grid-auto-flow: column;
+    grid-template-columns: none;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    padding: 0 16px 12px;
+    scroll-padding-inline: 16px;
+    scroll-snap-type: inline mandatory;
+    scrollbar-color: var(--color-brand) var(--color-line);
+    scrollbar-width: thin;
+  }
+  .featured-package-list > * { min-width: 0; scroll-snap-align: start; }
+}
