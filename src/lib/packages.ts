@@ -6,7 +6,7 @@ export type Package = {
   descripcion: string; incluye: string[]; no_incluye?: string[] | null; itinerario: string | null; duracion: string;
   precio_desde: number | null; moneda: string | null; imagen_url: string | null;
   galeria: string[] | null; categoria: string | null; etiquetas: string[];
-  destacado: boolean; publicado: boolean; orden: number;
+  destacado: boolean; publicado: boolean; orden: number; updated_at?: string | null;
 };
 // Public display rule for this phase: pricing remains in the data model but is
 // not customer-facing until the display layer is explicitly enabled.
