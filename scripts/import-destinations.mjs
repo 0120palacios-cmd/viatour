@@ -1,10 +1,30 @@
 import dotenv from "dotenv";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 
 dotenv.config({ path: [".env.local", ".env"] });
 
 const destinationsPath = new URL("../data/destinations.json", import.meta.url);
+const publicPath = fileURLToPath(new URL("../public", import.meta.url));
+
+function destinationImages(slug) {
+  const galleryPath = path.join(publicPath, "destinos", slug);
+  const galeria = existsSync(galleryPath)
+    ? readdirSync(galleryPath, { withFileTypes: true })
+        .filter((entry) => entry.isFile() && /\.(?:jpg|webp|png)$/i.test(entry.name))
+        .map((entry) => entry.name)
+        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" }))
+        .map((file) => `/destinos/${slug}/${file}`)
+    : [];
+  const coverPath = path.join(publicPath, "destinos", `${slug}.jpg`);
+
+  return {
+    galeria,
+    imagen_url: existsSync(coverPath) ? `/destinos/${slug}.jpg` : galeria[0],
+  };
+}
 
 function loadDestinations() {
   const value = JSON.parse(readFileSync(destinationsPath, "utf8"));
@@ -58,7 +78,7 @@ async function main() {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  const { data: before, error: beforeError } = await client.from("destinations").select("slug,cuerpo");
+  const { data: before, error: beforeError } = await client.from("destinations").select("slug,cuerpo,imagen_url,galeria");
   if (beforeError) throw new Error(`No se pudieron consultar los destinos existentes: ${beforeError.message}`);
 
   const existingBySlug = new Map((before ?? []).map((row) => [row.slug, row]));
@@ -68,6 +88,12 @@ async function main() {
   for (const item of destinations) {
     const row = destinationRow(item);
     const existing = existingBySlug.get(item.slug);
+    const images = destinationImages(item.slug);
+    console.log(`Destino ${item.slug}: ${images.galeria.length} imágenes de galería detectadas.`);
+    if (images.galeria.length > 0) row.galeria = images.galeria;
+    else if (existing?.galeria != null) row.galeria = existing.galeria;
+    if (images.imagen_url) row.imagen_url = images.imagen_url;
+    else if (existing?.imagen_url != null) row.imagen_url = existing.imagen_url;
 
     // A null body in the seed must not erase editorial content already in the database.
     if (existing && row.cuerpo === null && existing.cuerpo !== null) {
