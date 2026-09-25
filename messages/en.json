@@ -53,6 +53,7 @@
   },
   "footer": {
     "social": "Social media",
+    "googleProfile": "Find us on Google",
     "iata": "IATA sales under an accredited host agency.",
     "iataSrOnly": "Space reserved for the IATA logo",
     "currency": "Currency",
@@ -296,6 +297,8 @@
     "requiredFields": "Fields marked with * are required.",
     "photoError": "The photo must be no larger than 3 MB.",
     "published": "Published reviews",
+    "googleCta": "Leave us a Google review",
+    "googleSubline": "Your review helps us a lot.",
     "pages": "Review pages",
     "verified": "Verified",
     "loading": "Loading reviews.",

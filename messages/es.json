@@ -53,6 +53,7 @@
   },
   "footer": {
     "social": "Redes sociales",
+    "googleProfile": "Encuéntranos en Google",
     "iata": "IATA sales under an accredited host agency.",
     "iataSrOnly": "Espacio reservado para el logotipo IATA",
     "currency": "Moneda",
@@ -296,6 +297,8 @@
     "requiredFields": "Los campos con * son obligatorios.",
     "photoError": "La foto debe pesar como máximo 3 MB.",
     "published": "Opiniones publicadas",
+    "googleCta": "Déjenos su opinión en Google",
+    "googleSubline": "Su opini?n nos ayuda mucho.",
     "pages": "Páginas de opiniones",
     "verified": "Verificada",
     "loading": "Cargando opiniones.",
