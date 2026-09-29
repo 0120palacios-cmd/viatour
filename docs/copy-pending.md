@@ -1,6 +1,8 @@
-# Copy pendiente de aprobación (implementación de OPPORTUNITY-AUDIT, 2026-09-29)
+# Copy de la implementación de OPPORTUNITY-AUDIT (2026-09-29)
 
-Todo el texto siguiente es un **borrador** agregado durante la implementación. Está activo en el sitio salvo donde se indica lo contrario. Nada se inventó sobre credenciales, reseñas, cifras ni tiempos de respuesta. Apruebe, corrija o retire cada punto antes de lanzar. Las versiones en inglés están en `messages/en.json` con las mismas claves.
+**Estado: aprobado por el propietario el 2026-09-29.** La sección de referidos en `/gira` quedó activada. Los recordatorios al cliente se activan con `CUSTOMER_REMINDERS=1` en Vercel. Los dos puntos de "Pendiente de decisión del propietario" (al final) no tenían texto que aprobar y siguen abiertos.
+
+Todo el texto siguiente se agregó durante la implementación. Está activo en el sitio salvo donde se indica lo contrario. Nada se inventó sobre credenciales, reseñas, cifras ni tiempos de respuesta. Apruebe, corrija o retire cada punto antes de lanzar. Las versiones en inglés están en `messages/en.json` con las mismas claves.
 
 ## Formularios de cotización (`messages/es.json` → `quote.*`)
 - `contactLegend` "Sus datos de contacto"; `phone` "Número de WhatsApp"; `email` "Correo electrónico (opcional)".
