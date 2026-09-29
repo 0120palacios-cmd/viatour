@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/admin";
 import { validateBlog } from "@/lib/blog-validation";
+import { expireContent } from "@/lib/content-cache";
 export type Result = {
     error?: string;
     success?: string;
@@ -124,6 +125,7 @@ export async function save(_: Result, form: FormData): Promise<Result> {
         return { error: error?.code === "23505" ? "Ese slug ya existe. Elija otro." : "No se pudo guardar el registro. Revise los datos e intente nuevamente." };
     const section = ({ reviews: "opiniones", packages: "paquetes", destinations: "destinos", leads: "leads", blog_posts: "blog", faqs: "faq" } as Record<string, string>)[table];
     revalidatePath("/admin", "layout");
+    expireContent(table);
     if(table === "faqs") revalidatePath("/preguntas-frecuentes");
     if (table !== "leads") {
         revalidatePath("/");

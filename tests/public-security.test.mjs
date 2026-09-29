@@ -57,3 +57,24 @@ test('reviews reject missing or invalid tokens before uploads or writes and obey
   }
   assert.equal(writes,0);denied=true;assert.equal((await route.POST(request({},'reviews'))).status,429);
 });
+test('a verified human session gets its own bucket plus a wider shared-IP ceiling (CGNAT)', async () => {
+  const calls = [];
+  const api = security({ rpc: async (_name, args) => { calls.push(args); return { data: true }; } });
+  const cookie = (await api.humanSessionResponse()).headers.get('set-cookie').split(';')[0];
+  const nonce = cookie.split('=')[1].split('.')[1];
+  const withSession = new Request('http://local/api/leads', { method: 'POST', headers: { 'x-forwarded-for': '192.0.2.1', cookie } });
+  assert.equal(await api.rateLimit(withSession, '/api/leads', 10), null);
+  assert.deepEqual(calls.map(c => [c.p_key, c.p_max]), [[`/api/leads:192.0.2.1:${nonce}`, 10], ['/api/leads:192.0.2.1', 50]]);
+  const denied = security({ rpc: async (_name, args) => ({ data: !args.p_key.endsWith(nonce) }) });
+  assert.equal((await denied.rateLimit(withSession, '/api/leads', 10)).status, 429);
+  const forged = new Request('http://local/api/leads', { method: 'POST', headers: { 'x-forwarded-for': '192.0.2.1', cookie: 'viatour-human=1.2.3' } });
+  calls.length = 0; await api.rateLimit(forged, '/api/leads', 10);
+  assert.deepEqual(calls.map(c => c.p_key), ['/api/leads:192.0.2.1']);
+});
+test('lead notifications are labeled lines with a customer WhatsApp link and admin link, not raw JSON', () => {
+  const notifications = load('src/lib/notifications.ts', { 'server-only': {}, '@/lib/site-config': { siteConfig: { supportEmail: 'soporte@miviatour.com', url: 'https://miviatour.com' } } });
+  const text = notifications.leadNotificationText('id-1', { servicio: 'Paquete', referencia: 'VT-ABCDE', fields: { Destino: 'Cartagena', Notas: '' }, contacto: { telefono: '+50499998888' }, origen: { utm_source: 'facebook' } });
+  assert.match(text, /Referencia: VT-ABCDE/); assert.match(text, /Destino: Cartagena/); assert.doesNotMatch(text, /Notas:/);
+  assert.match(text, /https:\/\/wa\.me\/50499998888/); assert.match(text, /admin\/leads\?q=VT-ABCDE/); assert.match(text, /utm_source: facebook/);
+  assert.doesNotMatch(text, /[{}]/);
+});

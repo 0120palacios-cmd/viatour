@@ -14,8 +14,10 @@ export async function getAdminReservation(client: SupabaseClient, id: string) {
     client.from("invoices").select(invoiceFields).eq("reservation_id", id).order("created_at", { ascending: false }),
   ]);
   if (itemsResult.error || paymentsResult.error || invoicesResult.error) throw new Error("No se pudieron cargar los datos de la reserva.");
+  // Income columns are optional (docs/sql/reservations_income.sql); a missing column must not break the page.
+  const income = await client.from("reservations").select("comision,segmento").eq("id", id).maybeSingle();
   return {
-    reservation: reservationResult.data as Reservation,
+    reservation: { ...(reservationResult.data as Reservation), ...(income.error || !income.data ? {} : income.data) },
     items: (itemsResult.data ?? []) as ReservationItem[],
     payments: (paymentsResult.data ?? []) as Payment[],
     invoices: (invoicesResult.data ?? []) as Invoice[],

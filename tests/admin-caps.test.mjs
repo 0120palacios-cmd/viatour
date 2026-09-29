@@ -10,7 +10,7 @@ test('blog rejects excessive field lengths before persistence',()=>{
 });
 test('packages and destinations reject length, collection and UUID violations before mutations',async()=>{
   let writes=0;
-  const api=load('src/app/admin/actions.ts',{'@/lib/admin':{requireAdmin:async()=>({client:{from:()=>{writes++;throw Error('must not write');}}})}});
+  const api=load('src/app/admin/actions.ts',{'@/lib/content-cache':{expireContent(){}},'@/lib/admin':{requireAdmin:async()=>({client:{from:()=>{writes++;throw Error('must not write');}}})}});
   for(const[table,key,value]of [['packages','destination_id','not-a-uuid'],['packages','nombre','x'.repeat(201)],['packages','descripcion','x'.repeat(20001)],['packages','incluye',Array(51).fill('Prueba').join('\n')],['packages','incluye','x'.repeat(501)],['destinations','cuerpo','x'.repeat(100001)],['destinations','pregunta','x'.repeat(501)],['destinations','respuesta','x'.repeat(10001)]]){
     const form=new FormData();for(const[k,v]of Object.entries({table,nombre:'Prueba',slug:'prueba',orden:'0',moneda:'USD'}))form.set(k,v);form.set(key,value);
     assert.ok((await api.save({},form)).error,`${table}.${key}`);

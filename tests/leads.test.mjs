@@ -36,11 +36,14 @@ test('malformed bodies, missing challenges, enums, counts, date order, segments 
 test('rate limited and database failures do not trigger notification',async()=>{
   for(const options of [{limit:Response.json({}, {status:429})},{dbError:true}]){const api=route(options);assert.equal((await api.POST(request(quote()))).status,options.limit?429:502);assert.equal(api.emails.length,0);}
 });
-test('WhatsApp waits for capture and never opens on HTTP, malformed, network or timeout failure',async()=>{
+test('WhatsApp link exists only after capture and never on HTTP, malformed, network or timeout failure',async()=>{
   for(const outcome of ['success','http','malformed','network','timeout']){
-    const navigations=[],events=[];let resolve;const pending=new Promise(done=>resolve=done);
-    const api=load('src/lib/quote.ts',{'@/lib/site-config':{siteConfig:{whatsappNumber:'50488668704'}},'@/lib/analytics':{trackEvent:n=>events.push(n)}},{window:{location:{assign:url=>navigations.push(url)}},fetch:async()=>{await pending;if(['network','timeout'].includes(outcome))throw Error(outcome);if(outcome==='malformed')return new Response('invalid');return Response.json(outcome==='success'?{ok:true,id:'test'}:{ok:false},{status:outcome==='http'?502:201});}});
-    const handoff=api.requestQuote({service:'Vuelos',fields:{Destino:'Cartagena'},turnstileToken:'valid'});assert.equal(navigations.length,0);resolve();
-    if(outcome==='success'){await handoff;assert.equal(navigations.length,1);assert.equal(events.filter(n=>n==='quote_submit').length,1);}else{await assert.rejects(handoff);assert.equal(navigations.length,0);assert.equal(events.length,0);}
+    const navigations=[],events=[],bodies=[];let resolve;const pending=new Promise(done=>resolve=done);
+    const api=load('src/lib/quote.ts',{'@/lib/site-config':{siteConfig:{whatsappNumber:'50488668704'}},'@/lib/analytics':{trackEvent:n=>events.push(n)},'@/lib/attribution':{getAttribution:()=>({pagina:'/paquetes/x',utm_source:'facebook'})}},{window:{location:{assign:url=>navigations.push(url)}},fetch:async(_url,init)=>{bodies.push(JSON.parse(init.body));await pending;if(['network','timeout'].includes(outcome))throw Error(outcome);if(outcome==='malformed')return new Response('invalid');return Response.json(outcome==='success'?{ok:true,id:'test',referencia:'VT-ABC23'}:{ok:false},{status:outcome==='http'?502:201});}});
+    const handoff=api.requestQuote({service:'Vuelos',fields:{Destino:'Cartagena',Teléfono:'+50499999999'},turnstileToken:'valid'});resolve();
+    if(outcome==='success'){const result=await handoff;assert.equal(result.referencia,'VT-ABC23');const text=decodeURIComponent(result.href.split('?text=')[1]);assert.match(result.href,/^https:\/\/wa\.me\/50488668704\?text=/);assert.match(text,/Referencia: VT-ABC23/);assert.doesNotMatch(text,/Teléfono/);assert.equal(bodies[0].origen.utm_source,'facebook');assert.equal(events.filter(n=>n==='quote_submit').length,1);}
+    else{await assert.rejects(handoff);assert.equal(events.length,0);}
+    // Navigation is always the visitor's own click on the success panel, never automatic.
+    assert.equal(navigations.length,0);
   }
 });

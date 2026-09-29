@@ -8,6 +8,8 @@ import { renderQuotationPdf } from "@/lib/quotation-pdf";
 import { clean, isQuotationStatus, validUuid, validateQuotationFields } from "@/lib/quotation-validation";
 import { captureNotificationFailure } from "@/lib/notifications";
 import { siteConfig } from "@/lib/site-config";
+import { customerWhatsappHref } from "@/lib/lead-admin";
+import { normalizePhone } from "@/lib/lead-validation";
 import { convertQuotationToReservation } from "@/app/admin/reservas/actions";
 
 export { convertQuotationToReservation };
@@ -44,7 +46,12 @@ export async function saveQuotation(_: QuotationActionState, form: FormData): Pr
   if (id) {
     saved = await client.from("quotations").update(quoteValues).eq("id", id).select("id").single();
   } else {
-    saved = await client.from("quotations").insert({ ...quoteValues, codigo: quotationCode(), estado: "borrador" }).select("id").single();
+    const leadId = clean(form.get("lead_id"));
+    const created: Record<string, unknown> = { ...quoteValues, codigo: quotationCode(), estado: "borrador" };
+    saved = await client.from("quotations").insert(validUuid(leadId) ? { ...created, lead_id: leadId } : created).select("id").single();
+    // lead_id arrives with docs/sql/leads_contact.sql; without it the quotation is saved unlinked.
+    if (saved.error && (saved.error.code === "PGRST204" || saved.error.code === "42703")) saved = await client.from("quotations").insert(created).select("id").single();
+    if (!saved.error && validUuid(leadId)) await client.from("leads").update({ estado: "contactado" }).eq("id", leadId).eq("estado", "nuevo");
   }
   if (saved.error || !saved.data) return { error: "No se pudo guardar la cotización. Revise los datos e intente nuevamente." };
   const quotationId = String(saved.data.id);
@@ -92,5 +99,7 @@ export async function sendQuotation(_: QuotationActionState, form: FormData): Pr
   if (updated.error || !updated.data) return { error: "El correo se envió, pero no se pudo actualizar el estado. Revise la cotización antes de reenviar." };
   refreshQuotationPaths(id);
   const message = `Hola, le comparto la cotización ${record.quotation.codigo} de viatour para ${record.quotation.destino}. Total referencial: ${record.quotation.total} ${record.quotation.moneda}.`;
-  return { success: "Cotización enviada al correo del cliente.", whatsappUrl: `https://wa.me/${siteConfig.whatsappNumber}?text=${encodeURIComponent(message)}` };
+  // The share link opens a chat with the customer; it is omitted when there is no usable phone.
+  const whatsappUrl = customerWhatsappHref(normalizePhone(record.quotation.cliente_telefono ?? "") || record.quotation.cliente_telefono || "", message);
+  return { success: "Cotización enviada al correo del cliente.", ...(whatsappUrl ? { whatsappUrl } : {}) };
 }

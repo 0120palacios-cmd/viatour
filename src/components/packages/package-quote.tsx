@@ -1,16 +1,15 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { MessageCircle } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Turnstile } from "@/components/turnstile";
 import { useCurrency } from "@/components/currency-provider";
-import { requestQuote } from "@/lib/quote";
+import { ContactFields, QuoteHowItWorks, QuoteSubmit, QuoteSuccess, contactFormData } from "@/components/quote/quote-parts";
+import { requestQuote, type QuoteResult } from "@/lib/quote";
 import type { Package } from "@/lib/packages";
-import { Link } from "@/i18n/navigation";
 
-export function PackageQuote({ item, linkOnly = false }: { item: Package; linkOnly?: boolean }) {
+export function PackageQuote({ item }: { item: Package }) {
   const t = useTranslations("packageQuote");
   const locale = useLocale() as "es" | "en";
   const { currency } = useCurrency();
@@ -19,8 +18,8 @@ export function PackageQuote({ item, linkOnly = false }: { item: Package; linkOn
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
   const [otherDestination, setOtherDestination] = useState(false);
+  const [result, setResult] = useState<QuoteResult | null>(null);
   const locked = useRef(false);
-  if (linkOnly) return <Link href={`/paquetes/${item.slug}#solicitar-cotizacion`} className="inline-flex min-h-12 w-full items-center justify-center rounded-btn border border-brand px-5 py-3 font-semibold text-brand hover:bg-brand-tint">{t("open")}</Link>;
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -32,14 +31,15 @@ export function PackageQuote({ item, linkOnly = false }: { item: Package; linkOn
     const adults = String(form.get("adults") ?? "");
     const children = String(form.get("children") ?? "");
     const notes = String(form.get("notes") ?? "");
+    const contact = contactFormData(form);
     locked.current = true;
     setBusy(true);
     setError(false);
     try {
-      await requestQuote({ service: "Paquete", servicio: "Paquete", locale, currency, turnstileToken: token, fields: { Paquete: item.nombre, Origen: origin, Destino: destination, Fechas: dates, Adultos: adults, Niños: children, Notas: notes }, formData: {
+      setResult(await requestQuote({ service: "Paquete", servicio: "Paquete", locale, currency, turnstileToken: token, fields: { Paquete: item.nombre, Nombre: contact.name, Origen: origin, Destino: destination, Fechas: dates, Adultos: adults, Niños: children, Notas: notes }, formData: {
         slug: item.slug, nombre: item.nombre, destino: destination,
-        origin, dates, adults, children, notes,
-      } });
+        origin, dates, adults, children, notes, ...contact,
+      } }));
     } catch {
       setError(true);
     } finally {
@@ -49,6 +49,7 @@ export function PackageQuote({ item, linkOnly = false }: { item: Package; linkOn
     }
   }
 
+  if (result) return <QuoteSuccess result={result} service="Paquete" onReset={() => setResult(null)} />;
   return <form onSubmit={submit} className="space-y-5">
         <div className="space-y-2"><h2 id={`package-quote-title-${item.id}`} className="t-h3">{t("title")}</h2><p className="t-small text-ink-soft">{item.nombre}</p></div>
           <div className="grid gap-5 sm:grid-cols-2">
@@ -59,8 +60,10 @@ export function PackageQuote({ item, linkOnly = false }: { item: Package; linkOn
             <div className="space-y-2"><label htmlFor={`quote-children-${item.id}`} className="t-small">{t("children")}</label><Input id={`quote-children-${item.id}`} name="children" type="number" min={0} max={20} step={1} defaultValue={0} required /></div>
             <div className="space-y-2 sm:col-span-2"><label htmlFor={`quote-notes-${item.id}`} className="t-small">{t("notes")} <span className="font-normal text-ink-soft">({t("optional")})</span></label><textarea id={`quote-notes-${item.id}`} name="notes" maxLength={3000} rows={3} className="w-full rounded-btn border border-line bg-canvas p-3 t-body text-ink focus-visible:border-brand focus-visible:outline-2 focus-visible:outline-brand-tint" /></div>
           </div>
+          <ContactFields idPrefix={`quote-contact-${item.id}`} columns={1} />
           <Turnstile onToken={setToken} resetKey={challenge} />
           {error && <p role="alert" className="t-small text-error">{t("error")}</p>}
-          <button type="submit" disabled={busy || !token} aria-busy={busy} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-btn bg-wa px-6 py-3 font-semibold text-ink hover:bg-wa-deep focus-visible:outline-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-60"><MessageCircle size={20} strokeWidth={1.75} aria-hidden="true" />{busy ? t("sending") : t("submit")}</button>
+          <QuoteSubmit ready={!!token} busy={busy} label={t("submit")} className="sm:w-full" />
+          <QuoteHowItWorks />
         </form>
 }

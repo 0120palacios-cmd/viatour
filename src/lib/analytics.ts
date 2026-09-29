@@ -1,4 +1,4 @@
-export type AnalyticsEvent = "whatsapp_click" | "quote_submit" | "contact_submit" | "newsletter_signup" | "review_submit";
+export type AnalyticsEvent = "whatsapp_click" | "quote_submit" | "contact_submit" | "newsletter_signup" | "review_submit" | "share";
 export type EventParams = { service?: string; page?: string; placement?: string; status?: "requested" | "saved" };
 type Pixel = ((...args: unknown[]) => void) & { queue?: unknown[][]; callMethod?: (...args: unknown[]) => void; loaded?: boolean; version?: string; push?: Pixel };
 declare global { interface Window { [key: `ga-disable-${string}`]: boolean | undefined; dataLayer?: unknown[]; gtag?: (...args: unknown[]) => void; fbq?: Pixel; _fbq?: Pixel; viatourAnalytics?: { consent: boolean; ga: boolean; meta: boolean; gaId?: string }; } }

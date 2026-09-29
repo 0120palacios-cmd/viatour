@@ -112,3 +112,17 @@ test('private portal documents and ticket notifications have no public-storage p
   assert.match(ticketsRoute, /sendResendEmail/);
   assert.match(ticketsRoute, /support-ticket\//);
 });
+
+test('portal sessions expire server-side, differ per login and reject tampering', () => {
+  const portal = load('src/lib/portal.ts', { 'server-only': {}, 'node:crypto': crypto, '@/lib/quotation-validation': { validUuid: value => /^[0-9a-f-]{36}$/i.test(value) } });
+  const first = portal.signPortalReservationId(reservationId), second = portal.signPortalReservationId(reservationId);
+  assert.notEqual(first, second);
+  assert.equal(portal.verifyPortalCookie(first), reservationId);
+  const past = Math.floor(Date.now() / 1000) - 1;
+  assert.equal(portal.verifyPortalCookie(portal.signPortalReservationId(reservationId, past)), null);
+  const [id, expires, nonce, signature] = first.split('.');
+  assert.equal(portal.verifyPortalCookie([id, String(Number(expires) + 60), nonce, signature].join('.')), null);
+  assert.equal(portal.verifyPortalCookie([id, expires, 'otrononce123', signature].join('.')), null);
+  // The previous format (id.signature) is no longer accepted.
+  assert.equal(portal.verifyPortalCookie(`${id}.${signature}`), null);
+});

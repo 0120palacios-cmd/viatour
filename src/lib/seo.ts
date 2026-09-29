@@ -65,9 +65,13 @@ export async function localizedPageMetadata(path: string, key: string, image?: s
   return pageMetadata(path, t(`${key}.title`), t(`${key}.description`), image, article, locale);
 }
 
+// Database content (packages, destinations, blog) exists only in Spanish. The English URL keeps
+// its translated chrome for visitors but canonicalises to the Spanish page and no `en` alternate
+// is advertised, so search engines do not index Spanish text under English metadata.
 export async function localizedContentMetadata(path: string, title: string, description: string, image?: string | null, article = false): Promise<Metadata> {
   const locale = (await getLocale()) as Locale;
-  return pageMetadata(path, title, description, image, article, locale);
+  const spanish = localizedUrl(path, "es");
+  return { ...pageMetadata(path, title, description, image, article, locale), alternates: { canonical: spanish, languages: { es: spanish, "x-default": spanish } } };
 }
 
 export const agencySchema = { "@context": "https://schema.org", "@type": "TravelAgency", "@id": absoluteUrl("/#agency"), name: "viatour", description: "Asesores de viaje en Honduras para viajes al exterior. viatour ofrece servicios de viaje desde 2018.", url: absoluteUrl("/"), logo: absoluteUrl("/logo-black.png"), areaServed: { "@type": "Country", name: "Honduras" }, contactPoint: { "@type": "ContactPoint", telephone: "+50488668704", contactType: "customer service", url: "https://wa.me/50488668704", availableLanguage: ["es", "en"] }, sameAs: [siteConfig.social.facebook, siteConfig.social.instagram, siteConfig.social.tiktok] };

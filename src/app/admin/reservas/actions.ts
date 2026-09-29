@@ -10,6 +10,8 @@ import { validUuid } from "@/lib/quotation-validation";
 import { renderInvoicePdf } from "@/lib/invoice-pdf";
 import { siteConfig } from "@/lib/site-config";
 import { captureNotificationFailure } from "@/lib/notifications";
+import { customerWhatsappHref } from "@/lib/lead-admin";
+import { leadSegments, normalizePhone } from "@/lib/lead-validation";
 
 export type ReservationActionState = { error?: string; success?: string; reservationId?: string };
 export type InvoiceActionState = { error?: string; success?: string; whatsappUrl?: string; invoiceId?: string };
@@ -95,7 +97,15 @@ export async function saveReservation(_: ReservationActionState, form: FormData)
   if (removed.error) return { error: "La reserva se actualizó, pero no se pudieron actualizar sus ítems." };
   const inserted = await client.from("reservation_items").insert(parsed.items.map(item => ({ ...item, reservation_id: id })));
   if (inserted.error) return { error: "La reserva se actualizó, pero no se pudieron guardar sus ítems." };
+  // Net income and segment are stored separately so the reservation saves even before the SQL runs.
+  const comision = clean(form.get("comision")), segmento = clean(form.get("segmento"));
+  if (comision && (!/^\d+(\.\d{1,2})?$/.test(comision) || Number(comision) > 10000000)) return { error: "La reserva se guardó, pero revise la comisión: use un monto positivo con hasta dos decimales.", reservationId: id };
+  if (segmento && !leadSegments.includes(segmento as never)) return { error: "La reserva se guardó, pero el segmento no es válido.", reservationId: id };
   refreshReservationPaths(id);
+  if (form.has("comision") || form.has("segmento")) {
+    const income = await client.from("reservations").update({ comision: comision ? Number(comision) : null, segmento: segmento || null }).eq("id", id).select("id").single();
+    if (income.error) return { success: income.error.code === "PGRST204" || income.error.code === "42703" ? "Reserva guardada. Para registrar la comisión y el segmento, ejecute docs/sql/reservations_income.sql en Supabase." : "Reserva guardada, pero no se pudo registrar la comisión.", reservationId: id };
+  }
   return { success: "Reserva guardada.", reservationId: id };
 }
 
@@ -172,5 +182,6 @@ export async function sendInvoice(_: InvoiceActionState, form: FormData): Promis
   if (updated.error || !updated.data) return { error: "El correo se envió, pero no se pudo actualizar el estado de la factura." };
   refreshReservationPaths(String(updated.data.reservation_id));
   const message = `Hola, le comparto la factura ${record.invoice.numero} de viatour. Total: ${record.invoice.total} ${record.invoice.moneda}.`;
-  return { success: "Factura enviada al correo del cliente.", invoiceId: id, whatsappUrl: `https://wa.me/${siteConfig.whatsappNumber}?text=${encodeURIComponent(message)}` };
+  const whatsappUrl = customerWhatsappHref(normalizePhone(record.invoice.cliente_telefono ?? "") || record.invoice.cliente_telefono || "", message);
+  return { success: "Factura enviada al correo del cliente.", invoiceId: id, ...(whatsappUrl ? { whatsappUrl } : {}) };
 }

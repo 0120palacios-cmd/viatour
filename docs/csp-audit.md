@@ -36,3 +36,7 @@ In `next.config.ts`, replace the active header line with:
 ```
 
 Do this only after a production browser pass and report review show zero legitimate violations for the configured Supabase origin, consented analytics, Turnstile, embeds, Sentry, `/og`, and optimized/unoptimized images. Remove the report-only header once enforcement is enabled so the two policies do not diverge.
+
+## Recolección de reportes (2026-09-29)
+
+La política report-only no tenía `report-uri` ni `report-to`, por lo que los navegadores no enviaban reportes. Ahora incluye `report-uri /api/csp-report` y `report-to csp`, con el encabezado `Reporting-Endpoints` apuntando a `NEXT_PUBLIC_SITE_URL/api/csp-report`. La ruta registra en los logs del servidor (Vercel) solo la directiva, el origen bloqueado y la ruta de la página, con límite de tamaño y de frecuencia. Revise esos registros durante dos semanas de tráfico real antes de aplicar el cambio de una línea descrito arriba.

@@ -1,5 +1,7 @@
 {
   "common": {
+    "sharePage": "Share",
+    "shareText": "Take a look at this viatour travel option: {title}",
     "home": "Home",
     "destinations": "Destinations",
     "discover": "Discover",
@@ -66,7 +68,7 @@
     "newsletterConsent": "I agree to receive travel ideas and seasonal offers under the Privacy Policy.",
     "newsletterConsentError": "Please provide your consent to continue.",
     "subscribe": "Subscribe",
-    "newsletterSuccess": "Thank you. Your email has been registered; you will receive our updates.",
+    "newsletterSuccess": "Thank you. Your email has been registered to receive travel ideas and seasonal offers.",
     "newsletterError": "We could not complete your subscription. Please try again shortly."
   },
   "cookies": {
@@ -127,7 +129,9 @@
     "checkRequirements": "Check requirements",
     "finalTitle": "Ready to plan your trip?",
     "finalBody": "Write to us and let’s start putting together your ideal trip.",
-    "photoAlt": "Photograph of a trip to {name}"
+    "photoAlt": "Photograph of a trip to {name}",
+    "photoPlaceholder": "Placeholder for a photograph of {name}",
+    "pauseImages": "Pause images"
   },
   "quote": {
     "serviceType": "Trip type",
@@ -167,7 +171,28 @@
     "success": "Your request has been saved. You can continue on WhatsApp.",
     "error": "We could not send your request. Please try again.",
     "dateOrderError": "Please review the dates: they must follow the order of your trip.",
-    "requiredError": "Please review the required fields and indicated values."
+    "requiredError": "Please review the required fields and indicated values.",
+    "contactLegend": "Your contact details",
+    "fullName": "Name",
+    "phone": "WhatsApp number",
+    "phoneHint": "If you cannot send us the message, an advisor will contact you at this number.",
+    "phoneError": "Enter a valid number. If it is not a Honduran number, include the country code.",
+    "email": "Email (optional)",
+    "emailError": "Please check your email address.",
+    "verifying": "Verifying secure connection…",
+    "saving": "Saving your request…",
+    "savedTitle": "We received your request",
+    "savedReference": "Your request reference",
+    "savedBody": "Continue on WhatsApp to talk with your advisor. The message already includes your trip details and reference.",
+    "savedFallback": "If you cannot write to us now, an advisor will contact you at the number you provided.",
+    "continueWhatsapp": "Continue on WhatsApp",
+    "newRequest": "Make another request",
+    "openForm": "Request a quote",
+    "closeForm": "Close form",
+    "howTitle": "How your quote works",
+    "how1": "An advisor reviews your request and prepares options tailored to you, at no cost and with no commitment.",
+    "how2": "The final price is confirmed with you before booking.",
+    "how3": "Payment is arranged with your advisor by card or bank transfer; it is not made on this site."
   },
   "services": {
     "helpTitle": "How we help",
@@ -282,6 +307,10 @@
     "fallbackTitle": "We could not confirm this query online",
     "fallbackBody": "We cannot confirm the requirements online at this time. We will be glad to confirm them for you on WhatsApp.",
     "iata": "Check IATA Travel Centre",
+    "otherDestinationHint": "Can’t find your destination? Choose ‘Other’ — we offer many more.",
+    "planTitle": "Shall we help you plan this trip?",
+    "planBody": "An advisor can prepare travel options to {destination} tailored to you, at no cost and with no commitment.",
+    "planCta": "Request a quote",
     "regionMessage": "For regions or trips across multiple destinations, requirements can vary by country and route. Check the IATA Travel Centre and verify with the official authority.",
     "defaultMessage": "We could not get online information for this destination at this time. Please verify the requirements with the official authority."
   },
@@ -453,7 +482,19 @@
     "detailsOnRequest": "Ask your travel advisor for details.",
     "destinationInfo": "Destination information",
     "day": "Day",
-    "relatedPackages": "Related packages"
+    "relatedPackages": "Related packages",
+    "galleryLabel": "Photo gallery of {name}",
+    "galleryAlt": "{name}, {destination}: photo {number} of {total}",
+    "galleryPrevious": "Previous photo",
+    "galleryNext": "Next photo",
+    "galleryShow": "View photo {number} of {total}",
+    "galleryPosition": "Photo {number} of {total}"
+  },
+  "cityPage": {
+    "packagesTitle": "Travel packages from {city}",
+    "ctaTitle": "Let us plan your trip from {city}",
+    "ctaBody": "Tell us where you want to go and an advisor will prepare options tailored to you, at no cost and with no commitment.",
+    "requirementsLink": "Check the requirements for travelling from Honduras"
   },
   "packageQuote": {
     "open": "Request a quote",

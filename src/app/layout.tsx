@@ -12,6 +12,7 @@ import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { WhatsAppFloat } from "@/components/layout/whatsapp-float";
 import { PublicChrome } from "@/components/layout/public-chrome";
+import { AttributionCapture } from "@/components/quote/quote-parts";
 import { ConsentProvider, CookieBanner } from "@/components/cookie-consent";
 import { type Locale } from "@/i18n/config";
 import "./globals.css";
@@ -44,9 +45,9 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <NextIntlClientProvider locale={locale} messages={messages}>
           <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(agencySchema) }} />
           <SiteBreadcrumbJsonLd />
-          <ConsentProvider><PublicChrome><Analytics /></PublicChrome><CurrencyProvider initialCurrency={currency}>
+          <ConsentProvider><PublicChrome><Analytics /><AttributionCapture /></PublicChrome><CurrencyProvider initialCurrency={currency}>
             <PublicChrome><Header /></PublicChrome>
-            <div className="flex-1">{children}</div>
+            <div className="site-content flex-1">{children}</div>
             <PublicChrome><Footer /><WhatsAppFloat /></PublicChrome>
             <PublicChrome><CookieBanner /></PublicChrome>
           </CurrencyProvider></ConsentProvider>

@@ -29,14 +29,14 @@ test('FAQ create, edit and delete use admin guard and revalidate public route',a
   let guarded=0,saved;const paths=[];
   const result={select:()=>({single:async()=>({data:{id:'x'}})})};
   const client={from:table=>{assert.equal(table,'faqs');return {insert:v=>{saved=v;return result},update:v=>{saved=v;return {eq:()=>result}},delete:()=>({eq:()=>{saved='deleted';return result}})}}};
-  const actions=load('src/app/admin/actions.ts',{'@/lib/admin':{requireAdmin:async()=>{guarded++;return {client}}},'next/cache':{revalidatePath:p=>paths.push(p)}});
+  const actions=load('src/app/admin/actions.ts',{'@/lib/content-cache':{expireContent(){}},'@/lib/admin':{requireAdmin:async()=>{guarded++;return {client}}},'next/cache':{revalidatePath:p=>paths.push(p)}});
   const form=new FormData();for(const [k,v] of Object.entries({table:'faqs',pregunta:'Pregunta técnica',respuesta:'Respuesta técnica',categoria:'Prueba',orden:'2',publicado:'on'}))form.set(k,v);
   if(operation!=='create')form.set('id','12345678-1234-1234-1234-123456789abc');if(operation==='delete')form.set('operation','delete');
   assert.ok((await actions.save({},form)).success);assert.equal(guarded,1);assert.ok(paths.includes('/preguntas-frecuentes'));if(operation==='delete')assert.equal(saved,'deleted');else {assert.equal(saved.pregunta,'Pregunta técnica');assert.equal(saved.publicado,true);assert.equal(saved.orden,2);}
  }
 });
 test('Nosotros matches every approved paragraph verbatim',()=>{
- const brief=fs.readFileSync('build_brief.md','utf8');const approved=brief.split('## 4.')[1].split('Founding facts')[0];const page=fs.readFileSync('src/app/nosotros/page.tsx','utf8');
+ const brief=fs.readFileSync('build_brief.md','utf8');const approved=brief.split('## 4.')[1].split('Founding facts')[0];const messages=JSON.parse(fs.readFileSync('messages/es.json','utf8'));const page=fs.readFileSync('src/app/nosotros/page.tsx','utf8')+'\n'+Object.values(messages.static).join('\n');
  for(const line of approved.split(/\r?\n/).filter(l=>l.startsWith('> ')&&l.length>2))assert.ok(page.includes(line.slice(2).replaceAll('**','')),line);
 });
 test('consent fails closed during hydration and only accepted state renders tracking gate',()=>{

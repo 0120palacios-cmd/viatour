@@ -21,12 +21,16 @@ test("invitation action inserts a unique token and sends from the configured inv
   let inserted;
   let email;
   const client = { from: table => { assert.equal(table, "review_invitations"); return { insert: value => { inserted = value; return { select: () => ({ single: async () => ({ data: { id: "invitation-id" }, error: null }) }) }; } }; } };
-  const api = load("src/app/admin/opiniones/actions.ts", {
+  const sender = load("src/lib/review-invitation-send.ts", {
+    "server-only": {},
     "node:crypto": { randomBytes: () => ({ toString: encoding => encoding === "base64url" ? "A".repeat(43) : "" }) },
+    "@/lib/notifications": { sendResendEmail: async value => { email = value; }, captureNotificationFailure() {} },
+    "@/lib/site-config": { siteConfig: { url: "https://miviatour.com", supportEmail: "soporte@miviatour.com", reviewInvitationFrom: "no-reply@miviatour.com", googleReviewUrl: "https://g.page/review" } },
+  });
+  const api = load("src/app/admin/opiniones/actions.ts", {
     "next/cache": { revalidatePath() {} },
     "@/lib/admin": { requireAdmin: async () => ({ client }) },
-    "@/lib/notifications": { sendResendEmail: async value => { email = value; } },
-    "@/lib/site-config": { siteConfig: { url: "https://miviatour.com", supportEmail: "soporte@miviatour.com", reviewInvitationFrom: "no-reply@miviatour.com" } },
+    "@/lib/review-invitation-send": sender,
   }, { process: { env: { RESEND_API_KEY: "test" } } });
   const form = new FormData(); form.set("nombre", "Prueba invitación"); form.set("email", "person@example.invalid");
   const result = await api.sendReviewInvitation({}, form);
@@ -35,6 +39,7 @@ test("invitation action inserts a unique token and sends from the configured inv
   assert.match(inserted.token, /^[A-Za-z0-9_-]{43}$/);
   assert.equal(email.from, "no-reply@miviatour.com");
   assert.match(email.text, /\/opiniones\/nueva\?token=/);
+  assert.match(email.text, /https:\/\/g\.page\/review/);
 });
 
 test("tokenized review is saved as pending, associated, and consumed", async () => {
@@ -69,7 +74,7 @@ test("tokenized review is saved as pending, associated, and consumed", async () 
 });
 
 test("public schema stays absent without approved reviews", () => {
-  const { reviewSchema } = load("src/lib/reviews.ts", { "server-only": {}, "@/lib/supabase/server": {} });
+  const { reviewSchema } = load("src/lib/reviews.ts", {'@/lib/content-cache':{cachedContent:fn=>fn},'@/lib/supabase/public':{}, "server-only": {}, "@/lib/supabase/server": {}, "@/lib/supabase/admin": {}, "@/lib/seo": { agencySchema: { "@type": "TravelAgency" } } });
   assert.equal(reviewSchema({ total: 0, promedio: 0, c5: 0, c4: 0, c3: 0, c2: 0, c1: 0 }, []), null);
   const schema = reviewSchema({ total: 5, promedio: 3.4, c5: 1, c4: 2, c3: 1, c2: 0, c1: 1 }, []);
   assert.equal(schema.aggregateRating.ratingValue, "3.4");

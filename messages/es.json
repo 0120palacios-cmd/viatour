@@ -1,5 +1,7 @@
 {
   "common": {
+    "sharePage": "Compartir",
+    "shareText": "Mire esta opción de viaje de viatour: {title}",
     "home": "Inicio",
     "destinations": "Destinos",
     "discover": "Descubrir",
@@ -53,8 +55,8 @@
   },
   "footer": {
     "social": "Redes sociales",
-    "googleProfile": "Encuéntranos en Google",
-    "iata": "IATA sales under an accredited host agency.",
+    "googleProfile": "Encuéntrenos en Google",
+    "iata": "Ventas IATA a través de una agencia anfitriona acreditada.",
     "iataSrOnly": "Espacio reservado para el logotipo IATA",
     "currency": "Moneda",
     "legal": "Legales",
@@ -66,7 +68,7 @@
     "newsletterConsent": "Acepto recibir ideas de viaje y ofertas de temporada según la Política de Privacidad.",
     "newsletterConsentError": "Para continuar, indique su consentimiento.",
     "subscribe": "Suscribirme",
-    "newsletterSuccess": "Gracias. Su correo quedó registrado; pronto recibirá nuestras novedades.",
+    "newsletterSuccess": "Gracias. Su correo quedó registrado para recibir ideas de viaje y ofertas de temporada.",
     "newsletterError": "No pudimos completar su suscripción. Intente de nuevo en un momento."
   },
   "cookies": {
@@ -127,7 +129,9 @@
     "checkRequirements": "Consultar requisitos",
     "finalTitle": "¿Listo para planificar su viaje?",
     "finalBody": "Escríbanos y empecemos a armar su viaje ideal.",
-    "photoAlt": "Fotografía de un viaje a {name}"
+    "photoAlt": "Fotografía de un viaje a {name}",
+    "photoPlaceholder": "Espacio reservado para una fotografía de {name}",
+    "pauseImages": "Pausar imágenes"
   },
   "quote": {
     "serviceType": "Tipo de viaje",
@@ -167,7 +171,28 @@
     "success": "Su solicitud se ha guardado. Puede continuar por WhatsApp.",
     "error": "No se pudo enviar su solicitud. Por favor, inténtelo de nuevo.",
     "dateOrderError": "Revise las fechas: deben seguir el orden de su viaje.",
-    "requiredError": "Revise los campos obligatorios y los valores indicados."
+    "requiredError": "Revise los campos obligatorios y los valores indicados.",
+    "contactLegend": "Sus datos de contacto",
+    "fullName": "Nombre",
+    "phone": "Número de WhatsApp",
+    "phoneHint": "Si no logra enviarnos el mensaje, un asesor lo contactará a este número.",
+    "phoneError": "Ingrese un número válido. Si no es de Honduras, incluya el código de país.",
+    "email": "Correo electrónico (opcional)",
+    "emailError": "Revise su correo electrónico.",
+    "verifying": "Verificando conexión segura…",
+    "saving": "Guardando su solicitud…",
+    "savedTitle": "Recibimos su solicitud",
+    "savedReference": "Referencia de su solicitud",
+    "savedBody": "Continúe en WhatsApp para conversar con su asesor. El mensaje ya incluye los datos de su viaje y su referencia.",
+    "savedFallback": "Si no le es posible escribirnos ahora, un asesor lo contactará al número que nos indicó.",
+    "continueWhatsapp": "Continuar en WhatsApp",
+    "newRequest": "Hacer otra solicitud",
+    "openForm": "Solicitar cotización",
+    "closeForm": "Cerrar formulario",
+    "howTitle": "Cómo funciona su cotización",
+    "how1": "Un asesor revisa su solicitud y le prepara opciones a su medida, sin costo ni compromiso.",
+    "how2": "El precio final se confirma con usted antes de reservar.",
+    "how3": "El pago se coordina con su asesor, con tarjeta o transferencia bancaria; no se realiza en este sitio."
   },
   "services": {
     "helpTitle": "Cómo le ayudamos",
@@ -282,6 +307,10 @@
     "fallbackTitle": "No pudimos confirmar esta consulta en línea",
     "fallbackBody": "En este momento no podemos confirmar los requisitos en línea. Con gusto se los confirmamos por WhatsApp.",
     "iata": "Consultar IATA Travel Centre",
+    "otherDestinationHint": "¿No encuentra su destino? Elija 'Otro' — ofrecemos muchos más.",
+    "planTitle": "¿Le ayudamos a planificar este viaje?",
+    "planBody": "Un asesor puede prepararle opciones de viaje a {destination} a su medida, sin costo ni compromiso.",
+    "planCta": "Solicitar cotización",
     "regionMessage": "Para regiones o viajes con varios destinos, los requisitos pueden cambiar según cada país y ruta. Consulte IATA Travel Centre y verifique con la autoridad oficial.",
     "defaultMessage": "No pudimos obtener la información en línea para este destino en este momento. Verifique los requisitos con la autoridad oficial."
   },
@@ -453,7 +482,19 @@
     "destinationInfo": "Información del destino",
     "day": "Día",
     "relatedPackages": "Paquetes relacionados",
-    "learnDestination": "Conozca más sobre {name}"
+    "learnDestination": "Conozca más sobre {name}",
+    "galleryLabel": "Galería de fotografías de {name}",
+    "galleryAlt": "{name}, {destination}: fotografía {number} de {total}",
+    "galleryPrevious": "Fotografía anterior",
+    "galleryNext": "Fotografía siguiente",
+    "galleryShow": "Ver fotografía {number} de {total}",
+    "galleryPosition": "Fotografía {number} de {total}"
+  },
+  "cityPage": {
+    "packagesTitle": "Paquetes para viajar desde {city}",
+    "ctaTitle": "Planifiquemos su viaje desde {city}",
+    "ctaBody": "Cuéntenos a dónde quiere ir y un asesor le preparará opciones a su medida, sin costo ni compromiso.",
+    "requirementsLink": "Consulte los requisitos para viajar desde Honduras"
   },
   "packageQuote": {
     "open": "Solicitar cotización",

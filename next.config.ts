@@ -18,6 +18,9 @@ const csp = [
   `media-src 'self' ${[storageOrigin, "https://*.cdninstagram.com", "https://*.tiktokcdn.com"].filter(Boolean).join(" ")}`,
   "manifest-src 'self'",
   "upgrade-insecure-requests",
+  // Reports go to a same-origin collector so the policy can be reviewed before enforcement.
+  "report-uri /api/csp-report",
+  "report-to csp",
 ].join("; ");
 const nextConfig: NextConfig = {
   poweredByHeader: false,
@@ -26,6 +29,7 @@ const nextConfig: NextConfig = {
     return [{ source: "/:path*", headers: [
       // Keep report-only until production reports show zero blocked resources.
       { key: "Content-Security-Policy-Report-Only", value: csp },
+      { key: "Reporting-Endpoints", value: `csp="${(process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://miviatour.com").replace(/\/$/, "")}/api/csp-report"` },
       { key: "Strict-Transport-Security", value: "max-age=31536000" },
       { key: "X-Frame-Options", value: "DENY" },
       { key: "X-Content-Type-Options", value: "nosniff" },

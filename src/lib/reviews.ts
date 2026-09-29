@@ -1,16 +1,19 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createPublicClient } from "@/lib/supabase/public";
+import { cachedContent } from "@/lib/content-cache";
 import { agencySchema } from "@/lib/seo";
 
 export type PublicReview = { id: string; nombre: string; calificacion: number; texto: string; destino: string | null; foto_path: string | null; foto_url: string | null; fecha: string; verificada: boolean; created_at: string };
 export type ReviewSummary = { total: number; promedio: number; c5: number; c4: number; c3: number; c2: number; c1: number };
-export async function getReviewSummary(): Promise<ReviewSummary> {
-  const client = await createClient();
+// The aggregate is identical for every visitor; the review list itself carries short-lived signed photo URLs and is not cached.
+export const getReviewSummary = cachedContent(async (): Promise<ReviewSummary> => {
+  const client = createPublicClient();
   const { data, error } = await client.from("reviews_resumen").select("total,promedio,c5,c4,c3,c2,c1").abortSignal(AbortSignal.timeout(8000)).single();
   if (error) throw new Error("No se pudo cargar el resumen de opiniones.");
   return { total: Number(data.total) || 0, promedio: data.promedio == null ? 0 : Number(Number(data.promedio).toFixed(1)), c5: Number(data.c5) || 0, c4: Number(data.c4) || 0, c3: Number(data.c3) || 0, c2: Number(data.c2) || 0, c1: Number(data.c1) || 0 };
-}
+}, "review-summary", "reviews");
 export async function getReviews(limit = 30, page = 1) {
   const client = await createClient();
   const [summary, reviews] = await Promise.all([

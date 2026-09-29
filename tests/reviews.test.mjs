@@ -44,7 +44,7 @@ test('honeypot, missing fields, oversized bodies and disguised files never reach
   for (let i = 0; i < forms.length; i++) assert.equal((await route.POST(new Request('http://local/api/reviews', { method: 'POST', body: forms[i] }))).status, i === 3 ? 413 : 400);
 });
 test('schema is absent at zero; import template has no rows; CSV supports quoted multiline cells', () => {
-  const { reviewSchema } = load('src/lib/reviews.ts', { 'server-only': {}, '@/lib/supabase/server': {} });
+  const { reviewSchema } = load('src/lib/reviews.ts', {'@/lib/content-cache':{cachedContent:fn=>fn},'@/lib/supabase/public':{}, 'server-only': {}, '@/lib/supabase/server': {} });
   assert.equal(reviewSchema({ total: 0 }, []), null);
   assert.deepEqual(importRows(fs.readFileSync('data/reviews-import.sample.csv', 'utf8')), []);
   assert.deepEqual(parseCsv('a,b\r\n"one,two","line\n""quoted"""'), [['a','b'],['one,two','line\n"quoted"']]);

@@ -9,6 +9,8 @@ import { getPackagesForDestination } from "@/lib/packages";
 import { DestinationImage } from "@/components/destinations/destination-card";
 import { PackageGrid } from "@/components/packages/package-card";
 import { QuoteButton } from "@/components/home/quote-button";
+import { StickyQuoteBar } from "@/components/quote/sticky-quote-bar";
+import { ShareButton } from "@/components/share-button";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { getLocale } from "next-intl/server";
 import type { Locale } from "@/i18n/config";
@@ -70,32 +72,35 @@ export default async function Page({ params }: Props) {
       }] : []),
     ],
   };
-  const quote = <QuoteButton payload={{ service: "Destino", servicio: "destino", fields: { Destino: item.nombre }, formData: { slug: item.slug, nombre: item.nombre, destination_id: item.id } }}>{common("requestQuote")}</QuoteButton>;
+  const quotePayload = { service: "Destino", servicio: "destino", fields: { Destino: item.nombre }, formData: { slug: item.slug, nombre: item.nombre, destination_id: item.id } };
+  const quote = <QuoteButton payload={quotePayload}>{common("requestQuote")}</QuoteButton>;
+  const bottomQuote = <QuoteButton payload={quotePayload} align="center">{common("requestQuote")}</QuoteButton>;
   return (
     <main>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} />
-      <header className="container-site grid items-center gap-8 py-14 sm:py-24 lg:grid-cols-2">
+      <header className="container-site grid items-center gap-8 py-12 sm:py-24 lg:grid-cols-2">
         <div className="space-y-6">
           <h1 className="t-h1">{item.nombre}</h1>
           {item.intro && <p className="t-body-lg measure whitespace-pre-line text-ink-soft">{item.intro}</p>}
-          {quote}
+          <div className="flex flex-wrap items-start gap-4">{quote}<ShareButton title={item.nombre} /></div>
         </div>
         <div className="overflow-hidden rounded-card border border-line"><DestinationImage item={item} hero /></div>
       </header>
-      {(item.cuerpo || item.mejor_epoca) && <div className="border-y border-line bg-surface py-14 sm:py-24"><div className="container-site grid items-start gap-12 lg:grid-cols-3">
+      {(item.cuerpo || item.mejor_epoca) && <div className="border-y border-line bg-surface py-12 sm:py-24"><div className="container-site grid items-start gap-12 lg:grid-cols-3">
         {item.cuerpo && <div className="space-y-6 lg:col-span-2">{item.cuerpo.split(/\r?\n\s*\r?\n/).filter(paragraph => paragraph.trim()).map((paragraph, index) => <p key={index} className="t-body measure whitespace-pre-line">{paragraph}</p>)}</div>}
         {item.mejor_epoca && <section aria-labelledby="season-title" className="space-y-4"><h2 id="season-title" className="t-h2">{t("destinationSeason")}</h2><p className="t-body measure whitespace-pre-line text-ink-soft">{item.mejor_epoca}</p></section>}
       </div></div>}
-      <section className="container-site py-14 sm:py-24" aria-labelledby="destination-packages">
+      <section className="container-site py-12 sm:py-24" aria-labelledby="destination-packages">
         <h2 id="destination-packages" className="t-h2 mb-8">{t("destinationPackages", { name: item.nombre })}</h2>
-        {packages.length ? <PackageGrid items={packages} /> : <div className="space-y-6 rounded-panel border border-line bg-surface p-8 text-center"><p className="t-body text-ink-soft">{t("noDestinationPackages")}</p>{quote}</div>}
+        {packages.length ? <PackageGrid items={packages} label={t("destinationPackages", { name: item.nombre })} /> : <div className="space-y-6 rounded-panel border border-line bg-surface p-8 text-center"><p className="t-body text-ink-soft">{t("noDestinationPackages")}</p>{quote}</div>}
       </section>
-      {item.faqs.length > 0 && <section className="border-y border-line bg-surface py-14 sm:py-24" aria-labelledby="destination-faq"><div className="container-site"><h2 id="destination-faq" className="t-h2 mb-8 text-center">{common("faq")}</h2><Accordion type="single" collapsible className="mx-auto max-w-3xl">{item.faqs.map((faq, index) => <AccordionItem key={index} value={String(index)}><AccordionTrigger>{faq.pregunta}</AccordionTrigger><AccordionContent>{faq.respuesta}</AccordionContent></AccordionItem>)}</Accordion></div></section>}
-      <section className="container-site space-y-6 py-14 text-center sm:py-24" aria-labelledby="destination-quote">
+      {item.faqs.length > 0 && <section className="border-y border-line bg-surface py-12 sm:py-24" aria-labelledby="destination-faq"><div className="container-site"><h2 id="destination-faq" className="t-h2 mb-8 text-center">{common("faq")}</h2><Accordion type="single" collapsible className="mx-auto max-w-3xl">{item.faqs.map((faq, index) => <AccordionItem key={index} value={String(index)}><AccordionTrigger>{faq.pregunta}</AccordionTrigger><AccordionContent>{faq.respuesta}</AccordionContent></AccordionItem>)}</Accordion></div></section>}
+      <section id="solicitar-cotizacion" className="container-site scroll-mt-24 space-y-6 py-12 text-center sm:py-24" aria-labelledby="destination-quote">
         <h2 id="destination-quote" className="t-h2">{common("planTrip")}</h2>
-        {quote}
+        {bottomQuote}
         <Link href="/destinos" className="t-small inline-flex items-center gap-2 text-brand underline underline-offset-4"><ArrowLeft size={16} strokeWidth={1.75} aria-hidden="true" />{t("backToDestinations")}</Link>
       </section>
+      <StickyQuoteBar targetId="solicitar-cotizacion" title={item.nombre} />
     </main>
   );
 }

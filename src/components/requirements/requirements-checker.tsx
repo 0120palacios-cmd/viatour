@@ -7,10 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { publishedRequirementDestinations } from "@/lib/requirements/destinations";
 import type { RequirementsResult } from "@/lib/requirements/types";
+import { QuoteButton } from "@/components/home/quote-button";
 
 const iataTravelCentreUrl = "https://www.iatatravelcentre.com/";
 const otherDestination = "__otro__";
 const selectClassName = "h-12 w-full min-w-0 rounded-btn border border-line bg-canvas px-3 py-2 t-body text-ink transition-colors duration-(--duration-fast) ease-out focus-visible:border-brand";
+function slugify(value: string) { return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 120); }
 function linkIcon() { return <ArrowUpRight size={16} strokeWidth={1.75} aria-hidden="true" />; }
 
 export function RequirementsChecker() {
@@ -21,12 +23,13 @@ export function RequirementsChecker() {
   const [transits, setTransits] = useState("");
   const [result, setResult] = useState<RequirementsResult | null>(null);
   const [busy, setBusy] = useState(false);
+  const [checked, setChecked] = useState("");
   const destination = destinationChoice === otherDestination ? customDestination.trim() : destinationChoice;
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!destination) return;
-    setBusy(true); setResult(null);
+    setBusy(true); setResult(null); setChecked(destination);
     try {
       const response = await fetch("/api/requisitos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ nacionalidad: "HN", destino: destination, fechas: dates || undefined, transitos: transits || undefined }) });
       const payload = (await response.json()) as RequirementsResult;
@@ -54,6 +57,7 @@ export function RequirementsChecker() {
       {result.status === "region" ? <p className="mt-8 border-y border-line py-6 t-body text-ink-soft">{t("regionMessage")}</p> : data ? <dl className="mt-8 grid gap-6 border-y border-line py-6 md:grid-cols-2"><div><dt className="t-small text-ink-soft">{t("visa")}</dt><dd className="t-body mt-2">{data.visaRequirement}</dd></div><div><dt className="t-small text-ink-soft">{t("stay")}</dt><dd className="t-body mt-2">{data.allowedStay}</dd></div><div className="md:col-span-2"><dt className="t-small text-ink-soft">{t("documents")}</dt><dd className="t-body mt-2"><ul className="list-disc space-y-2 pl-5">{data.passportRules.map(rule => <li key={rule}>{rule}</li>)}</ul></dd></div>{data.transitRequirements && <div className="md:col-span-2"><dt className="t-small text-ink-soft">{t("transit")}</dt><dd className="t-body mt-2">{data.transitRequirements}</dd></div>}</dl> : <p className="mt-8 border-y border-line py-6 t-body text-ink-soft">{t("defaultMessage")}</p>}
       {data?.notes?.length ? <ul className="t-small space-y-2 text-ink-soft">{data.notes.map(note => <li key={note}>{note}</li>)}</ul> : null}{data?.updatedAt && <p className="t-small mt-6 text-ink-soft">{t("lastUpdated", { date: data.updatedAt })}</p>}<p className="t-small mt-6 font-semibold text-ink">{t("disclaimer")}</p>
       <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3">{result?.sourceUrl && <a href={result.sourceUrl} target="_blank" rel="noopener noreferrer" className="t-small inline-flex min-h-12 items-center gap-2 text-brand underline underline-offset-4">{t("officialDestination")} {linkIcon()}</a>}<a href={iataTravelCentreUrl} target="_blank" rel="noopener noreferrer" className="t-small inline-flex min-h-12 items-center gap-2 text-brand underline underline-offset-4">IATA Travel Centre {linkIcon()}</a></div>
+      {checked && <div className="mt-8 space-y-4 border-t border-line pt-8"><h3 className="t-h3">{t("planTitle")}</h3><p className="t-body measure text-ink-soft">{t("planBody", { destination: checked })}</p><QuoteButton payload={{ service: "Destino", servicio: "destino", fields: { Destino: checked }, formData: { slug: `requisitos-${slugify(checked) || "destino"}`, nombre: checked } }}>{t("planCta")}</QuoteButton></div>}
     </section>}
   </div>;
 }
