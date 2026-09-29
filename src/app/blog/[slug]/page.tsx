@@ -61,7 +61,7 @@ export default async function Page({ params }: Props) {
     ],
   };
   return (
-    <main className="container-site py-14 sm:py-24">
+    <main className="container-site py-12 sm:py-24">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema).replace(/</g, "\\u003c") }} />
       <article className="mx-auto max-w-[68ch]">
         <Link className="text-brand underline" href="/blog">{t("backToBlog")}</Link>

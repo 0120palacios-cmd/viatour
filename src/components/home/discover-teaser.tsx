@@ -3,7 +3,7 @@ import { ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function DiscoverTeaser() {
-  return <section className="border-y border-line bg-surface py-14 sm:py-24" aria-labelledby="discover-title">
+  return <section className="border-y border-line bg-surface py-12 sm:py-24" aria-labelledby="discover-title">
     <div className="container-site">
       <div className="max-w-2xl space-y-6">
         <h2 id="discover-title" className="t-h2">Descubra su destino</h2>
