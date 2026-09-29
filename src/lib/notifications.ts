@@ -22,14 +22,29 @@ export async function sendResendEmail(input: { idempotencyKey: string; from: str
   if (!response.ok) throw new Error(`Resend HTTP ${response.status}`);
 }
 
+type LeadNotice = { servicio?: string; referencia?: string; fields?: Record<string, string>; contacto?: { telefono?: string; email?: string }; origen?: Record<string, string> };
+
+// Labeled lines in the same order as the WhatsApp message, readable on a phone.
+export function leadNotificationText(id: string, lead: LeadNotice) {
+  const lines = [`Referencia: ${lead.referencia || "—"}`, `Servicio: ${lead.servicio || "—"}`, "", ...Object.entries(lead.fields ?? {}).filter(([, value]) => String(value ?? "").trim()).map(([label, value]) => `${label}: ${value}`)];
+  const phone = lead.contacto?.telefono?.replace(/\D/g, "");
+  if (phone) lines.push("", `Escribir al cliente por WhatsApp: https://wa.me/${phone}`);
+  const origin = Object.entries(lead.origen ?? {}).map(([key, value]) => `${key}: ${value}`).join(" · ");
+  if (origin) lines.push("", `Origen web: ${origin}`);
+  lines.push("", `Ver en la administración: ${siteConfig.url}/admin/leads?q=${encodeURIComponent(lead.referencia || "")}`, `Registro: ${id}`);
+  return lines.join("\n");
+}
+
 export async function notifySubmission(kind: "lead" | "review", id: string, fields: unknown) {
+  const lead = kind === "lead" && typeof fields === "object" && fields !== null ? fields as LeadNotice : null;
+  const summary = lead ? [lead.referencia, lead.servicio, lead.fields?.Destino].filter(Boolean).join(" · ") : "";
   try {
     await sendResendEmail({
       idempotencyKey: `${kind}/${id}`,
       from: siteConfig.supportEmail,
       to: [siteConfig.supportEmail],
-      subject: kind === "lead" ? "Nueva solicitud de cotización — viatour" : "Nueva opinión pendiente de revisión — viatour",
-      text: `Registro: ${id}\n\nDatos enviados:\n${JSON.stringify(fields, null, 2)}`,
+      subject: kind === "lead" ? `Nueva solicitud de cotización${summary ? ` — ${summary}` : ""} — viatour` : "Nueva opinión pendiente de revisión — viatour",
+      text: lead ? leadNotificationText(id, lead) : `Registro: ${id}\n\nDatos enviados:\n${JSON.stringify(fields, null, 2)}`,
     });
   } catch (error) { captureNotificationFailure(kind, id, error); }
 }

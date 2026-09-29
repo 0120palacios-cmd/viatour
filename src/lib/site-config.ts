@@ -11,6 +11,8 @@ export const siteConfig = {
   portalOtpFrom: "no-reply@miviatour.com",
   helpEmail: "ayuda@miviatour.com",
   defaultCurrency: "USD" as const,
+  // Referral section on /gira: new business commitment, off until the owner approves the copy and the policy.
+  referralProgram: false as boolean,
   social: {
     facebook: "https://www.facebook.com/viatourTrips",
     instagram: "https://www.instagram.com/viatour.inc/",

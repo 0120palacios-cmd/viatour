@@ -27,6 +27,9 @@ export type Reservation = {
   agente_id: string;
   created_at: string;
   updated_at?: string;
+  // Added by docs/sql/reservations_income.sql; absent until it runs.
+  comision?: number | null;
+  segmento?: string | null;
 };
 
 export type ReservationItem = {

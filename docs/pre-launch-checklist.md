@@ -26,7 +26,7 @@ Este documento reúne las comprobaciones que deben cerrarse antes de desplegar S
 - [ ] Las ciudades de Prioridad 2 (`Danlí`, `El Progreso`, `Choloma`, `Comayagua`, `Villanueva`, `Puerto Cortés`, `Choluteca`, `Siguatepeque`, `Santa Rosa de Copán`, `Juticalpa` y `Tela`) tienen `robots: noindex, follow`.
 - [ ] Las ciudades de Prioridad 1 publicadas (`San Pedro Sula`, `Tegucigalpa`, `La Ceiba` y `Roatán`) tienen `index, follow` y aparecen en sitemap.
 - [ ] El sitemap contiene solo rutas públicas indexables en español e inglés, ciudades P1, destinos/paquetes publicados y artículos publicados; excluye admin, API, `/mi-reserva`, styleguide, legales y ciudades P2.
-- [ ] En inicio, servicios, destinos, paquetes, blog, ciudades y legales se comprueba `canonical`, `hreflang` `es`, `en` y `x-default` con el dominio canónico.
+- [ ] En inicio, servicios, ciudades y legales se comprueba `canonical`, `hreflang` `es`, `en` y `x-default` con el dominio canónico. Los detalles de destinos, paquetes y blog (contenido solo en español) publican `es` y `x-default`; su URL `/en/` apunta como canonical a la versión en español y no aparece en el sitemap.
 - [ ] Las páginas clave emiten JSON-LD válido y ningún nodo contiene `offers.price` ni `priceCurrency` mientras los precios no estén publicados; tampoco se emite precio `0`.
 - [ ] Un paquete con precio ausente, cero o no válido muestra únicamente la CTA de cotización; no muestra un precio inventado.
 - [ ] No hay fechas de viaje fijas en copy público, JSON-LD o metadatos; las fechas que el usuario introduce en un formulario y las fechas del portal autenticado son los únicos datos dinámicos permitidos.

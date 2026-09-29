@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
+import { cachedContent } from "@/lib/content-cache";
 export type BlogPost = {
     id: string;
     slug: string;
@@ -16,7 +17,8 @@ export type BlogPost = {
     publicado_en: string | null;
     updated_at: string;
 };
-export async function getBlogPosts(): Promise<BlogPost[]> { const client = await createClient(); const { data, error } = await client.from("blog_posts").select("*").eq("publicado", true).order("publicado_en", { ascending: false, nullsFirst: false }).order("orden").order("slug").abortSignal(AbortSignal.timeout(8000)); if (error)
-    throw Error("No se pudieron cargar las publicaciones."); return data as BlogPost[]; }
-export const getBlogPost = cache(async (slug: string): Promise<BlogPost | null> => { const client = await createClient(); const { data, error } = await client.from("blog_posts").select("*").eq("publicado", true).eq("slug", slug).abortSignal(AbortSignal.timeout(8000)).maybeSingle(); if (error)
-    throw Error("No se pudo cargar la publicación."); return data as BlogPost | null; });
+export const getBlogPosts = cachedContent(async (): Promise<BlogPost[]> => { const client = createPublicClient(); const { data, error } = await client.from("blog_posts").select("*").eq("publicado", true).order("publicado_en", { ascending: false, nullsFirst: false }).order("orden").order("slug").abortSignal(AbortSignal.timeout(8000)); if (error)
+    throw Error("No se pudieron cargar las publicaciones."); return data as BlogPost[]; }, "blog", "blog_posts");
+const readBlogPost = cachedContent(async (slug: string): Promise<BlogPost | null> => { const client = createPublicClient(); const { data, error } = await client.from("blog_posts").select("*").eq("publicado", true).eq("slug", slug).abortSignal(AbortSignal.timeout(8000)).maybeSingle(); if (error)
+    throw Error("No se pudo cargar la publicación."); return data as BlogPost | null; }, "blog-post", "blog_posts");
+export const getBlogPost = cache((slug: string) => readBlogPost(slug));

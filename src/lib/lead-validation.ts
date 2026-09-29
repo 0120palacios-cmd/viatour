@@ -1,5 +1,24 @@
 import { validateContact } from "./contact-validation";
 const object = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
+// Honduran numbers are 8 digits; anything else must carry its country code. Returns E.164 or "" when invalid.
+export function normalizePhone(value: string) {
+  const compact = value.trim().replace(/[\s().-]/g, "");
+  if (!/^\+?\d+$/.test(compact)) return "";
+  const digits = compact.replace(/^\+/, "").replace(/^00/, "");
+  const full = !compact.startsWith("+") && !compact.startsWith("00") && digits.length === 8 ? `504${digits}` : digits;
+  return full.length >= 8 && full.length <= 15 ? `+${full}` : "";
+}
+// Keys a button-only CTA may send alongside its fixed item (see QuoteButton).
+const contactKeys = ["name", "phone", "email", "notes"];
+export const leadSegments =["quinceañera", "luna de miel", "grupo", "familia", "corporativo"] as const;
+const originKeys =["pagina", "landing", "referrer", "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"] as const;
+// Attribution is best-effort: invalid or unknown keys are dropped, never rejected.
+export function validateOrigin(input: unknown) {
+  const origin: Record<string, string> = {};
+  if (!object(input)) return origin;
+  for (const key of originKeys) { const value = input[key]; if (typeof value === "string" && value.trim()) origin[key] = value.trim().slice(0, 200); }
+  return origin;
+}
 export function validateLead(input: unknown) {
   if (!object(input) || typeof input.servicio !== "string" || !["Vuelos", "Hoteles", "Paquetes", "Paquete", "Viaje a medida", "paquetes", "destino", "contacto", "descubrimiento"].includes(String(input.servicio))) throw Error("Service");
   const servicio = String(input.servicio), currency = input.currency ?? "USD";
@@ -19,7 +38,7 @@ export function validateLead(input: unknown) {
   if (servicio === "contacto") {
     const result = validateContact(raw); if (Object.keys(result.errors).length) throw Error("Contact");
     Object.assign(formData, result.values); Object.assign(fields, { Nombre: formData.nombre, Email: formData.email, Teléfono: formData.telefono, Notas: formData.mensaje });
-  } else if (["paquetes", "Paquete", "destino"].includes(servicio) || (servicio === "Viaje a medida" && !Object.keys(raw).length && !Object.keys(labels).length)) {
+  } else if (["paquetes", "Paquete", "destino"].includes(servicio) || (servicio === "Viaje a medida" && Object.keys(raw).every(key => contactKeys.includes(key)) && Object.keys(labels).every(key => ["Nombre", "Notas"].includes(key)))) {
     for (const key of ["slug", "nombre", "destino", "destination_id"]) get(key, key === "destination_id" ? 36 : 200, (key === "slug" && servicio !== "Viaje a medida") || (servicio === "Paquete" && ["nombre", "destino"].includes(key)));
     if (formData.destination_id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(formData.destination_id)) throw Error("UUID");
     for (const key of ["Destino", "Paquete", "Notas"]) fields[key] = str(labels[key], key === "Notas" ? 3000 : 200, key === "Destino" && servicio !== "Viaje a medida" && !["paquetes", "Paquete"].includes(servicio));
@@ -70,5 +89,19 @@ export function validateLead(input: unknown) {
     if (servicio === "Hoteles") fields.Habitaciones = count("rooms", 1, 20);
     if (servicio === "Viaje a medida") { const budget = get("budget", 16); if (budget && (!/^\d+(\.\d{1,2})?$/.test(budget) || Number(budget) > 10000000)) throw Error("Budget"); fields["Presupuesto aproximado"] = budget ? `${budget} ${currency}` : ""; }
   }
-  return { servicio, currency: currency as "USD" | "HNL", fields, formData };
+  // Contact data lets the advisor follow up when the visitor never sends the WhatsApp message.
+  // The public forms require the phone; the server validates it when present so older clients keep working.
+  let telefono = "", email = "";
+  if (servicio === "contacto") { telefono = formData.telefono ? normalizePhone(formData.telefono) : ""; email = formData.email; }
+  else {
+    const phone = get("phone", 40);
+    if (phone) { telefono = normalizePhone(phone); if (!telefono) throw Error("Phone"); formData.phone = telefono; }
+    email = get("email", 254);
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw Error("Email");
+    if (!fields.Nombre) { const name = get("name", 120); if (name) fields.Nombre = name; }
+    if (telefono) fields.Teléfono = telefono;
+    if (email) fields.Email = email;
+  }
+  const segmento = typeof input.segmento === "string" && leadSegments.includes(input.segmento as never) ? input.segmento : "";
+  return { servicio, currency: currency as "USD" | "HNL", fields, formData, contacto: { telefono, email }, origen: validateOrigin(input.origen), segmento };
 }

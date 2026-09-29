@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { validUuid } from "@/lib/quotation-validation";
 
 export const portalCookieName = "viatour-portal";
@@ -16,26 +16,30 @@ function portalSecret() {
   return secret;
 }
 
-function signatureForReservation(id: string) {
-  return createHmac("sha256", portalSecret()).update(`portal:${id}`).digest("base64url");
+function signatureForReservation(id: string, expiresAt: number, nonce: string) {
+  return createHmac("sha256", portalSecret()).update(`portal:${id}:${expiresAt}:${nonce}`).digest("base64url");
 }
 
 function signatureForPending(id: string, expiresAt: number) {
   return createHmac("sha256", portalSecret()).update(`portal-pending:${id}:${expiresAt}`).digest("base64url");
 }
 
-export function signPortalReservationId(id: string) {
-  if (!validUuid(id)) throw new Error("Identificador de reserva inválido.");
-  return `${id}.${signatureForReservation(id)}`;
+// The session carries its own expiry and a random nonce, so a copied value stops working
+// after portalCookieMaxAge and each login yields a different value.
+export function signPortalReservationId(id: string, expiresAt = Math.floor(Date.now() / 1000) + portalCookieMaxAge) {
+  if (!validUuid(id) || !Number.isSafeInteger(expiresAt)) throw new Error("Identificador de reserva inválido.");
+  const nonce = randomBytes(12).toString("base64url");
+  return `${id}.${expiresAt}.${nonce}.${signatureForReservation(id, expiresAt, nonce)}`;
 }
 
 export function verifyPortalCookie(value: string | undefined | null) {
-  if (!value || value.length > 256) return null;
+  if (!value || value.length > 320) return null;
   const parts = value.split(".");
-  if (parts.length !== 2 || !validUuid(parts[0]) || !parts[1]) return null;
+  const expiresAt = Number(parts[1]);
+  if (parts.length !== 4 || !validUuid(parts[0]) || !Number.isSafeInteger(expiresAt) || expiresAt <= Math.floor(Date.now() / 1000) || expiresAt > Math.floor(Date.now() / 1000) + portalCookieMaxAge || !/^[A-Za-z0-9_-]{8,32}$/.test(parts[2]) || !parts[3]) return null;
   try {
-    const received = Buffer.from(parts[1], "base64url");
-    const expected = Buffer.from(signatureForReservation(parts[0]), "base64url");
+    const received = Buffer.from(parts[3], "base64url");
+    const expected = Buffer.from(signatureForReservation(parts[0], expiresAt, parts[2]), "base64url");
     if (received.length !== expected.length || !timingSafeEqual(received, expected)) return null;
     return parts[0];
   } catch {

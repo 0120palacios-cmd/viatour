@@ -1,6 +1,6 @@
 "use client";
 import Script from "next/script";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type API = { render: (element: HTMLElement, options: Record<string, unknown>) => string; remove: (id: string) => void; reset: (id: string) => void };
 declare global { interface Window { turnstile?: API } }
@@ -61,8 +61,21 @@ function checkSession() {
   })().finally(() => { checking = undefined; render(); });
   return checking;
 }
+// The challenge script stays off the critical path: it loads on the first interaction with the
+// form or when the browser is idle (at most ~4 s), whichever comes first.
+let scriptRequested = false;
 export function Turnstile({ onToken }: { onToken: (token: string) => void; resetKey?: number }) {
   const element = useRef<HTMLDivElement>(null);
+  const [loadScript, setLoadScript] = useState(scriptRequested);
+  useEffect(() => {
+    if (loadScript) return;
+    const start = () => { scriptRequested = true; setLoadScript(true); };
+    const scope = element.current?.closest("form") ?? element.current?.parentElement;
+    const events = ["focusin", "pointerdown", "keydown"] as const;
+    events.forEach(name => scope?.addEventListener(name, start, { once: true, passive: true }));
+    const idle = "requestIdleCallback" in window ? window.requestIdleCallback(start, { timeout: 4000 }) : globalThis.setTimeout(start, 2500);
+    return () => { events.forEach(name => scope?.removeEventListener(name, start)); if ("cancelIdleCallback" in window) window.cancelIdleCallback(idle as number); else globalThis.clearTimeout(idle as number); };
+  }, [loadScript]);
   useEffect(() => {
     const node = element.current!;
     consumers.set(node, onToken);
@@ -77,5 +90,5 @@ export function Turnstile({ onToken }: { onToken: (token: string) => void; reset
       if (!consumers.size) { clearTimeout(timer); removeWidget(); }
     };
   }, [onToken]);
-  return <><Script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" onReady={render} /><div ref={element} className="min-w-0 empty:hidden" aria-label="Verificación de seguridad" /></>;
+  return <>{loadScript && <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" onReady={render} />}<div ref={element} className="min-w-0 empty:hidden" aria-label="Verificación de seguridad" /></>;
 }

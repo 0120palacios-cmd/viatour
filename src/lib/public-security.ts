@@ -6,11 +6,19 @@ export const publicError = (status: number, error: string) => Response.json({ ok
 export function clientIP(request: Request) {
   return request.headers.get("x-forwarded-for")?.split(",")[0].trim().slice(0, 64) || "unknown";
 }
+// Mobile carriers share public IPs (CGNAT), so a verified human session gets its own
+// bucket while the IP keeps a wider ceiling as a backstop against scripted abuse.
 export async function rateLimit(request: Request, route: string, max: number) {
   try {
-    const { data, error } = await createAdminClient().rpc("hit_rate_limit", { p_key: `${route}:${clientIP(request)}`, p_max: max, p_window_seconds: 3600 });
-    if (error || typeof data !== "boolean") throw new Error("Rate limit unavailable");
-    return data ? null : publicError(429, "No se pudo procesar su solicitud. Inténtelo nuevamente más adelante.");
+    const ip = clientIP(request), session = await humanSessionNonce(request);
+    const buckets: [string, number][] = session ? [[`${route}:${ip}:${session}`, max], [`${route}:${ip}`, max * 5]] : [[`${route}:${ip}`, max]];
+    const client = createAdminClient();
+    for (const [key, limit] of buckets) {
+      const { data, error } = await client.rpc("hit_rate_limit", { p_key: key, p_max: limit, p_window_seconds: 3600 });
+      if (error || typeof data !== "boolean") throw new Error("Rate limit unavailable");
+      if (!data) return publicError(429, "No se pudo procesar su solicitud. Inténtelo nuevamente más adelante.");
+    }
+    return null;
   } catch {
     console.error("Public rate limit unavailable", { route });
     return publicError(503, "No se pudo procesar su solicitud. Inténtelo nuevamente.");
@@ -52,15 +60,22 @@ async function humanKey() {
   return crypto.subtle.importKey("raw", Buffer.from(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"]);
 }
 export async function humanSessionExpires(request: Request): Promise<number> {
+  return (await humanSession(request)).expiry;
+}
+async function humanSessionNonce(request: Request) {
+  return (await humanSession(request)).nonce;
+}
+async function humanSession(request: Request): Promise<{ expiry: number; nonce: string }> {
+  const none = { expiry: 0, nonce: "" };
   try {
     const value = request.headers.get("cookie")?.split(";").map(part => part.trim()).find(part => part.startsWith(`${humanCookie}=`))?.slice(humanCookie.length + 1);
-    if (!value || value.length > 256) return 0;
+    if (!value || value.length > 256) return none;
     const [expires, nonce, signature, extra] = value.split(".");
     const expiry = Number(expires);
-    if (extra || !nonce || !signature || !Number.isSafeInteger(expiry) || expiry <= Date.now() || expiry > Date.now() + humanLifetime) return 0;
+    if (extra || !nonce || !signature || !Number.isSafeInteger(expiry) || expiry <= Date.now() || expiry > Date.now() + humanLifetime) return none;
     const key = await humanKey();
-    return key && await crypto.subtle.verify("HMAC", key, Buffer.from(signature, "base64url"), Buffer.from(`human:${expires}.${nonce}`)) ? expiry : 0;
-  } catch { return 0; }
+    return key && await crypto.subtle.verify("HMAC", key, Buffer.from(signature, "base64url"), Buffer.from(`human:${expires}.${nonce}`)) ? { expiry, nonce } : none;
+  } catch { return none; }
 }
 export async function humanSessionResponse() {
   const key = await humanKey();

@@ -8,6 +8,9 @@ import { serviceLinks } from "@/lib/navigation";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { absoluteUrl, breadcrumbSchema, localizedUrl } from "@/lib/seo";
 import type { Locale } from "@/i18n/config";
+import { getPackages, type Package } from "@/lib/packages";
+import { PackageGrid } from "@/components/packages/package-card";
+import { QuoteButton } from "@/components/home/quote-button";
 
 type Props = { params: Promise<{ city: string }> };
 
@@ -34,11 +37,14 @@ export default async function CityLandingPage({ params }: Props) {
   const city = getCitySeoPage((await params).city);
   if (!city) notFound();
   const locale = (await getLocale()) as Locale;
+  const cityT = await getTranslations("cityPage");
+  let packages: Package[] = [];
+  try { packages = await getPackages(true); } catch { packages = []; }
   const common = await getTranslations("common");
   const copy = city[locale];
   const structuredData = { "@context": "https://schema.org", "@graph": [{ "@type": "TravelAgency", "@id": absoluteUrl("/#agency"), name: "viatour", url: localizedUrl(`/agencia-de-viajes/${city.slug}`, locale), areaServed: { "@type": "City", name: city.name, containedInPlace: { "@type": "Country", name: "Honduras" } }, parentOrganization: { "@id": absoluteUrl("/#agency") } }, breadcrumbSchema([{ label: common("home"), href: "/" }, { label: city.name, href: `/agencia-de-viajes/${city.slug}` }], locale)] };
   const crossLinks = [...serviceLinks, { key: "destinations", href: "/destinos" }];
-  return <main className="container-site space-y-12 py-14 sm:py-24">
+  return <main className="container-site space-y-12 py-12 sm:py-24">
     {city.published && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} />}
     <Breadcrumbs items={[{ label: common("home"), href: "/" }, { label: city.name, href: `/agencia-de-viajes/${city.slug}` }]} />
     <header className="max-w-3xl space-y-6">
@@ -52,5 +58,11 @@ export default async function CityLandingPage({ params }: Props) {
     <nav aria-label={locale === "en" ? "Travel services" : "Servicios de viaje"} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {crossLinks.map(link => <Link key={link.href} href={link.href} className="rounded-card border border-line bg-canvas p-6 text-brand underline underline-offset-4 shadow-sm">{common(link.key)}</Link>)}
     </nav>
+    {packages.length > 0 && <section className="space-y-6" aria-labelledby="city-packages-title"><h2 id="city-packages-title" className="t-h2">{cityT("packagesTitle", { city: city.name })}</h2><PackageGrid items={packages} label={cityT("packagesTitle", { city: city.name })} /></section>}
+    <section className="space-y-6 rounded-panel border border-line bg-surface p-6 sm:p-8" aria-labelledby="city-cta-title">
+      <div className="max-w-3xl space-y-3"><h2 id="city-cta-title" className="t-h2">{cityT("ctaTitle", { city: city.name })}</h2><p className="t-body-lg text-ink-soft">{cityT("ctaBody")}</p></div>
+      <QuoteButton payload={{ service: "Viaje a medida", fields: {} }}>{common("requestQuote")}</QuoteButton>
+      <Link href="/requisitos" className="t-small inline-flex min-h-12 items-center text-brand underline underline-offset-4">{cityT("requirementsLink")}</Link>
+    </section>
   </main>;
 }

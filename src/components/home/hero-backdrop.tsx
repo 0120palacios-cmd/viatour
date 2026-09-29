@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useEffect, useState, type ReactNode } from "react";
 import { heroImages } from "@/lib/hero-images";
 
-export function HeroBackdrop({ children }: { children: ReactNode }) {
+export function HeroBackdrop({ children, pauseLabel }: { children: ReactNode; pauseLabel: string }) {
   const [active, setActive] = useState(0);
   const [failed, setFailed] = useState<number[]>([]);
   const [loaded, setLoaded] = useState<number[]>([]);
@@ -32,7 +32,7 @@ export function HeroBackdrop({ children }: { children: ReactNode }) {
   }, [reducedMotion, hovered, focused, paused, loaded, failed]);
 
   const visible = reducedMotion ? 0 : active;
-  return <section aria-labelledby="hero-title" data-photo={heroImages.length > 0} className="group/hero relative isolate overflow-hidden bg-surface py-14 sm:py-24"
+  return <section aria-labelledby="hero-title" data-photo={heroImages.length > 0} className="group/hero relative isolate overflow-hidden bg-surface py-8 sm:py-24"
     onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
     onFocusCapture={() => setFocused(true)} onBlurCapture={event => {
       if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
@@ -49,11 +49,11 @@ export function HeroBackdrop({ children }: { children: ReactNode }) {
       />)}
     </div>
     {children}
-    {loaded.filter(index => !failed.includes(index)).length > 1 && !reducedMotion && <div className="container-site relative mt-6">
+    {loaded.filter(index => !failed.includes(index)).length > 1 && !reducedMotion && <div className="container-site relative mt-4 sm:mt-6">
       {/* Functional accessibility copy pending approval. */}
       <button type="button" aria-pressed={paused} onClick={() => setPaused(value => !value)}
-        className="t-small min-h-12 rounded-btn border border-canvas/50 bg-ink px-4 py-3 text-canvas focus-visible:outline-brand-tint">
-        Pausar imágenes
+        className="t-small min-h-11 rounded-btn border border-canvas/50 bg-ink px-4 py-2 text-canvas focus-visible:outline-brand-tint">
+        {pauseLabel}
       </button>
     </div>}
   </section>;

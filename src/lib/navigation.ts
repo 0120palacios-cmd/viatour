@@ -27,9 +27,12 @@ export const legalLinks = [
   { key: "cookies", href: "/legales/cookies" },
 ] as const;
 
-// Stage 2: direct general contact. Quote forms gain lead capture in a later stage.
-export function whatsappHref(locale: Locale = "es") {
-  const message = locale === "en" ? "Hello, I would like advice about a trip." : "Hola, me gustaría recibir asesoría para un viaje.";
+// Direct general contact (header, floating button, footer). Quote forms capture the lead first.
+// `viewing` adds the page the visitor is on so the advisor starts with context (copy pendiente de aprobación).
+export function whatsappHref(locale: Locale = "es", viewing?: string) {
+  const base = locale === "en" ? "Hello, I would like advice about a trip." : "Hola, me gustaría recibir asesoría para un viaje.";
+  const context = viewing?.trim().slice(0, 120);
+  const message = context ? `${base} ${locale === "en" ? "I am looking at" : "Estoy viendo"}: ${context}` : base;
   return `https://wa.me/${siteConfig.whatsappNumber}?text=${encodeURIComponent(message)}`;
 }
 

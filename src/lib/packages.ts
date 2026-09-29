@@ -1,5 +1,6 @@
 ﻿import { cache } from "react";
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
+import { cachedContent } from "@/lib/content-cache";
 
 export type Package = {
   destination_id: string | null; id: string; slug: string; nombre: string; destino: string; resumen: string;
@@ -8,12 +9,8 @@ export type Package = {
   galeria: string[] | null; categoria: string | null; etiquetas: string[];
   destacado: boolean; publicado: boolean; orden: number; updated_at?: string | null;
 };
-// Public display rule for this phase: pricing remains in the data model but is
-// not customer-facing until the display layer is explicitly enabled.
-export const PACKAGE_DISPLAY_RULES = {
-  mostrar_fechas: false,
-  mostrar_precios: false,
-} as const;
+import { PACKAGE_DISPLAY_RULES } from "@/lib/display-rules";
+export { PACKAGE_DISPLAY_RULES };
 
 export function hasPublishedPrice(pkg: Pick<Package, "precio_desde" | "moneda">): boolean {
   return PACKAGE_DISPLAY_RULES.mostrar_precios
@@ -25,14 +22,18 @@ export function hasPublishedPrice(pkg: Pick<Package, "precio_desde" | "moneda">)
 
 const columns = "*";
 
-export async function getPackages(featured = false, destinationId?: string): Promise<Package[]> {
-  const supabase = await createClient();
+const readPackages = cachedContent(async (featured: boolean, destinationId: string): Promise<Package[]> => {
+  const supabase = createPublicClient();
   let query = supabase.from("packages").select(columns).eq("publicado", true).order("orden").order("slug");
   if (destinationId) query = query.eq("destination_id", destinationId);
   if (featured) query = query.eq("destacado", true).limit(3);
   const { data, error } = await query.abortSignal(AbortSignal.timeout(8000));
   if (error) throw new Error("No se pudieron cargar los paquetes.");
   return data as Package[];
+}, "packages", "packages");
+
+export async function getPackages(featured = false, destinationId?: string): Promise<Package[]> {
+  return readPackages(featured, destinationId ?? "");
 }
 
 function normalizeDestination(value: string) {
@@ -45,10 +46,11 @@ export async function getPackagesForDestination(destination: { id: string; slug:
   return packages.filter(item => item.destination_id === destination.id || destinationNames.has(normalizeDestination(item.destino)));
 }
 
-export const getPackage = cache(async (slug: string): Promise<Package | null> => {
-  const supabase = await createClient();
+const readPackage = cachedContent(async (slug: string): Promise<Package | null> => {
+  const supabase = createPublicClient();
   const { data, error } = await supabase.from("packages").select(columns).eq("publicado", true).eq("slug", slug).abortSignal(AbortSignal.timeout(8000)).maybeSingle();
   if (error) throw new Error("No se pudo cargar el paquete.");
   return data as Package | null;
-});
+}, "package", "packages");
+export const getPackage = cache((slug: string) => readPackage(slug));
 
