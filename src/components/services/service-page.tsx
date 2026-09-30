@@ -1,7 +1,28 @@
 import { useTranslations } from "next-intl";
+import { Check } from "lucide-react";
 import { FlightTool, type FlightToolTab } from "@/components/home/flight-tool";
-import { Breadcrumbs } from "@/components/layout/breadcrumbs";
+import { PageHeader } from "@/components/layout/page-header";
 import { FinalCta } from "@/components/home/sections";
+import { QuoteHowItWorks } from "@/components/quote/quote-parts";
 
 type ServicePageProps = { breadcrumbKey: string; path: string; titleKey: string; introKey: string; defaultTab: FlightToolTab; helpKeys: readonly [string, string, string] };
-export function ServicePage({ breadcrumbKey, path, titleKey, introKey, defaultTab, helpKeys }: ServicePageProps) { const t = useTranslations("services"); const common = useTranslations("common"); return <main><section className="container-site section-space"><Breadcrumbs items={[{ label: common("home"), href: "/" }, { label: common(breadcrumbKey), href: path }]} /><header className="mt-8 max-w-3xl space-y-6"><h1 className="t-h1">{t(titleKey)}</h1><p className="t-body-lg measure text-ink-soft">{t(introKey)}</p></header><section className="mt-12 rounded-panel border border-line bg-surface p-2 sm:p-4" aria-label={common("requestQuote")}><FlightTool defaultTab={defaultTab} /></section><section className="mt-14 space-y-8" aria-labelledby="help-title"><h2 id="help-title" className="t-h2">{t("helpTitle")}</h2><ol className="grid gap-6 md:grid-cols-3">{helpKeys.map((key, index) => <li key={key} className="rounded-card border border-line bg-canvas p-6 shadow-sm"><span className="t-small text-brand">{String(index + 1).padStart(2, "0")}</span><p className="t-body mt-6">{t(key)}</p></li>)}</ol></section></section><FinalCta /></main>; }
+// The form is the page: header, then the quote tool beside what the advisor does for you.
+export function ServicePage({ breadcrumbKey, path, titleKey, introKey, defaultTab, helpKeys }: ServicePageProps) {
+  const t = useTranslations("services"); const common = useTranslations("common");
+  return <main>
+    <div className="container-site">
+      <PageHeader breadcrumbs={[{ label: common("home"), href: "/" }, { label: common(breadcrumbKey), href: path }]} title={t(titleKey)} intro={t(introKey)} />
+      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-12">
+        <section aria-label={common("requestQuote")} className="min-w-0"><FlightTool defaultTab={defaultTab} /></section>
+        <aside aria-labelledby="help-title" className="space-y-6 lg:sticky lg:top-28">
+          <div className="space-y-4 rounded-panel border border-line bg-surface p-6">
+            <h2 id="help-title" className="t-h3">{t("helpTitle")}</h2>
+            <ul className="space-y-4">{helpKeys.map(key => <li key={key} className="t-body flex gap-3"><Check size={20} strokeWidth={1.75} className="mt-1 shrink-0 text-brand" aria-hidden="true" /><span>{t(key)}</span></li>)}</ul>
+          </div>
+          <QuoteHowItWorks />
+        </aside>
+      </div>
+    </div>
+    <FinalCta />
+  </main>;
+}

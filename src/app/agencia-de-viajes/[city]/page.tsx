@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
+import { ArrowRight } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { pageMetadata } from "@/lib/seo";
 import { CITY_SEO_PAGES, getCitySeoPage } from "@/lib/city-seo";
@@ -44,9 +45,9 @@ export default async function CityLandingPage({ params }: Props) {
   const copy = city[locale];
   const structuredData = { "@context": "https://schema.org", "@graph": [{ "@type": "TravelAgency", "@id": absoluteUrl("/#agency"), name: "viatour", url: localizedUrl(`/agencia-de-viajes/${city.slug}`, locale), areaServed: { "@type": "City", name: city.name, containedInPlace: { "@type": "Country", name: "Honduras" } }, parentOrganization: { "@id": absoluteUrl("/#agency") } }, breadcrumbSchema([{ label: common("home"), href: "/" }, { label: city.name, href: `/agencia-de-viajes/${city.slug}` }], locale)] };
   const crossLinks = [...serviceLinks, { key: "destinations", href: "/destinos" }];
-  return <main className="container-site space-y-12 py-12 sm:py-24">
+  return <main className="container-site space-y-12 pb-12 pt-8 sm:pb-24 sm:pt-12">
     {city.published && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} />}
-    <Breadcrumbs items={[{ label: common("home"), href: "/" }, { label: city.name, href: `/agencia-de-viajes/${city.slug}` }]} />
+    <Breadcrumbs schema={false} items={[{ label: common("home"), href: "/" }, { label: city.name, href: `/agencia-de-viajes/${city.slug}` }]} />
     <header className="max-w-3xl space-y-6">
       <h1 className="t-h1">{copy.h1}</h1>
       <p className="t-body-lg text-ink-soft">{copy.description}</p>
@@ -55,9 +56,9 @@ export default async function CityLandingPage({ params }: Props) {
       <h2 id="city-copy-title" className="sr-only">{copy.h1}</h2>
       {copy.body.map((paragraph, index) => <p key={`${city.slug}-${locale}-${index}`} className="t-body-lg text-ink-soft">{paragraph}</p>)}
     </section>
-    <nav aria-label={locale === "en" ? "Travel services" : "Servicios de viaje"} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {crossLinks.map(link => <Link key={link.href} href={link.href} className="rounded-card border border-line bg-canvas p-6 text-brand underline underline-offset-4 shadow-sm">{common(link.key)}</Link>)}
-    </nav>
+    <nav aria-label={locale === "en" ? "Travel services" : "Servicios de viaje"}><ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      {crossLinks.map(link => <li key={link.href}><Link href={link.href} className="media-card t-body flex min-h-14 items-center justify-between gap-2 rounded-card border border-line bg-canvas px-4 py-3 font-semibold text-ink shadow-sm hover:text-brand">{common(link.key)}<ArrowRight size={18} strokeWidth={1.75} className="shrink-0 text-brand" aria-hidden="true" /></Link></li>)}
+    </ul></nav>
     {packages.length > 0 && <section className="space-y-6" aria-labelledby="city-packages-title"><h2 id="city-packages-title" className="t-h2">{cityT("packagesTitle", { city: city.name })}</h2><PackageGrid items={packages} label={cityT("packagesTitle", { city: city.name })} /></section>}
     <section className="space-y-6 rounded-panel border border-line bg-surface p-6 sm:p-8" aria-labelledby="city-cta-title">
       <div className="max-w-3xl space-y-3"><h2 id="city-cta-title" className="t-h2">{cityT("ctaTitle", { city: city.name })}</h2><p className="t-body-lg text-ink-soft">{cityT("ctaBody")}</p></div>

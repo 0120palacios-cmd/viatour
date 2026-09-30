@@ -20,6 +20,29 @@ export const serviceLinks = [
   { key: "customTrip", href: "/viaje-a-medida" },
 ] as const;
 
+// Header order follows how visitors shop: the catalogue first, then help to decide, then proof and contact.
+// The logo is the link to Inicio.
+export const headerLinks = [
+  { key: "packages", href: "/paquetes" },
+  { key: "destinations", href: "/destinos" },
+] as const;
+export const headerServiceLinks = [
+  { key: "flights", href: "/vuelos", body: "home.flightBody" },
+  { key: "hotels", href: "/hoteles", body: "home.hotelBody" },
+  { key: "customTrip", href: "/viaje-a-medida", body: "home.customBody" },
+  { key: "discover", href: "/descubrir", body: "home.discoverBody" },
+] as const;
+export const headerSecondaryLinks = [
+  { key: "reviews", href: "/opiniones" },
+  { key: "blog", href: "/blog" },
+  { key: "about", href: "/nosotros" },
+  { key: "contact", href: "/contacto" },
+] as const;
+export const helpLinks = [
+  { key: "faq", href: "/preguntas-frecuentes" },
+  { key: "requirements", href: "/requisitos" },
+] as const;
+
 export const legalLinks = [
   { key: "terms", href: "/legales/terminos" },
   { key: "privacy", href: "/legales/privacidad" },

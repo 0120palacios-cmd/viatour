@@ -13,6 +13,8 @@ export const siteConfig = {
   defaultCurrency: "USD" as const,
   // Referral section on /gira (copy and policy approved by the owner 2026-09-29).
   referralProgram: true as boolean,
+  // Internal "borrador / pendiente de aprobación" notes stay out of the public UI; approval status lives in docs/copy-pending.md.
+  showDraftNotices: false as boolean,
   social: {
     facebook: "https://www.facebook.com/viatourTrips",
     instagram: "https://www.instagram.com/viatour.inc/",

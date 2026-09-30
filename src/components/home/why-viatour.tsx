@@ -13,20 +13,20 @@ export function WhyViatour() {
   ];
 
   return (
-    <section className="container-site py-12 sm:py-24" aria-labelledby="why-title">
-      <div className="mb-10 max-w-3xl space-y-4 sm:mb-12">
+    <section className="section-space border-y border-line bg-surface" aria-labelledby="why-title"><div className="container-site">
+      <div className="mb-8 max-w-3xl space-y-3 sm:mb-12">
         <h2 id="why-title" className="t-h2">{t("home.whyTitle")}</h2>
         <p className="t-body-lg text-ink-soft">{t("home.whyIntro")}</p>
       </div>
       <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
         {items.map(({ icon: Icon, title, body }) => (
           <article key={title} className="space-y-4">
-            <Icon size={28} strokeWidth={1.75} className="text-brand" aria-hidden="true" />
+            <span className="flex size-12 items-center justify-center rounded-btn bg-canvas text-brand shadow-sm"><Icon size={24} strokeWidth={1.75} aria-hidden="true" /></span>
             <h3 className="t-h3">{title}</h3>
             <p className="t-body text-ink-soft">{body}</p>
           </article>
         ))}
       </div>
-    </section>
+    </div></section>
   );
 }

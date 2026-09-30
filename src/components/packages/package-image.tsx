@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { useTranslations } from "next-intl";
+import { MapPin } from "lucide-react";
 import { canOptimizeImage } from "@/lib/image-optimization";
 import type { Package } from "@/lib/packages";
 
@@ -12,7 +13,8 @@ export function PackageImage({ item, hero = false }: { item: Package; hero?: boo
     : "(max-width: 639px) 300px, (max-width: 1023px) calc((100vw - 72px) / 2), (max-width: 1199px) calc((100vw - 96px) / 3), 368px";
 
   if (!item.imagen_url) {
-    return <div role="img" aria-label={t("photoPlaceholder", { name: item.destino })} className={className} />;
+    // Tonal placeholder until a real photo exists: reads as intentional, not as a failed image.
+    return <div role="img" aria-label={t("photoPlaceholder", { name: item.destino })} className={`${className} flex flex-col items-center justify-center gap-2 bg-brand-tint text-brand`}><MapPin size={28} strokeWidth={1.5} aria-hidden="true" /><span className="t-small px-4 text-center font-semibold text-brand-deep">{item.destino}</span></div>;
   }
 
   return (

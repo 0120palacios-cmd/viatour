@@ -2,7 +2,9 @@ import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
 import { Link } from "@/i18n/navigation";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
+import { Breadcrumbs } from "@/components/layout/breadcrumbs";
+import { Button } from "@/components/ui/button";
 import { absoluteUrl, breadcrumbSchema, localizedContentMetadata, localizedUrl, detailDescription } from "@/lib/seo";
 import { getDestination } from "@/lib/destinations";
 import { getPackagesForDestination } from "@/lib/packages";
@@ -33,6 +35,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function Page({ params }: Props) {
   const t = await getTranslations("static");
   const common = await getTranslations("common");
+  const home = await getTranslations("home");
+  const ux = await getTranslations("ux");
   const locale = (await getLocale()) as Locale;
   const item = await getDestination((await params).slug);
   if (!item) notFound();
@@ -78,13 +82,16 @@ export default async function Page({ params }: Props) {
   return (
     <main>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} />
-      <header className="container-site grid items-center gap-8 py-12 sm:py-24 lg:grid-cols-2">
-        <div className="space-y-6">
-          <h1 className="t-h1">{item.nombre}</h1>
-          {item.intro && <p className="t-body-lg measure whitespace-pre-line text-ink-soft">{item.intro}</p>}
-          <div className="flex flex-wrap items-start gap-4">{quote}<ShareButton title={item.nombre} /></div>
+      <header className="container-site space-y-6 pb-12 pt-8 sm:pb-16 sm:pt-12">
+        <Breadcrumbs schema={false} items={[{ label: common("home"), href: "/" }, { label: common("destinations"), href: "/destinos" }, { label: item.nombre, href: `/destinos/${item.slug}` }]} />
+        <div className="grid items-center gap-8 lg:grid-cols-2 lg:gap-12">
+          <div className="space-y-6">
+            <h1 className="t-h1">{item.nombre}</h1>
+            {item.intro && <p className="t-body-lg measure whitespace-pre-line text-ink-soft">{item.intro}</p>}
+            <div className="flex flex-wrap items-start gap-3">{quote}<ShareButton title={item.nombre} /></div>
+          </div>
+          <div className="overflow-hidden rounded-card border border-line shadow-sm"><DestinationImage item={item} hero /></div>
         </div>
-        <div className="overflow-hidden rounded-card border border-line"><DestinationImage item={item} hero /></div>
       </header>
       {(item.cuerpo || item.mejor_epoca) && <div className="border-y border-line bg-surface py-12 sm:py-24"><div className="container-site grid items-start gap-12 lg:grid-cols-3">
         {item.cuerpo && <div className="space-y-6 lg:col-span-2">{item.cuerpo.split(/\r?\n\s*\r?\n/).filter(paragraph => paragraph.trim()).map((paragraph, index) => <p key={index} className="t-body measure whitespace-pre-line">{paragraph}</p>)}</div>}
@@ -92,13 +99,16 @@ export default async function Page({ params }: Props) {
       </div></div>}
       <section className="container-site py-12 sm:py-24" aria-labelledby="destination-packages">
         <h2 id="destination-packages" className="t-h2 mb-8">{t("destinationPackages", { name: item.nombre })}</h2>
-        {packages.length ? <PackageGrid items={packages} label={t("destinationPackages", { name: item.nombre })} /> : <div className="space-y-6 rounded-panel border border-line bg-surface p-8 text-center"><p className="t-body text-ink-soft">{t("noDestinationPackages")}</p>{quote}</div>}
+        {packages.length ? <PackageGrid layout={packages.length > 3 ? "grid" : "carousel"} items={packages} label={t("destinationPackages", { name: item.nombre })} /> : <div className="space-y-4 rounded-panel border border-line bg-surface p-6 sm:p-8"><p className="t-body text-ink-soft">{t("noDestinationPackages")}</p><Button asChild variant="ghost"><Link href="/paquetes">{ux("allPackages")}<ArrowRight size={18} strokeWidth={1.75} aria-hidden="true" /></Link></Button></div>}
       </section>
       {item.faqs.length > 0 && <section className="border-y border-line bg-surface py-12 sm:py-24" aria-labelledby="destination-faq"><div className="container-site"><h2 id="destination-faq" className="t-h2 mb-8 text-center">{common("faq")}</h2><Accordion type="single" collapsible className="mx-auto max-w-3xl">{item.faqs.map((faq, index) => <AccordionItem key={index} value={String(index)}><AccordionTrigger>{faq.pregunta}</AccordionTrigger><AccordionContent>{faq.respuesta}</AccordionContent></AccordionItem>)}</Accordion></div></section>}
-      <section id="solicitar-cotizacion" className="container-site scroll-mt-24 space-y-6 py-12 text-center sm:py-24" aria-labelledby="destination-quote">
-        <h2 id="destination-quote" className="t-h2">{common("planTrip")}</h2>
-        {bottomQuote}
-        <Link href="/destinos" className="t-small inline-flex items-center gap-2 text-brand underline underline-offset-4"><ArrowLeft size={16} strokeWidth={1.75} aria-hidden="true" />{t("backToDestinations")}</Link>
+      <section id="solicitar-cotizacion" className="container-site scroll-mt-24 py-12 sm:py-24" aria-labelledby="destination-quote">
+        <div className="space-y-6 rounded-panel border border-line bg-brand-tint px-6 py-10 text-center sm:px-12 sm:py-14">
+          <h2 id="destination-quote" className="t-h2">{common("planTrip")}</h2>
+          <p className="t-body-lg mx-auto max-w-2xl text-ink-soft">{home("finalBody")}</p>
+          <div className="flex justify-center">{bottomQuote}</div>
+        </div>
+        <div className="mt-6 text-center"><Link href="/destinos" className="t-small inline-flex items-center gap-2 text-brand underline underline-offset-4"><ArrowLeft size={16} strokeWidth={1.75} aria-hidden="true" />{t("backToDestinations")}</Link></div>
       </section>
       <StickyQuoteBar targetId="solicitar-cotizacion" title={item.nombre} />
     </main>
