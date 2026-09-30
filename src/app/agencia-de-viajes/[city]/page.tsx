@@ -1,3 +1,4 @@
+import { JsonLd } from "@/components/seo/json-ld";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
@@ -7,7 +8,7 @@ import { pageMetadata } from "@/lib/seo";
 import { CITY_SEO_PAGES, getCitySeoPage } from "@/lib/city-seo";
 import { serviceLinks } from "@/lib/navigation";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
-import { absoluteUrl, breadcrumbSchema, localizedUrl } from "@/lib/seo";
+import { agencyRef, breadcrumbSchema, localizedUrl } from "@/lib/seo";
 import type { Locale } from "@/i18n/config";
 import { getPackages, type Package } from "@/lib/packages";
 import { PackageGrid } from "@/components/packages/package-card";
@@ -43,10 +44,13 @@ export default async function CityLandingPage({ params }: Props) {
   try { packages = await getPackages(true); } catch { packages = []; }
   const common = await getTranslations("common");
   const copy = city[locale];
-  const structuredData = { "@context": "https://schema.org", "@graph": [{ "@type": "TravelAgency", "@id": absoluteUrl("/#agency"), name: "viatour", url: localizedUrl(`/agencia-de-viajes/${city.slug}`, locale), areaServed: { "@type": "City", name: city.name, containedInPlace: { "@type": "Country", name: "Honduras" } }, parentOrganization: { "@id": absoluteUrl("/#agency") } }, breadcrumbSchema([{ label: common("home"), href: "/" }, { label: city.name, href: `/agencia-de-viajes/${city.slug}` }], locale)] };
+  // The city page describes a service area of the one agency, not a second agency (same @id with a
+  // different url and areaServed would contradict the site-wide TravelAgency node).
+  const cityUrl = localizedUrl(`/agencia-de-viajes/${city.slug}`, locale);
+  const structuredData = { "@context": "https://schema.org", "@graph": [{ "@type": "Service", "@id": `${cityUrl}#service`, name: copy.h1, description: copy.description, serviceType: "Agencia de viajes", url: cityUrl, provider: agencyRef, areaServed: { "@type": "City", name: city.name, containedInPlace: { "@type": "Country", name: "Honduras" } } }, breadcrumbSchema([{ label: common("home"), href: "/" }, { label: city.name, href: `/agencia-de-viajes/${city.slug}` }], locale)] };
   const crossLinks = [...serviceLinks, { key: "destinations", href: "/destinos" }];
   return <main className="container-site space-y-12 pb-12 pt-8 sm:pb-24 sm:pt-12">
-    {city.published && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} />}
+    {city.published && <JsonLd data={structuredData} />}
     <Breadcrumbs schema={false} items={[{ label: common("home"), href: "/" }, { label: city.name, href: `/agencia-de-viajes/${city.slug}` }]} />
     <header className="max-w-3xl space-y-6">
       <h1 className="t-h1">{copy.h1}</h1>

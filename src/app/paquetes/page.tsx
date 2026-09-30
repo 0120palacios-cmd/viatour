@@ -25,7 +25,7 @@ async function Packages({ region }: { region?: string }) {
   return <div className="space-y-8">
     {regions.length > 1 && <nav aria-label={t("ux.filterLabel")} className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0"><ul className="chip-row flex gap-2 sm:flex-wrap">{chip(t("ux.filterAll"), items.length)}{regions.map(value => chip(value, counts.get(value) ?? 0, value))}</ul></nav>}
     <p className="t-small text-ink-soft" aria-live="polite">{t("ux.packageCount", { count: visible.length })}</p>
-    <PackageGrid items={visible} label={t("static.packagesAvailable")} layout="grid" />
+    <PackageGrid items={visible} label={t("static.packagesAvailable")} layout="grid" preloadCount={2} />
   </div>;
 }
 

@@ -15,10 +15,14 @@ const selectClassName = "h-12 w-full min-w-0 rounded-btn border border-line bg-c
 function slugify(value: string) { return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 120); }
 function linkIcon() { return <ArrowUpRight size={16} strokeWidth={1.75} aria-hidden="true" />; }
 
-export function RequirementsChecker() {
+// `initialDestination` (from ?destino=, e.g. a destination page link) preselects a listed
+// destination, or fills "Otro destino" with any other name.
+export function RequirementsChecker({ initialDestination = "" }: { initialDestination?: string }) {
   const t = useTranslations("requirements");
-  const [destinationChoice, setDestinationChoice] = useState("");
-  const [customDestination, setCustomDestination] = useState("");
+  const preset = initialDestination.trim().slice(0, 120);
+  const listed = publishedRequirementDestinations.some(option => option.value === preset);
+  const [destinationChoice, setDestinationChoice] = useState(listed ? preset : preset ? otherDestination : "");
+  const [customDestination, setCustomDestination] = useState(listed ? "" : preset);
   const [dates, setDates] = useState("");
   const [transits, setTransits] = useState("");
   const [result, setResult] = useState<RequirementsResult | null>(null);

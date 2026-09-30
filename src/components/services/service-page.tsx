@@ -1,4 +1,7 @@
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { JsonLd } from "@/components/seo/json-ld";
+import { serviceSchema } from "@/lib/seo";
+import type { Locale } from "@/i18n/config";
 import { Check } from "lucide-react";
 import { FlightTool, type FlightToolTab } from "@/components/home/flight-tool";
 import { PageHeader } from "@/components/layout/page-header";
@@ -8,8 +11,9 @@ import { QuoteHowItWorks } from "@/components/quote/quote-parts";
 type ServicePageProps = { breadcrumbKey: string; path: string; titleKey: string; introKey: string; defaultTab: FlightToolTab; helpKeys: readonly [string, string, string] };
 // The form is the page: header, then the quote tool beside what the advisor does for you.
 export function ServicePage({ breadcrumbKey, path, titleKey, introKey, defaultTab, helpKeys }: ServicePageProps) {
-  const t = useTranslations("services"); const common = useTranslations("common");
+  const t = useTranslations("services"); const common = useTranslations("common"); const locale = useLocale() as Locale;
   return <main>
+    <JsonLd data={serviceSchema(path, t(titleKey), t(introKey), locale)} />
     <div className="container-site">
       <PageHeader breadcrumbs={[{ label: common("home"), href: "/" }, { label: common(breadcrumbKey), href: path }]} title={t(titleKey)} intro={t(introKey)} />
       <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-12">

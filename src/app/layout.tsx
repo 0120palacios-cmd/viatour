@@ -1,4 +1,5 @@
-import { agencySchema, pageMetadata } from "@/lib/seo";
+import { pageMetadata, siteSchema } from "@/lib/seo";
+import { JsonLd } from "@/components/seo/json-ld";
 import { siteConfig } from "@/lib/site-config";
 import { SiteBreadcrumbJsonLd } from "@/components/seo/site-breadcrumb-json-ld";
 import { Analytics } from "@/components/analytics";
@@ -43,7 +44,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     <html lang={locale === "en" ? "en" : "es-HN"} className={manrope.variable}>
       <body className="flex min-h-dvh flex-col">
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(agencySchema) }} />
+          <JsonLd data={siteSchema} />
           <SiteBreadcrumbJsonLd />
           <ConsentProvider><PublicChrome><Analytics /><AttributionCapture /></PublicChrome><CurrencyProvider initialCurrency={currency}>
             <PublicChrome><Header /></PublicChrome>

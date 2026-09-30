@@ -42,5 +42,6 @@ export async function getReviewPhotoSignedUrl(path: string, expiresIn = 300) {
 }
 export function reviewSchema(summary: ReviewSummary, reviews: PublicReview[]) {
   if (!summary.total) return null;
-  return { ...agencySchema, aggregateRating: { "@type": "AggregateRating", ratingValue: summary.promedio.toFixed(1), reviewCount: summary.total, bestRating: 5, worstRating: 1 }, review: reviews.map(review => ({ "@type": "Review", author: { "@type": "Person", name: review.nombre }, reviewBody: review.texto, datePublished: review.fecha, reviewRating: { "@type": "Rating", ratingValue: review.calificacion, bestRating: 5, worstRating: 1 } })) };
+  // Attaches the rating to the site-wide agency node (same @id) rather than restating the agency.
+  return { "@context": "https://schema.org", "@type": "TravelAgency", "@id": agencySchema["@id"], name: agencySchema.name, aggregateRating: { "@type": "AggregateRating", ratingValue: summary.promedio.toFixed(1), reviewCount: summary.total, bestRating: 5, worstRating: 1 }, review: reviews.map(review => ({ "@type": "Review", author: { "@type": "Person", name: review.nombre }, reviewBody: review.texto, datePublished: review.fecha, reviewRating: { "@type": "Rating", ratingValue: review.calificacion, bestRating: 5, worstRating: 1 } })) };
 }

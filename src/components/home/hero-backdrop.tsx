@@ -43,12 +43,14 @@ export function HeroBackdrop({ children, pauseLabel, resumeLabel = pauseLabel }:
       if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
     }}>
     <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden bg-surface group-data-[photo=true]/hero:bg-ink">
-      {heroImages.map((photo, index) => !failed.includes(index) && (!reducedMotion || index === 0) && <Image
+      {/* The first photo is the LCP element: it is visible in the server HTML (no fade gated on hydration),
+          and the other slides mount only once it has loaded (or failed), so they never compete with it for bandwidth. */}
+      {heroImages.map((photo, index) => !failed.includes(index) && (index === 0 || (!reducedMotion && (loaded.includes(0) || failed.includes(0)))) && <Image
         key={`${index}-${photo.src}`} src={photo.src} alt={photo.alt} fill sizes="100vw"
         // Next.js 16 replaces the deprecated priority prop with preload.
         preload={index === 0}
         aria-hidden={index !== visible}
-        className={`object-cover object-[center_38%] sm:object-center transition-opacity duration-(--duration-reveal) ease-out motion-reduce:transition-none ${index === visible && loaded.includes(index) ? "opacity-100" : "opacity-0"}`}
+        className={`object-cover object-[center_38%] sm:object-center transition-opacity duration-(--duration-reveal) ease-out motion-reduce:transition-none ${index === visible && (index === 0 || loaded.includes(index)) ? "opacity-100" : "opacity-0"}`}
         onLoad={() => setLoaded(previous => previous.includes(index) ? previous : [...previous, index])}
         onError={() => setFailed(previous => previous.includes(index) ? previous : [...previous, index])}
       />)}

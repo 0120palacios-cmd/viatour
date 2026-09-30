@@ -1,3 +1,4 @@
+import { JsonLd } from "@/components/seo/json-ld";
 import { Link } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { ChevronRight } from "lucide-react";
@@ -21,6 +22,6 @@ export function Breadcrumbs({ items, schema: withSchema = true }: { items: reado
         </li>)}
       </ol>
     </nav>
-    {withSchema && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema).replace(/</g, "\\u003c") }} />}
+    {withSchema && <JsonLd data={schema} />}
   </>;
 }

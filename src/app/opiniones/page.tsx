@@ -1,3 +1,4 @@
+import { JsonLd } from "@/components/seo/json-ld";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { ArrowLeft, ArrowRight, ArrowUpRight, PenLine } from "lucide-react";
@@ -29,6 +30,6 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ p
         </nav>}
       </section>
     </div>}
-    {schema && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema).replace(/</g, "\\u003c") }} />}
+    {schema && <JsonLd data={schema} />}
   </main>;
 }

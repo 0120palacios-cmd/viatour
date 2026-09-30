@@ -4,7 +4,7 @@ import { ArrowRight, Compass, MapPin, MessageSquare, Package } from "lucide-reac
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { localizedPageMetadata } from "@/lib/seo";
-export async function generateMetadata(): Promise<Metadata> { return { ...(await localizedPageMetadata("/404", "home")), alternates: { canonical: null }, robots: { index: false, follow: true } }; }
+export async function generateMetadata(): Promise<Metadata> { return { ...(await localizedPageMetadata("/404", "notFound")), alternates: { canonical: null }, robots: { index: false, follow: true } }; }
 export default function NotFound() {
   const t = useTranslations();
   const next = [{ href: "/paquetes", key: "packages", icon: Package }, { href: "/destinos", key: "destinations", icon: MapPin }, { href: "/descubrir", key: "discover", icon: Compass }, { href: "/contacto", key: "contact", icon: MessageSquare }] as const;
