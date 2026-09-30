@@ -21,11 +21,23 @@ export function fitMetaDescription(description: string, locale: Locale = default
   return `${text.slice(0, cut > 140 ? cut : 159).replace(/[.,;:]$/, "")}.`;
 }
 
+// Words that cannot end a title: cutting "…a su medida desde Honduras" at 60 characters used to
+// leave "…a su medida desde" in search results.
+const danglingWords = new Set(["a", "al", "con", "de", "del", "desde", "el", "en", "la", "las", "los", "para", "por", "su", "sus", "un", "una", "y", "o", "and", "for", "from", "in", "of", "the", "to", "with"]);
+
 export function fitMetaTitle(title: string) {
   const text = title.replace(/\s+/g, " ").trim();
   if (text.length <= 60) return text;
   const cut = text.lastIndexOf(" ", 59);
-  return text.slice(0, cut > 45 ? cut : 59).replace(/[|,:;-]$/, "").trim();
+  const words = text.slice(0, cut > 45 ? cut : 59).split(" ");
+  while (words.length > 1 && (danglingWords.has(words.at(-1)!.toLocaleLowerCase()) || /^[|,:;–—-]$/.test(words.at(-1)!))) words.pop();
+  return words.join(" ").replace(/[|,:;–—-]$/, "").trim();
+}
+
+// The first candidate that fits whole; titles are written longest (most descriptive) first.
+export function pickMetaTitle(...candidates: string[]) {
+  const fitting = candidates.map(value => value.replace(/\s+/g, " ").trim()).find(value => value.length <= 60);
+  return fitting ?? fitMetaTitle(candidates.at(-1) ?? "");
 }
 
 // Announced in every page head so readers and crawlers can find the guides feed.
@@ -127,6 +139,27 @@ export const siteSchema = {
 // A service page: what viatour does, for whom and where, attached to the agency.
 export function serviceSchema(path: string, name: string, description: string, locale: Locale = defaultLocale) {
   return { "@context": "https://schema.org", "@type": "Service", "@id": `${localizedUrl(path, locale)}#service`, name, description, serviceType: name, url: localizedUrl(path, locale), provider: agencyRef, areaServed: { "@type": "Country", name: "Honduras" }, availableChannel: { "@type": "ServiceChannel", serviceUrl: `https://wa.me/${siteConfig.whatsappNumber}`, availableLanguage: ["es", "en"] } };
+}
+
+// A listing page (packages, destinations, guides) as a CollectionPage whose ItemList names every
+// entry and links it, so crawlers and AI systems read the catalogue without following each card.
+export function collectionSchema(path: string, name: string, items: readonly { name: string; path: string; image?: string | null }[], locale: Locale = defaultLocale) {
+  const url = localizedUrl(path, locale);
+  return {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "@id": `${url}#page`,
+    url,
+    name,
+    isPartOf: { "@id": websiteId },
+    publisher: agencyRef,
+    inLanguage: locale === "en" ? "en" : "es-HN",
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: items.length,
+      itemListElement: items.map((item, index) => ({ "@type": "ListItem", position: index + 1, name: item.name, url: absoluteUrl(localizedPath(item.path, "es")), ...(item.image ? { image: absoluteUrl(item.image) } : {}) })),
+    },
+  };
 }
 
 export function noindexMetadata(title: string, description: string): Metadata {

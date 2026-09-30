@@ -27,7 +27,7 @@ export function BlogCard({ post }: { post: BlogPost }) {
       <p className="t-body line-clamp-3 text-ink-soft">{post.extracto}</p>
       <div className="t-small mt-auto flex items-center justify-between gap-4 pt-2 text-ink-soft">
         {post.publicado_en ? <time dateTime={post.publicado_en}>{blogDate(post.publicado_en)}</time> : <span />}
-        <span className="inline-flex items-center gap-1 font-semibold text-brand" aria-hidden="true">{t("common.readMore")}<ArrowRight size={16} strokeWidth={1.75} className="transition-transform duration-(--duration-fast) group-hover:translate-x-1 motion-reduce:transition-none" /></span>
+        <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap font-semibold text-brand" aria-hidden="true">{t("common.readMore")}<ArrowRight size={16} strokeWidth={1.75} className="transition-transform duration-(--duration-fast) group-hover:translate-x-1 motion-reduce:transition-none" /></span>
       </div>
     </div>
   </article>;

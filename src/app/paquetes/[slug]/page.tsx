@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { Link } from "@/i18n/navigation";
 import { notFound } from "next/navigation";
 import { ArrowDown, CalendarDays, Check, Clock3, Compass, Info, ListChecks, MapPin, Minus, X } from "lucide-react";
-import { absoluteUrl, agencyRef, breadcrumbSchema, localizedContentMetadata, localizedUrl, detailDescription, websiteId } from "@/lib/seo";
+import { absoluteUrl, agencyRef, breadcrumbSchema, localizedContentMetadata, localizedUrl, detailDescription, pickMetaTitle, websiteId } from "@/lib/seo";
 import { getBlogPosts } from "@/lib/blog";
 import { guideDestination } from "@/lib/guide-utils";
 import { BlogCard } from "@/components/blog/card";
@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!item) notFound();
   const locale = (await getLocale()) as Locale;
   const english = locale === "en";
-  return localizedContentMetadata("/paquetes/" + item.slug, english ? `viatour | ${item.nombre} travel package from Honduras` : "viatour | " + item.nombre + " a su medida desde Honduras", english ? `Explore the ${item.nombre} travel package from Honduras with viatour and request guidance to adjust dates, services and details to your plans.` : detailDescription(item.nombre, item.resumen || item.descripcion), item.imagen_url);
+  return localizedContentMetadata("/paquetes/" + item.slug, english ? pickMetaTitle(`viatour | ${item.nombre} travel package from Honduras`, `viatour | ${item.nombre} from Honduras`, `viatour | ${item.nombre}`) : pickMetaTitle(`viatour | ${item.nombre} a su medida desde Honduras`, `viatour | ${item.nombre} desde Honduras`, `viatour | ${item.nombre}`), english ? `Explore the ${item.nombre} travel package from Honduras with viatour and request guidance to adjust dates, services and details to your plans.` : detailDescription(item.nombre, item.resumen || item.descripcion), item.imagen_url);
 }
 
 export default async function Page({ params }: Props) {

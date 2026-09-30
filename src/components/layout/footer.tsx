@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { ChevronDown, Mail, MapPin, MessageCircle } from "lucide-react";
 import { helpLinks, legalLinks, reservationLink, serviceLinks } from "@/lib/navigation";
 import { CITY_SEO_PAGES } from "@/lib/city-seo";
@@ -32,14 +32,12 @@ const footerLink = "t-small inline-flex min-h-11 items-center rounded-btn text-c
 
 export function Footer() {
   const t = useTranslations();
-  const locale = useLocale();
   const coverage = CITY_SEO_PAGES.filter(city => city.published);
-  const coverageTitle = locale === "en" ? "Coverage" : "Cobertura";
   const columns: { title: string; links: readonly { href: string; label: string }[] }[] = [
     { title: t("common.services"), links: serviceLinks.map(({ href, key }) => ({ href, label: t(`common.${key}`) })) },
     { title: t("footer.explore"), links: exploreLinks.map(({ href, key }) => ({ href, label: t(`common.${key}`) })) },
     { title: "viatour", links: companyLinks.map(({ href, key }) => ({ href, label: t(`common.${key}`) })) },
-    ...(coverage.length ? [{ title: coverageTitle, links: coverage.map(city => ({ href: `/agencia-de-viajes/${city.slug}`, label: city.name })) }] : []),
+    ...(coverage.length ? [{ title: t("footer.coverage"), links: coverage.map(city => ({ href: `/agencia-de-viajes/${city.slug}`, label: city.name })) }] : []),
   ];
   return <footer id="site-footer" className="bg-ink text-canvas">
     <div className="container-site py-12 sm:py-16">

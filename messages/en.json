@@ -55,6 +55,7 @@
   },
   "footer": {
     "explore": "Explore",
+    "coverage": "Coverage",
     "social": "Social media",
     "googleProfile": "Find us on Google",
     "iata": "IATA sales under an accredited host agency.",
@@ -66,7 +67,7 @@
     "newsletterEmail": "Email address (required)",
     "newsletterName": "Name (optional)",
     "newsletterInvalidEmail": "Enter a valid email address.",
-    "newsletterConsent": "I agree to receive travel ideas and seasonal offers under the Privacy Policy.",
+    "newsletterConsent": "I agree to receive travel ideas and seasonal offers under the <link>Privacy Policy</link>.",
     "newsletterConsentError": "Please provide your consent to continue.",
     "subscribe": "Subscribe",
     "newsletterSuccess": "Thank you. Your email has been registered to receive travel ideas and seasonal offers.",
@@ -360,7 +361,11 @@
     "validation": "Please review the indicated fields.",
     "error": "We could not send your review. Please try again.",
     "ratingSummary": "{count} reviews",
-    "starsCount": "{count, plural, one {# star} other {# stars}}"
+    "starsCount": "{count, plural, one {# star} other {# stars}}",
+    "filterLabel": "Filter reviews by rating",
+    "filterRow": "Show the {count} {stars, plural, one {# star} other {# star}} reviews",
+    "filterActive": "{stars, plural, one {# star} other {# star}} reviews: {count}",
+    "filterClear": "Show all reviews"
   },
   "portal": {
     "headerMessage": "Check your reservation online, whenever you need.",

@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
-import { Turnstile } from "@/components/turnstile";
+import { Turnstile, useHumanToken } from "@/components/turnstile";
 import { useCurrency } from "@/components/currency-provider";
 import { ContactFields, QuoteHowItWorks, QuoteSubmit, QuoteSuccess, contactFormData } from "@/components/quote/quote-parts";
 import { requestQuote, type QuoteResult } from "@/lib/quote";
@@ -13,7 +13,7 @@ export function PackageQuote({ item, intro }: { item: Package; intro?: string })
   const t = useTranslations("packageQuote");
   const locale = useLocale() as "es" | "en";
   const { currency } = useCurrency();
-  const [token, setToken] = useState("");
+  const human = useHumanToken();
   const [challenge, setChallenge] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
@@ -23,7 +23,7 @@ export function PackageQuote({ item, intro }: { item: Package; intro?: string })
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (locked.current || !token) return;
+    if (locked.current) return;
     const form = new FormData(event.currentTarget);
     const origin = String(form.get("origin") ?? "");
     const destination = otherDestination ? String(form.get("destination") ?? "").trim() : item.destino;
@@ -33,10 +33,11 @@ export function PackageQuote({ item, intro }: { item: Package; intro?: string })
     const notes = String(form.get("notes") ?? "");
     const contact = contactFormData(form);
     locked.current = true;
-    setBusy(true);
     setError(false);
     try {
-      setResult(await requestQuote({ service: "Paquete", servicio: "Paquete", locale, currency, turnstileToken: token, fields: { Paquete: item.nombre, Nombre: contact.name, Origen: origin, Destino: destination, Fechas: dates, Adultos: adults, Niños: children, Notas: notes }, formData: {
+      const turnstileToken = await human.ensure();
+      setBusy(true);
+      setResult(await requestQuote({ service: "Paquete", servicio: "Paquete", locale, currency, turnstileToken, fields: { Paquete: item.nombre, Nombre: contact.name, Origen: origin, Destino: destination, Fechas: dates, Adultos: adults, Niños: children, Notas: notes }, formData: {
         slug: item.slug, nombre: item.nombre, destino: destination,
         origin, dates, adults, children, notes, ...contact,
       } }));
@@ -64,9 +65,9 @@ export function PackageQuote({ item, intro }: { item: Package; intro?: string })
       <div className="space-y-2"><label htmlFor={`quote-notes-${item.id}`} className="t-small block">{t("notes")} <span className="text-ink-soft">({t("optional")})</span></label><textarea id={`quote-notes-${item.id}`} name="notes" maxLength={3000} rows={3} className="t-body w-full rounded-btn border border-line bg-canvas p-3 text-ink focus-visible:border-brand" /></div>
     </div>
     <div className="border-t border-line pt-5"><ContactFields idPrefix={`quote-contact-${item.id}`} columns={1} /></div>
-    <Turnstile onToken={setToken} resetKey={challenge} />
+    <Turnstile onToken={human.onToken} resetKey={challenge} />
     {error && <p role="alert" className="t-small rounded-btn border border-error/40 p-3 text-error">{t("error")}</p>}
-    <QuoteSubmit ready={!!token} busy={busy} label={t("submit")} className="sm:w-full" />
+    <QuoteSubmit verifying={human.verifying} busy={busy} label={t("submit")} className="sm:w-full" />
     <QuoteHowItWorks />
   </form>;
 }

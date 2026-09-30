@@ -1,9 +1,27 @@
 import Image from "next/image";
 import { useTranslations, useLocale } from "next-intl";
 import { Star, ShieldCheck } from "lucide-react";
+import { Link } from "@/i18n/navigation";
 import { type PublicReview, type ReviewSummary } from "@/lib/reviews";
 export function Stars({ value, size = 20 }: { value: number; size?: number }) { const t = useTranslations("reviews"); const label = `${value.toFixed(1)} / 5 ${t("stars")}`; return <span className="inline-flex gap-1" role="img" aria-label={label}>{[1, 2, 3, 4, 5].map(n => <Star key={n} size={size} strokeWidth={1.75} aria-hidden="true" className={n <= Math.round(value) ? "fill-amber text-amber" : "fill-line text-line"} />)}</span>; }
-export function RatingSummary({ summary, compact = false }: { summary: ReviewSummary; compact?: boolean }) { const t = useTranslations("reviews"); if (!summary.total) return null; return <div className="space-y-4"><p className="flex items-baseline gap-2"><span className="t-h1">{summary.promedio.toFixed(1)}</span><span className="t-body text-ink-soft">/ 5</span></p><Stars value={summary.promedio} /><p className="t-body text-ink-soft">{t("ratingSummary", { count: summary.total })}</p>{!compact && <ul className="space-y-2 pt-2">{[5, 4, 3, 2, 1].map(n => { const count = summary[`c${n}` as keyof ReviewSummary]; return <li key={n} className="t-small grid grid-cols-[5.5rem_minmax(0,1fr)_2.5rem] items-center gap-3"><span>{t("starsCount", { count: n })}</span><div className="h-2 overflow-hidden rounded-btn bg-line" aria-hidden="true"><div className="h-full bg-brand" style={{ width: `${count / summary.total * 100}%` }} /></div><span className="text-right text-ink-soft">{count}</span></li>; })}</ul>}</div>; }
+// With `filter`, each distribution row is a link that shows only that rating (every rating, low ones
+// included, is one tap away: the full picture builds more trust than a curated one).
+export function RatingSummary({ summary, compact = false, filter }: { summary: ReviewSummary; compact?: boolean; filter?: { active?: number; href: (stars?: number) => string } }) {
+  const t = useTranslations("reviews");
+  if (!summary.total) return null;
+  const bar = (count: number) => <div className="h-2 overflow-hidden rounded-btn bg-line" aria-hidden="true"><div className="h-full bg-brand" style={{ width: `${count / summary.total * 100}%` }} /></div>;
+  const rowClass = "t-small grid grid-cols-[5.5rem_minmax(0,1fr)_2.5rem] items-center gap-3";
+  return <div className="space-y-4"><p className="flex items-baseline gap-2"><span className="t-h1">{summary.promedio.toFixed(1)}</span><span className="t-body text-ink-soft">/ 5</span></p><Stars value={summary.promedio} /><p className="t-body text-ink-soft">{t("ratingSummary", { count: summary.total })}</p>
+    {!compact && <ul className={filter ? "space-y-1 pt-2" : "space-y-2 pt-2"} aria-label={filter ? t("filterLabel") : undefined}>{[5, 4, 3, 2, 1].map(n => {
+      const count = summary[`c${n}` as keyof ReviewSummary];
+      if (!filter) return <li key={n} className={rowClass}><span>{t("starsCount", { count: n })}</span>{bar(count)}<span className="text-right text-ink-soft">{count}</span></li>;
+      const current = filter.active === n;
+      return <li key={n}>{count > 0
+        ? <Link href={filter.href(current ? undefined : n)} scroll={false} aria-current={current ? "true" : undefined} aria-label={t("filterRow", { stars: n, count })} className={`${rowClass} -mx-2 min-h-10 rounded-btn px-2 transition-colors duration-(--duration-fast) ease-out hover:bg-canvas ${current ? "bg-canvas font-semibold text-brand-deep ring-1 ring-brand" : ""}`}><span>{t("starsCount", { count: n })}</span>{bar(count)}<span className="text-right text-ink-soft">{count}</span></Link>
+        : <span className={`${rowClass} -mx-2 min-h-10 px-2 text-ink-soft`}><span>{t("starsCount", { count: n })}</span>{bar(count)}<span className="text-right">{count}</span></span>}</li>;
+    })}</ul>}
+  </div>;
+}
 
 function formatDate(value: string, locale: string) { return new Intl.DateTimeFormat(locale === "en" ? "en-US" : "es-HN", { dateStyle: "long", timeZone: "UTC" }).format(new Date(value)); }
 
