@@ -95,3 +95,21 @@ Detalle técnico en `docs/ux-seo-round-3.md`. No se modificó ningún texto apro
   - Descripciones breves de Servicios y de Ayuda.
 - **Datos estructurados de la agencia** (`src/lib/seo.ts`): descripción ampliada ("…vuelos, hoteles, paquetes y viajes a medida, cotizados personalmente por un asesor y coordinados por WhatsApp.") y una descripción por servicio.
 - **RSS** (`/blog/rss.xml`): título "viatour | Guías de viaje desde Honduras" y descripción "Guías y artículos de viatour para planificar viajes al exterior desde Honduras."
+
+---
+
+# Copy de la ronda 4: UX, SEO y visibilidad en IA (2026-09-30), pendiente de aprobación
+
+Detalle técnico en `docs/ux-seo-round-4.md`. No se modificó ningún texto aprobado ni se inventaron cifras, credenciales ni plazos de respuesta.
+
+## Textos de interfaz nuevos (`messages/es.json` → `reviews.*`; versión en inglés en `messages/en.json`)
+- `filterLabel` "Filtrar opiniones por calificación" (etiqueta accesible de la distribución de estrellas en /opiniones).
+- `filterRow` "Ver las {n} opiniones de {estrellas}" (etiqueta accesible de cada fila).
+- `filterActive` "Opiniones de {estrellas}: {n}" (aviso sobre la lista filtrada).
+- `filterClear` "Ver todas las opiniones".
+- `footer.coverage` "Cobertura": el título ya existía en el pie; solo se movió a los mensajes.
+
+## Cambios de forma, sin cambio de texto
+- Boletín: en "Acepto recibir ideas de viaje y ofertas de temporada según la Política de Privacidad." el enlace ahora es "Política de Privacidad". Antes se repetía después como "Privacidad.".
+- Títulos de paquetes en buscadores: si "viatour | {paquete} a su medida desde Honduras" supera 60 caracteres, se usa "viatour | {paquete} desde Honduras" o "viatour | {paquete}", en lugar de cortar la frase.
+- Botones de envío: muestran su texto aprobado desde el inicio; "Verificando conexión segura…" (ya aprobado) solo aparece si el visitante envía antes de terminar la verificación.

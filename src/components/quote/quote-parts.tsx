@@ -33,12 +33,13 @@ export function contactFormData(data: FormData) {
   return { name: value("name"), phone: value("phone"), email: value("email") };
 }
 
-// The WhatsApp button stays visibly inactive, with a reason, until verification and saving allow it.
-export function QuoteSubmit({ ready, busy, label, className = "" }: { ready: boolean; busy: boolean; label: string; className?: string }) {
+// The WhatsApp button is ready from the first paint. It only says "verifying" when a visitor
+// submits before the background security check has finished, and then submits by itself.
+export function QuoteSubmit({ verifying, busy, label, className = "" }: { verifying: boolean; busy: boolean; label: string; className?: string }) {
   const t = useTranslations("quote");
-  return <Button type="submit" variant="whatsapp" disabled={!ready || busy} aria-busy={busy} className={`h-auto min-h-12 w-full whitespace-normal leading-normal disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto ${className}`}>
+  return <Button type="submit" variant="whatsapp" disabled={verifying || busy} aria-busy={verifying || busy} className={`h-auto min-h-12 w-full whitespace-normal leading-normal disabled:cursor-wait disabled:opacity-70 sm:w-auto ${className}`}>
     <MessageCircle size={24} strokeWidth={1.75} className="shrink-0" aria-hidden="true" />
-    {busy ? t("saving") : ready ? label : t("verifying")}
+    {busy ? t("saving") : verifying ? t("verifying") : label}
   </Button>;
 }
 

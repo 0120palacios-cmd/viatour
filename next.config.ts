@@ -38,7 +38,8 @@ const nextConfig: NextConfig = {
       { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
     ] }];
   },
-  images: { remotePatterns: storage ? [{ protocol: storage.protocol === "https:" ? "https" : "http", hostname: storage.hostname, port: storage.port, pathname: "/storage/v1/object/public/**" }] : [] },
+  // AVIF first (~20% lighter than WebP for these photos), WebP for browsers without AVIF.
+  images: { formats: ["image/avif", "image/webp"], remotePatterns: storage ? [{ protocol: storage.protocol === "https:" ? "https" : "http", hostname: storage.hostname, port: storage.port, pathname: "/storage/v1/object/public/**" }] : [] },
 };
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 export default withSentryConfig(withNextIntl(nextConfig), { silent: true, telemetry: false });

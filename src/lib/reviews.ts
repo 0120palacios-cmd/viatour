@@ -14,11 +14,14 @@ export const getReviewSummary = cachedContent(async (): Promise<ReviewSummary> =
   if (error) throw new Error("No se pudo cargar el resumen de opiniones.");
   return { total: Number(data.total) || 0, promedio: data.promedio == null ? 0 : Number(Number(data.promedio).toFixed(1)), c5: Number(data.c5) || 0, c4: Number(data.c4) || 0, c3: Number(data.c3) || 0, c2: Number(data.c2) || 0, c1: Number(data.c1) || 0 };
 }, "review-summary", "reviews");
-export async function getReviews(limit = 30, page = 1) {
+// `stars` (1–5) narrows the list to one rating; the summary always covers every approved review.
+export async function getReviews(limit = 30, page = 1, stars?: number) {
   const client = await createClient();
+  let list = client.from("reviews_publicas").select("id,nombre,calificacion,texto,destino,foto_path,fecha,verificada,created_at");
+  if (stars) list = list.eq("calificacion", stars);
   const [summary, reviews] = await Promise.all([
     client.from("reviews_resumen").select("total,promedio,c5,c4,c3,c2,c1").abortSignal(AbortSignal.timeout(8000)).single(),
-    client.from("reviews_publicas").select("id,nombre,calificacion,texto,destino,foto_path,fecha,verificada,created_at").order("fecha", { ascending: false }).order("id").range((page - 1) * limit, page * limit - 1).abortSignal(AbortSignal.timeout(8000)),
+    list.order("fecha", { ascending: false }).order("id").range((page - 1) * limit, page * limit - 1).abortSignal(AbortSignal.timeout(8000)),
   ]);
   if (summary.error || reviews.error) throw new Error("No se pudieron cargar las opiniones.");
   const raw = summary.data;

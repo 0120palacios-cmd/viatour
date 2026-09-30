@@ -55,6 +55,7 @@
   },
   "footer": {
     "explore": "Explorar",
+    "coverage": "Cobertura",
     "social": "Redes sociales",
     "googleProfile": "Encuéntrenos en Google",
     "iata": "Ventas IATA a través de una agencia anfitriona acreditada.",
@@ -66,7 +67,7 @@
     "newsletterEmail": "Correo electrónico (requerido)",
     "newsletterName": "Nombre (opcional)",
     "newsletterInvalidEmail": "Ingrese un correo electrónico válido.",
-    "newsletterConsent": "Acepto recibir ideas de viaje y ofertas de temporada según la Política de Privacidad.",
+    "newsletterConsent": "Acepto recibir ideas de viaje y ofertas de temporada según la <link>Política de Privacidad</link>.",
     "newsletterConsentError": "Para continuar, indique su consentimiento.",
     "subscribe": "Suscribirme",
     "newsletterSuccess": "Gracias. Su correo quedó registrado para recibir ideas de viaje y ofertas de temporada.",
@@ -360,7 +361,11 @@
     "validation": "Revise los campos indicados.",
     "error": "No se pudo enviar su opinión. Inténtelo de nuevo.",
     "ratingSummary": "{count} opiniones",
-    "starsCount": "{count, plural, one {# estrella} other {# estrellas}}"
+    "starsCount": "{count, plural, one {# estrella} other {# estrellas}}",
+    "filterLabel": "Filtrar opiniones por calificación",
+    "filterRow": "Ver las {count} opiniones de {stars, plural, one {# estrella} other {# estrellas}}",
+    "filterActive": "Opiniones de {stars, plural, one {# estrella} other {# estrellas}}: {count}",
+    "filterClear": "Ver todas las opiniones"
   },
   "portal": {
     "headerMessage": "Consulte su reserva en línea, cuando lo necesite.",

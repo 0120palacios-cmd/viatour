@@ -18,12 +18,15 @@ export function WhyViatour() {
         <h2 id="why-title" className="t-h2">{t("home.whyTitle")}</h2>
         <p className="t-body-lg text-ink-soft">{t("home.whyIntro")}</p>
       </div>
-      <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Phones: icon beside the text, so six points read as a list instead of ~1,900px of stacked blocks. */}
+      <div className="grid gap-6 sm:grid-cols-2 sm:gap-8 lg:grid-cols-3">
         {items.map(({ icon: Icon, title, body }) => (
-          <article key={title} className="space-y-4">
-            <span className="flex size-12 items-center justify-center rounded-btn bg-canvas text-brand shadow-sm"><Icon size={24} strokeWidth={1.75} aria-hidden="true" /></span>
-            <h3 className="t-h3">{title}</h3>
-            <p className="t-body text-ink-soft">{body}</p>
+          <article key={title} className="flex items-start gap-4 sm:block sm:space-y-4">
+            <span className="flex size-12 shrink-0 items-center justify-center rounded-btn bg-canvas text-brand shadow-sm"><Icon size={24} strokeWidth={1.75} aria-hidden="true" /></span>
+            <div className="min-w-0 space-y-2 sm:space-y-4">
+              <h3 className="t-h3">{title}</h3>
+              <p className="t-body text-ink-soft">{body}</p>
+            </div>
           </article>
         ))}
       </div>

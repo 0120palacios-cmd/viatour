@@ -1,6 +1,6 @@
 "use client";
 import Script from "next/script";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type API = { render: (element: HTMLElement, options: Record<string, unknown>) => string; remove: (id: string) => void; reset: (id: string) => void };
 declare global { interface Window { turnstile?: API } }
@@ -11,8 +11,23 @@ let expires = 0;
 let checking: Promise<void> | undefined;
 let verifying = false;
 let timer: ReturnType<typeof setTimeout> | undefined;
+// Submissions made before verification finishes wait here instead of meeting a disabled button.
+const waiters = new Set<(token: string) => void>();
+const scriptStarters = new Set<() => void>();
 function publish() {
-  for (const callback of consumers.values()) callback(expires > Date.now() ? "human-session" : "");
+  const token = expires > Date.now() ? "human-session" : "";
+  for (const callback of consumers.values()) callback(token);
+  if (token) { for (const resolve of waiters) resolve(token); waiters.clear(); }
+}
+export function waitForHuman(timeout = 60000): Promise<string> {
+  if (expires > Date.now()) return Promise.resolve("human-session");
+  return new Promise((resolve, reject) => {
+    const done = (token: string) => { clearTimeout(limit); resolve(token); };
+    const limit = setTimeout(() => { waiters.delete(done); reject(new Error("Verification timed out")); }, timeout);
+    waiters.add(done);
+    for (const start of scriptStarters) start();
+    void checkSession();
+  });
 }
 function removeWidget() {
   if (widget) window.turnstile?.remove(widget.id);
@@ -44,6 +59,10 @@ function render() {
       timer = setTimeout(() => { if (widget) window.turnstile?.reset(widget.id); else render(); }, 8000);
     },
     "expired-callback": () => { if (widget) window.turnstile?.reset(widget.id); },
+    // interaction-only keeps the widget invisible, yet its frame still took ~150px of empty space
+    // in every form. The box opens only while Cloudflare actually needs the visitor.
+    "before-interactive-callback": () => { element.dataset.interactive = "true"; },
+    "after-interactive-callback": () => { delete element.dataset.interactive; },
     "error-callback": () => publish(),
   });
   widget = { id, element };
@@ -70,11 +89,12 @@ export function Turnstile({ onToken }: { onToken: (token: string) => void; reset
   useEffect(() => {
     if (loadScript) return;
     const start = () => { scriptRequested = true; setLoadScript(true); };
+    scriptStarters.add(start);
     const scope = element.current?.closest("form") ?? element.current?.parentElement;
     const events = ["focusin", "pointerdown", "keydown"] as const;
     events.forEach(name => scope?.addEventListener(name, start, { once: true, passive: true }));
     const idle = "requestIdleCallback" in window ? window.requestIdleCallback(start, { timeout: 4000 }) : globalThis.setTimeout(start, 2500);
-    return () => { events.forEach(name => scope?.removeEventListener(name, start)); if ("cancelIdleCallback" in window) window.cancelIdleCallback(idle as number); else globalThis.clearTimeout(idle as number); };
+    return () => { scriptStarters.delete(start); events.forEach(name => scope?.removeEventListener(name, start)); if ("cancelIdleCallback" in window) window.cancelIdleCallback(idle as number); else globalThis.clearTimeout(idle as number); };
   }, [loadScript]);
   useEffect(() => {
     const node = element.current!;
@@ -90,5 +110,18 @@ export function Turnstile({ onToken }: { onToken: (token: string) => void; reset
       if (!consumers.size) { clearTimeout(timer); removeWidget(); }
     };
   }, [onToken]);
-  return <>{loadScript && <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" onReady={render} />}<div ref={element} className="min-w-0 empty:hidden" aria-label="Verificación de seguridad" /></>;
+  return <>{loadScript && <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" onReady={render} />}<div ref={element} className="min-w-0 max-h-0 overflow-hidden data-interactive:max-h-none data-interactive:overflow-visible" aria-label="Verificación de seguridad" /></>;
+}
+
+// One hook per form: the submit button keeps its real label, and a submission made before
+// verification finishes waits for it (the button shows "verifying") instead of being blocked.
+export function useHumanToken() {
+  const [token, setToken] = useState("");
+  const [verifying, setVerifying] = useState(false);
+  const ensure = useCallback(async () => {
+    if (token) return token;
+    setVerifying(true);
+    try { return await waitForHuman(); } finally { setVerifying(false); }
+  }, [token]);
+  return { token, onToken: setToken, verifying, ensure };
 }
