@@ -45,3 +45,22 @@ test('listing pages describe their catalogue as an ItemList attached to the site
   assert.deepEqual(JSON.parse(JSON.stringify(schema.mainEntity.itemListElement[0])), { '@type': 'ListItem', position: 1, name: 'Punta Cana', url: 'https://miviatour.com/paquetes/punta-cana', image: 'https://miviatour.com/paquetes/punta-cana/1.jpg' });
   assert.equal('image' in schema.mainEntity.itemListElement[1], false);
 });
+
+test('a trimmed description ends on a whole sentence or word, never on a connector', () => {
+  const long = 'Agencia de viajes en Honduras para planificar vuelos, hoteles, paquetes y viajes a la medida con asesoría personal de viatour. Solicite su cotización por WhatsApp.';
+  assert.equal(seo.fitMetaDescription(long), 'Agencia de viajes en Honduras para planificar vuelos, hoteles, paquetes y viajes a la medida con asesoría personal de viatour.');
+  const run = 'Explore destinos para viajar desde Honduras con viatour y conozca opciones de viaje, paquetes y orientación personal para elegir el plan que mejor se ajuste a usted y a su familia';
+  const cut = seo.fitMetaDescription(run);
+  assert.ok(cut.length <= 161);
+  assert.match(cut, /…$/);
+  assert.doesNotMatch(cut, /\s(a|su|y|de|con|para)…$/i);
+});
+
+test('a description is never padded with a clause that would be cut', () => {
+  const medium = 'Read viatour travel articles and guides to learn, compare options and plan your next trip from Honduras with personal advice.';
+  assert.equal(seo.fitMetaDescription(medium, 'en'), medium);
+  assert.equal(seo.fitMetaDescription('Consulte su reserva de viaje.'), 'Consulte su reserva de viaje. Solicite su cotización con viatour.');
+  const detail = seo.detailDescription('Punta Cana', 'Playas de arena blanca y resorts todo incluido en el Caribe. '.repeat(4));
+  assert.ok(detail.length <= 161);
+  assert.match(detail, /[.…]$/);
+});

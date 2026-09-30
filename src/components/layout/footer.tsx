@@ -8,6 +8,7 @@ import { siteConfig } from "@/lib/site-config";
 import { CurrencyToggle } from "./currency-toggle";
 import { PACKAGE_DISPLAY_RULES } from "@/lib/display-rules";
 import { WhatsAppLink } from "./whatsapp-link";
+import { TrackedLink } from "@/components/tracked-link";
 import whiteLogo from "../../../public/logo-white.png";
 
 function FacebookGlyph() { return <svg viewBox="0 0 24 24" className="size-5" fill="currentColor" aria-hidden="true"><path d="M24 12.073C24 5.446 18.627.073 12 .073S0 5.446 0 12.073c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.41c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953h-1.514c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073Z" /></svg>; }
@@ -48,8 +49,8 @@ export function Footer() {
           <WhatsAppLink placement="footer" />
           <ul className="space-y-1">
             <li><span className="t-small inline-flex min-h-11 items-center gap-3 text-canvas/85"><MessageCircle size={18} strokeWidth={1.75} aria-hidden="true" />+504 8866-8704</span></li>
-            <li><a href={`mailto:${siteConfig.supportEmail}`} className={`${footerLink} gap-3`}><Mail size={18} strokeWidth={1.75} aria-hidden="true" />{siteConfig.supportEmail}</a></li>
-            <li><a href={siteConfig.googleProfileUrl} target="_blank" rel="noopener noreferrer" className={`${footerLink} gap-3`}><MapPin size={18} strokeWidth={1.75} aria-hidden="true" />{t("footer.googleProfile")}</a></li>
+            <li><TrackedLink event="email_click" placement="footer" href={`mailto:${siteConfig.supportEmail}`} className={`${footerLink} gap-3`}><Mail size={18} strokeWidth={1.75} aria-hidden="true" />{siteConfig.supportEmail}</TrackedLink></li>
+            <li><TrackedLink event="google_profile_click" placement="footer" href={siteConfig.googleProfileUrl} target="_blank" rel="noopener noreferrer" className={`${footerLink} gap-3`}><MapPin size={18} strokeWidth={1.75} aria-hidden="true" />{t("footer.googleProfile")}</TrackedLink></li>
           </ul>
           {socialLinks.length > 0 && <nav className="flex gap-2" aria-label={t("footer.social")}>{socialLinks.map(({ Icon, key, href }) => <a key={key} href={href} target="_blank" rel="noopener noreferrer" aria-label={`${key} de viatour`} className="flex size-12 items-center justify-center rounded-btn border border-canvas/25 text-canvas transition-colors duration-(--duration-fast) ease-out hover:bg-canvas hover:text-ink"><Icon /></a>)}</nav>}
           {/* The toggle only matters once prices are shown; until then it would change nothing visible. */}

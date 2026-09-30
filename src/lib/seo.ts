@@ -12,18 +12,31 @@ export function localizedUrl(path: string, locale: Locale) {
   return absoluteUrl(localizedPath(path, locale));
 }
 
-export function fitMetaDescription(description: string, locale: Locale = defaultLocale) {
-  const suffix = locale === "en" ? " Learn more and request travel advice from viatour." : " Conozca más y solicite su cotización con viatour.";
-  let text = description.replace(/\s+/g, " ").trim();
-  while (text.length < 150) text += suffix;
-  if (text.length <= 160) return text;
-  const cut = text.lastIndexOf(" ", 159);
-  return `${text.slice(0, cut > 140 ? cut : 159).replace(/[.,;:]$/, "")}.`;
+// Words that cannot end a title or a trimmed description: cutting "…a su medida desde Honduras"
+// at 60 characters used to leave "…a su medida desde" in search results.
+const danglingWords = new Set(["a", "al", "con", "de", "del", "desde", "el", "en", "la", "las", "los", "para", "por", "su", "sus", "un", "una", "y", "o", "and", "for", "from", "in", "of", "the", "to", "with", "your", "our"]);
+
+// Search results show about 160 characters. Longer text ends on the last whole sentence that fits;
+// when no sentence fits, it ends on a whole word followed by an ellipsis, never on a connector.
+export function fitDescriptionText(value: string, max = 160) {
+  const text = value.replace(/\s+/g, " ").trim();
+  if (text.length <= max) return text;
+  const head = text.slice(0, max + 1);
+  const sentenceEnd = Math.max(...[". ", "? ", "! "].map(mark => head.lastIndexOf(mark)));
+  if (sentenceEnd >= 90) return head.slice(0, sentenceEnd + 1);
+  const words = text.slice(0, max).split(" ");
+  words.pop();
+  while (words.length > 1 && danglingWords.has(words.at(-1)!.replace(/[.,;:]$/, "").toLocaleLowerCase())) words.pop();
+  return `${words.join(" ").replace(/[.,;:–—-]+$/, "")}…`;
 }
 
-// Words that cannot end a title: cutting "…a su medida desde Honduras" at 60 characters used to
-// leave "…a su medida desde" in search results.
-const danglingWords = new Set(["a", "al", "con", "de", "del", "desde", "el", "en", "la", "las", "los", "para", "por", "su", "sus", "un", "una", "y", "o", "and", "for", "from", "in", "of", "the", "to", "with"]);
+// A short description gains one closing call to action, and only when the whole sentence fits.
+export function fitMetaDescription(description: string, locale: Locale = defaultLocale) {
+  const suffix = locale === "en" ? " Request personal travel advice from viatour." : " Solicite su cotización con viatour.";
+  const text = description.replace(/\s+/g, " ").trim();
+  if (text.length < 110 && text.length + suffix.length <= 160 && /[.?!]$/.test(text)) return text + suffix;
+  return fitDescriptionText(text);
+}
 
 export function fitMetaTitle(title: string) {
   const text = title.replace(/\s+/g, " ").trim();
@@ -107,7 +120,9 @@ const agencyNode = {
   "@type": "TravelAgency",
   "@id": agencyId,
   name: "viatour",
-  alternateName: "miviatour",
+  // "Viatour Travel" is the name on the Google Business Profile; listing it lets Google tie the
+  // profile and the site to one business until both use the same name.
+  alternateName: ["miviatour", "Viatour Travel"],
   description: "Asesores de viaje en Honduras para viajes al exterior. viatour ofrece servicios de viaje desde 2018: vuelos, hoteles, paquetes y viajes a medida, cotizados personalmente por un asesor y coordinados por WhatsApp.",
   slogan: siteConfig.tagline,
   foundingDate: "2018",
@@ -116,7 +131,10 @@ const agencyNode = {
   image: absoluteUrl("/logo-black.png"),
   email: siteConfig.supportEmail,
   telephone: "+504 8866-8704",
+  // Service-area business (Build Brief §3): no public street address, only the country it serves.
+  address: { "@type": "PostalAddress", addressCountry: "HN" },
   areaServed: { "@type": "Country", name: "Honduras" },
+  ...(siteConfig.googleProfileUrl ? { hasMap: siteConfig.googleProfileUrl } : {}),
   knowsLanguage: ["es", "en"],
   contactPoint: { "@type": "ContactPoint", telephone: "+50488668704", contactType: "customer service", url: `https://wa.me/${siteConfig.whatsappNumber}`, email: siteConfig.supportEmail, areaServed: "HN", availableLanguage: ["es", "en"] },
   hasOfferCatalog: {
@@ -168,9 +186,8 @@ export function noindexMetadata(title: string, description: string): Metadata {
 
 export function detailDescription(subject: string, copy?: string | null) {
   const plain = copy?.replace(/\s+/g, " ").trim() || "";
-  let text = subject + ". " + plain;
-  if (text.length < 150) text += " Consulte la información disponible y solicite su cotización con viatour para planificar su viaje desde Honduras con asesoría personal.";
-  if (text.length <= 160) return text.trim();
-  const cut = text.lastIndexOf(" ", 159);
-  return text.slice(0, cut > 140 ? cut : 159).replace(/[.,;:]$/, "") + ".";
+  const text = `${subject.replace(/[.\s]+$/, "")}. ${plain}`.trim();
+  const closing = " Solicite su cotización con viatour desde Honduras.";
+  if (text.length + closing.length <= 160 && /[.?!]$/.test(text)) return text + closing;
+  return fitDescriptionText(text);
 }

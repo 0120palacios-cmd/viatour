@@ -7,6 +7,7 @@ import { ContactForm } from "@/components/contact-form";
 import { WhatsAppLink } from "@/components/layout/whatsapp-link";
 import { PageHeader } from "@/components/layout/page-header";
 import { siteConfig } from "@/lib/site-config";
+import { TrackedLink } from "@/components/tracked-link";
 
 export function generateMetadata(): Promise<Metadata> { return localizedPageMetadata("/contacto", "contact"); }
 // WhatsApp is the main channel, so it leads; email and the form are the alternatives.
@@ -24,8 +25,8 @@ export default function Page() {
           <WhatsAppLink placement="contact-page" block />
         </div>
         <ul className="space-y-4">
-          {[siteConfig.supportEmail, siteConfig.helpEmail].map(email => <li key={email}><a href={`mailto:${email}`} className={`${channel} hover:border-brand`}><span className={icon}><Mail size={20} strokeWidth={1.75} aria-hidden="true" /></span><span className="min-w-0"><span className="t-small block text-ink-soft">{t("email")}</span><span className="t-body block break-all font-semibold text-brand">{email}</span></span></a></li>)}
-          <li><a href={siteConfig.googleProfileUrl} target="_blank" rel="noopener noreferrer" className={`${channel} hover:border-brand`}><span className={icon}><MapPin size={20} strokeWidth={1.75} aria-hidden="true" /></span><span className="t-body self-center font-semibold text-brand">{footer("googleProfile")}</span></a></li>
+          {[siteConfig.supportEmail, siteConfig.helpEmail].map(email => <li key={email}><TrackedLink event="email_click" placement="contact-page" href={`mailto:${email}`} className={`${channel} hover:border-brand`}><span className={icon}><Mail size={20} strokeWidth={1.75} aria-hidden="true" /></span><span className="min-w-0"><span className="t-small block text-ink-soft">{t("email")}</span><span className="t-body block break-all font-semibold text-brand">{email}</span></span></TrackedLink></li>)}
+          <li><TrackedLink event="google_profile_click" placement="contact-page" href={siteConfig.googleProfileUrl} target="_blank" rel="noopener noreferrer" className={`${channel} hover:border-brand`}><span className={icon}><MapPin size={20} strokeWidth={1.75} aria-hidden="true" /></span><span className="t-body self-center font-semibold text-brand">{footer("googleProfile")}</span></TrackedLink></li>
           <li><Link href="/mi-reserva" className={`${channel} hover:border-brand`}><span className={icon}><TicketCheck size={20} strokeWidth={1.75} aria-hidden="true" /></span><span className="t-body self-center font-semibold text-brand">{common("reservation")}</span></Link></li>
         </ul>
       </section>
