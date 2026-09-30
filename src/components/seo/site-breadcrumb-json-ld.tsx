@@ -1,42 +1,45 @@
 import { headers } from "next/headers";
 import { getLocale, getTranslations } from "next-intl/server";
 import { breadcrumbSchema } from "@/lib/seo";
+import { JsonLd } from "@/components/seo/json-ld";
 import type { Locale } from "@/i18n/config";
 
-const segmentKeys: Record<string, string> = {
-  destinos: "destinations",
-  descubrir: "discover",
-  opiniones: "reviews",
-  blog: "blog",
-  nosotros: "about",
-  contacto: "contact",
-  "mi-reserva": "reservation",
-  vuelos: "flights",
-  hoteles: "hotels",
-  paquetes: "packages",
-  "viaje-a-medida": "customTrip",
-  "preguntas-frecuentes": "faq",
-  requisitos: "requirements",
-  legales: "terms",
+// Static routes and their labels. Detail pages (packages, destinations, guides, city pages) emit
+// their own BreadcrumbList with the real title, and unknown paths (404s) get none at all.
+// `null` marks a path segment that has no page of its own, so it is left out of the trail.
+const segmentKeys: Record<string, string | null> = {
+  destinos: "common.destinations",
+  descubrir: "common.discover",
+  opiniones: "common.reviews",
+  nueva: "reviews.formTitle",
+  blog: "common.blog",
+  nosotros: "common.about",
+  contacto: "common.contact",
+  vuelos: "common.flights",
+  hoteles: "common.hotels",
+  paquetes: "common.packages",
+  "viaje-a-medida": "common.customTrip",
+  "preguntas-frecuentes": "common.faq",
+  requisitos: "common.requirements",
+  legales: null,
+  terminos: "common.terms",
+  privacidad: "common.privacy",
+  cancelaciones: "common.cancellations",
+  cookies: "common.cookies",
 };
-
-function humanizeSegment(segment: string) {
-  return decodeURIComponent(segment).replace(/[-_]+/g, " ").replace(/\b\w/g, character => character.toUpperCase());
-}
+const staticRoutes = new Set(["/destinos", "/descubrir", "/opiniones", "/opiniones/nueva", "/blog", "/nosotros", "/contacto", "/vuelos", "/hoteles", "/paquetes", "/viaje-a-medida", "/preguntas-frecuentes", "/requisitos", "/legales/terminos", "/legales/privacidad", "/legales/cancelaciones", "/legales/cookies"]);
 
 export async function SiteBreadcrumbJsonLd() {
-  const requestHeaders = await headers();
-  const pathname = requestHeaders.get("x-viatour-pathname") || "/";
-  if (/^\/(admin|api|mi-reserva|styleguide)(\/|$)/.test(pathname)) return null;
+  const pathname = (await headers()).get("x-viatour-pathname") || "/";
+  if (!staticRoutes.has(pathname.replace(/\/$/, ""))) return null;
   const locale = (await getLocale()) as Locale;
-  const common = await getTranslations("common");
-  const items = [{ label: common("home"), href: "/" }];
+  const t = await getTranslations();
+  const items = [{ label: t("common.home"), href: "/" }];
   let currentPath = "";
   for (const segment of pathname.split("/").filter(Boolean)) {
     currentPath += `/${segment}`;
     const key = segmentKeys[segment];
-    items.push({ label: key ? common(key) : humanizeSegment(segment), href: currentPath });
+    if (key) items.push({ label: t(key), href: currentPath });
   }
-  const schema = breadcrumbSchema(items, locale === "en" ? "en" : "es");
-  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema).replace(/</g, "\\u003c") }} />;
+  return <JsonLd data={breadcrumbSchema(items, locale === "en" ? "en" : "es")} />;
 }

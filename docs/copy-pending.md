@@ -68,3 +68,30 @@ Detalle de la revisión en `docs/ux-overhaul.md`. No se modificó ningún texto 
 ## Avisos internos ocultos
 - Los avisos "Contenido funcional en borrador, pendiente de aprobación." (Contacto, Preguntas frecuentes) y "Texto en borrador, pendiente de aprobación." (banner de cookies) ya no se muestran al público. Para volver a mostrarlos en Contacto y Preguntas frecuentes: `siteConfig.showDraftNotices = true`. El aviso de borrador de los textos legales en inglés se mantiene.
 - El recuadro vacío del logotipo IATA en el pie se retiró; la línea de texto IATA se mantiene.
+
+---
+
+# Copy de la ronda 3: UX, SEO y visibilidad en IA (2026-09-30), pendiente de aprobación
+
+Detalle técnico en `docs/ux-seo-round-3.md`. No se modificó ningún texto aprobado. Todo lo nuevo se armó con datos ya publicados o con textos aprobados; no se inventaron cifras, credenciales ni plazos de respuesta.
+
+## Textos de interfaz (`messages/es.json` → `ux.*`, versión en inglés en `messages/en.json`)
+- `readingTime` "Lectura de {minutes} min" (guías).
+- `updatedOn` "Actualizado el {date}". Solo aparece si la guía cambió después de publicarse.
+- `contents` "Contenido" (índice de la guía).
+- `relatedGuides` "Guías relacionadas" (guías y paquetes).
+- `destinationGuides` "Guías para viajar a {name}" (destinos).
+- `requirementsTitle` "Requisitos para viajar a {name}" (destinos y paquetes).
+- `requirementsBody` "Consulte el pasaporte, la visa y los requisitos de entrada para viajeros hondureños antes de planificar su viaje. Confirme siempre con la fuente oficial."
+- `requirementsCta` "Consultar requisitos".
+- `otherDestinations` "Otros destinos".
+- `ratingLabel` "Valoración de viajeros" (etiqueta accesible de la valoración; el número sale de las opiniones aprobadas).
+- `seo.notFound`: título "viatour | Página no encontrada" y descripción de la página 404.
+
+## Texto para buscadores y asistentes de IA (no visible en las páginas)
+- **`/llms.txt` y `/llms-full.txt`** (`src/lib/llms.ts`): resumen de viatour y "Datos clave".
+  - Qué ofrece, cómo se solicita, precio (sin costo ni compromiso; el precio final se confirma antes de reservar), pago (con el asesor, tarjeta o transferencia; no en el sitio), Mi reserva y acompañamiento, idiomas, área de servicio (Honduras y las ciudades publicadas), valoración calculada, contacto y la línea IATA.
+  - Incluye una instrucción para asistentes: no indicar precios, disponibilidad ni plazos de respuesta.
+  - Descripciones breves de Servicios y de Ayuda.
+- **Datos estructurados de la agencia** (`src/lib/seo.ts`): descripción ampliada ("…vuelos, hoteles, paquetes y viajes a medida, cotizados personalmente por un asesor y coordinados por WhatsApp.") y una descripción por servicio.
+- **RSS** (`/blog/rss.xml`): título "viatour | Guías de viaje desde Honduras" y descripción "Guías y artículos de viatour para planificar viajes al exterior desde Honduras."

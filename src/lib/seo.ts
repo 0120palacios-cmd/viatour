@@ -28,6 +28,9 @@ export function fitMetaTitle(title: string) {
   return text.slice(0, cut > 45 ? cut : 59).replace(/[|,:;-]$/, "").trim();
 }
 
+// Announced in every page head so readers and crawlers can find the guides feed.
+const feedAlternates = { "application/rss+xml": [{ url: absoluteUrl("/blog/rss.xml"), title: "viatour | Guías de viaje" }] };
+
 export type BreadcrumbItem = { label: string; href: string };
 
 export function breadcrumbSchema(items: readonly BreadcrumbItem[], locale: Locale = defaultLocale) {
@@ -50,7 +53,7 @@ export function pageMetadata(path: string, title: string, description: string, i
   const englishPath = localizedPath(path, "en");
   const canonical = localizedUrl(path, locale);
   const fittedDescription = fitMetaDescription(description, locale);
-  return { title: { absolute: fittedTitle }, description: fittedDescription, alternates: { canonical, languages: { es: absoluteUrl(spanishPath), en: absoluteUrl(englishPath), "x-default": absoluteUrl(spanishPath) } }, openGraph: { title: fittedTitle, description: fittedDescription, url: canonical, siteName: "viatour", locale: locale === "en" ? "en_US" : "es_HN", type: article ? "article" : "website", images }, twitter: { card: "summary_large_image", title: fittedTitle, description: fittedDescription, images } };
+  return { title: { absolute: fittedTitle }, description: fittedDescription, alternates: { canonical, languages: { es: absoluteUrl(spanishPath), en: absoluteUrl(englishPath), "x-default": absoluteUrl(spanishPath) }, types: feedAlternates }, openGraph: { title: fittedTitle, description: fittedDescription, url: canonical, siteName: "viatour", locale: locale === "en" ? "en_US" : "es_HN", type: article ? "article" : "website", images }, twitter: { card: "summary_large_image", title: fittedTitle, description: fittedDescription, images } };
 }
 
 export function localizedAlternates(path: string, locale: Locale) {
@@ -71,10 +74,60 @@ export async function localizedPageMetadata(path: string, key: string, image?: s
 export async function localizedContentMetadata(path: string, title: string, description: string, image?: string | null, article = false): Promise<Metadata> {
   const locale = (await getLocale()) as Locale;
   const spanish = localizedUrl(path, "es");
-  return { ...pageMetadata(path, title, description, image, article, locale), alternates: { canonical: spanish, languages: { es: spanish, "x-default": spanish } } };
+  return { ...pageMetadata(path, title, description, image, article, locale), alternates: { canonical: spanish, languages: { es: spanish, "x-default": spanish }, types: feedAlternates } };
 }
 
-export const agencySchema = { "@context": "https://schema.org", "@type": "TravelAgency", "@id": absoluteUrl("/#agency"), name: "viatour", description: "Asesores de viaje en Honduras para viajes al exterior. viatour ofrece servicios de viaje desde 2018.", url: absoluteUrl("/"), logo: absoluteUrl("/logo-black.png"), areaServed: { "@type": "Country", name: "Honduras" }, contactPoint: { "@type": "ContactPoint", telephone: "+50488668704", contactType: "customer service", url: "https://wa.me/50488668704", availableLanguage: ["es", "en"] }, sameAs: [siteConfig.social.facebook, siteConfig.social.instagram, siteConfig.social.tiktok] };
+// One agency entity for the whole site. Other nodes (trips, articles, services, ratings) point at
+// it by @id instead of repeating it, so search engines and AI systems read a single organisation.
+export const agencyId = absoluteUrl("/#agency");
+export const websiteId = absoluteUrl("/#website");
+export const agencyRef = { "@id": agencyId } as const;
+
+// The four services viatour quotes (Build Brief §2). Names stay in Spanish: they are the offer.
+export const agencyServices = [
+  { name: "Vuelos", path: "/vuelos", description: "Cotización de vuelos internacionales desde Honduras: ida y vuelta, solo ida o multidestino, en clase Económica, Premium, Ejecutiva o Primera." },
+  { name: "Hoteles", path: "/hoteles", description: "Búsqueda y reserva de hoteles en el destino, según fechas, número de huéspedes y presupuesto." },
+  { name: "Paquetes de viaje", path: "/paquetes", description: "Paquetes armados con vuelo, hotel y servicios, ajustados a las fechas y al presupuesto de cada viajero." },
+  { name: "Viaje a medida", path: "/viaje-a-medida", description: "Diseño de un viaje completamente personalizado con un asesor de viaje." },
+] as const;
+
+const agencyNode = {
+  "@type": "TravelAgency",
+  "@id": agencyId,
+  name: "viatour",
+  alternateName: "miviatour",
+  description: "Asesores de viaje en Honduras para viajes al exterior. viatour ofrece servicios de viaje desde 2018: vuelos, hoteles, paquetes y viajes a medida, cotizados personalmente por un asesor y coordinados por WhatsApp.",
+  slogan: siteConfig.tagline,
+  foundingDate: "2018",
+  url: absoluteUrl("/"),
+  logo: { "@type": "ImageObject", url: absoluteUrl("/logo-black.png") },
+  image: absoluteUrl("/logo-black.png"),
+  email: siteConfig.supportEmail,
+  telephone: "+504 8866-8704",
+  areaServed: { "@type": "Country", name: "Honduras" },
+  knowsLanguage: ["es", "en"],
+  contactPoint: { "@type": "ContactPoint", telephone: "+50488668704", contactType: "customer service", url: `https://wa.me/${siteConfig.whatsappNumber}`, email: siteConfig.supportEmail, areaServed: "HN", availableLanguage: ["es", "en"] },
+  hasOfferCatalog: {
+    "@type": "OfferCatalog",
+    name: "Servicios de viaje de viatour",
+    itemListElement: agencyServices.map(service => ({ "@type": "Offer", itemOffered: { "@type": "Service", name: service.name, description: service.description, url: absoluteUrl(service.path) } })),
+  },
+  sameAs: [siteConfig.social.facebook, siteConfig.social.instagram, siteConfig.social.tiktok, siteConfig.googleProfileUrl].filter(Boolean),
+};
+export const agencySchema = { "@context": "https://schema.org", ...agencyNode };
+
+export const siteSchema = {
+  "@context": "https://schema.org",
+  "@graph": [
+    agencyNode,
+    { "@type": "WebSite", "@id": websiteId, url: absoluteUrl("/"), name: "viatour", alternateName: "miviatour.com", inLanguage: ["es-HN", "en"], publisher: agencyRef },
+  ],
+};
+
+// A service page: what viatour does, for whom and where, attached to the agency.
+export function serviceSchema(path: string, name: string, description: string, locale: Locale = defaultLocale) {
+  return { "@context": "https://schema.org", "@type": "Service", "@id": `${localizedUrl(path, locale)}#service`, name, description, serviceType: name, url: localizedUrl(path, locale), provider: agencyRef, areaServed: { "@type": "Country", name: "Honduras" }, availableChannel: { "@type": "ServiceChannel", serviceUrl: `https://wa.me/${siteConfig.whatsappNumber}`, availableLanguage: ["es", "en"] } };
+}
 
 export function noindexMetadata(title: string, description: string): Metadata {
   return { title: { absolute: title }, description, robots: { index: false, follow: false } };

@@ -1,3 +1,4 @@
+import { JsonLd } from "@/components/seo/json-ld";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { localizedPageMetadata } from "@/lib/seo";
@@ -23,6 +24,6 @@ export default async function Page() {
       </div>}
     </div>
     <FinalCta />
-    {faqs.length > 0 && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema).replace(/</g, "\\u003c") }} />}
+    {faqs.length > 0 && <JsonLd data={schema} />}
   </main>;
 }

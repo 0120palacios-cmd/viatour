@@ -531,9 +531,20 @@
     "copyright": "{year} viatour. Todos los derechos reservados.",
     "notFoundNext": "Puede continuar por aquí:",
     "menu": "Menú",
-    "quickFacts": "Datos del viaje"
+    "quickFacts": "Datos del viaje",
+    "readingTime": "Lectura de {minutes} min",
+    "updatedOn": "Actualizado el {date}",
+    "contents": "Contenido",
+    "relatedGuides": "Guías relacionadas",
+    "destinationGuides": "Guías para viajar a {name}",
+    "requirementsTitle": "Requisitos para viajar a {name}",
+    "requirementsBody": "Consulte el pasaporte, la visa y los requisitos de entrada para viajeros hondureños antes de planificar su viaje. Confirme siempre con la fuente oficial.",
+    "requirementsCta": "Consultar requisitos",
+    "otherDestinations": "Otros destinos",
+    "ratingLabel": "Valoración de viajeros"
   },
   "seo": {
+    "notFound": { "title": "viatour | Página no encontrada", "description": "La página que busca no está disponible. Explore nuestros paquetes y destinos, o escríbanos para planificar su viaje desde Honduras con un asesor de viatour." },
     "home": { "title": "viatour | Agencia de viajes y asesoría desde Honduras", "description": "Agencia de viajes en Honduras para planificar vuelos, hoteles, paquetes y viajes a la medida con asesoría personal de viatour. Solicite su cotización por WhatsApp." },
     "destinations": { "title": "viatour | Destinos y viajes personalizados desde Honduras", "description": "Explore destinos para viajar desde Honduras con viatour. Conozca opciones de viaje, paquetes y orientación personal para elegir el plan que mejor se ajuste a usted." },
     "discover": { "title": "viatour | Descubra destinos para viajar desde Honduras", "description": "Responda unas preguntas sobre sus preferencias y conozca destinos recomendados para su próximo viaje desde Honduras con la orientación de viatour." },

@@ -284,6 +284,10 @@ body:has([aria-labelledby="cookie-title"]) .whatsapp-float { display: none; }
   }
   .package-carousel > .package-carousel-item { width: auto; min-width: 0; max-width: none; }
 }
+/* Home reviews reuse the carousel on phones; three cards fit side by side from 768px. */
+@media (min-width: 768px) {
+  .package-carousel.review-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
 @media (min-width: 1024px) {
   .package-carousel { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }

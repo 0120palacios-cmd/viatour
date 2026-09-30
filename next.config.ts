@@ -17,7 +17,8 @@ const csp = [
   "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://challenges.cloudflare.com https://www.instagram.com https://www.tiktok.com",
   `media-src 'self' ${[storageOrigin, "https://*.cdninstagram.com", "https://*.tiktokcdn.com"].filter(Boolean).join(" ")}`,
   "manifest-src 'self'",
-  "upgrade-insecure-requests",
+  // upgrade-insecure-requests is omitted: browsers ignore it in a report-only policy and log an error
+  // on every page. Add it back when the policy moves to enforcement.
   // Reports go to a same-origin collector so the policy can be reviewed before enforcement.
   "report-uri /api/csp-report",
   "report-to csp",

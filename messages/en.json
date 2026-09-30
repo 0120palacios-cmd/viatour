@@ -531,9 +531,20 @@
     "copyright": "{year} viatour. All rights reserved.",
     "notFoundNext": "You can continue here:",
     "menu": "Menu",
-    "quickFacts": "Trip details"
+    "quickFacts": "Trip details",
+    "readingTime": "{minutes} min read",
+    "updatedOn": "Updated {date}",
+    "contents": "Contents",
+    "relatedGuides": "Related guides",
+    "destinationGuides": "Guides for travelling to {name}",
+    "requirementsTitle": "Travel requirements for {name}",
+    "requirementsBody": "Check passport, visa and entry requirements for Honduran travellers before you plan your trip. Always confirm with the official source.",
+    "requirementsCta": "Check requirements",
+    "otherDestinations": "Other destinations",
+    "ratingLabel": "Traveller rating"
   },
   "seo": {
+    "notFound": { "title": "viatour | Page not found", "description": "The page you are looking for is not available. Explore our packages and destinations, or write to us to plan your trip from Honduras with a viatour advisor." },
     "home": { "title": "viatour | Travel agency and advice from Honduras", "description": "Travel agency in Honduras for flights, hotels, packages and custom trips with personal guidance from viatour. Request your quote on WhatsApp." },
     "destinations": { "title": "viatour | Destinations and custom trips from Honduras", "description": "Explore destinations for travel from Honduras with viatour. Review trip ideas, packages and personal guidance to choose the plan that fits you." },
     "discover": { "title": "viatour | Discover destinations from Honduras", "description": "Answer a few questions about your preferences and explore recommended destinations for your next trip from Honduras with viatour guidance." },

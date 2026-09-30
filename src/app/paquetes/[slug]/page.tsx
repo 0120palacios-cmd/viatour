@@ -1,9 +1,14 @@
+import { JsonLd } from "@/components/seo/json-ld";
 import { getTranslations, getLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import { Link } from "@/i18n/navigation";
 import { notFound } from "next/navigation";
 import { ArrowDown, CalendarDays, Check, Clock3, Compass, Info, ListChecks, MapPin, Minus, X } from "lucide-react";
-import { absoluteUrl, breadcrumbSchema, localizedContentMetadata, localizedUrl, detailDescription } from "@/lib/seo";
+import { absoluteUrl, agencyRef, breadcrumbSchema, localizedContentMetadata, localizedUrl, detailDescription, websiteId } from "@/lib/seo";
+import { getBlogPosts } from "@/lib/blog";
+import { guideDestination } from "@/lib/guide-utils";
+import { BlogCard } from "@/components/blog/card";
+import { RatingBadge } from "@/components/reviews/rating-badge";
 import { getPackage, getPackages } from "@/lib/packages";
 import { getDestination, getDestinations } from "@/lib/destinations";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
@@ -50,13 +55,20 @@ export default async function Page({ params }: Props) {
   }
   let packages: Package[] = [];
   try { packages = (await getPackages()).filter(value => value.id !== item.id && ((item.categoria && value.categoria === item.categoria) || value.destino.trim().toLocaleLowerCase() === item.destino.trim().toLocaleLowerCase())).slice(0, 3); } catch { packages = []; }
+  // Guides for the same place: those about the destination first, then any that mention it.
+  const plain = (value: string) => value.normalize("NFD").replace(/\p{M}/gu, "").toLocaleLowerCase();
+  const place = plain(destination?.nombre ?? item.destino);
+  const posts = await getBlogPosts().catch(() => []);
+  const guides = [...posts.filter(post => destination && guideDestination(post.titulo)?.slug === destination.slug), ...posts.filter(post => plain(`${post.titulo} ${post.extracto}`).includes(place))].filter((post, index, list) => list.indexOf(post) === index).slice(0, 3);
   const url = localizedUrl(`/paquetes/${item.slug}`, locale);
   const itinerary = item.itinerario ? item.itinerario.split(/\r?\n/).map(value => value.trim()).filter(Boolean) : [];
-  const structuredData = { "@context": "https://schema.org", "@graph": [{ "@type": "TouristTrip", name: item.nombre, description: item.resumen || item.descripcion, url, touristType: item.categoria || undefined, itinerary: itinerary.length ? { "@type": "ItemList", itemListElement: itinerary.map((name, index) => ({ "@type": "ListItem", position: index + 1, name })) } : undefined, ...(item.imagen_url ? { image: absoluteUrl(item.imagen_url) } : {}) }, breadcrumbSchema([{ label: common("home"), href: "/" }, { label: common("packages"), href: "/paquetes" }, { label: item.nombre, href: `/paquetes/${item.slug}` }], locale)] };
+  const gallery = (Array.isArray(item.galeria) ? item.galeria : []).filter(source => typeof source === "string" && source.trim());
+  const images = (gallery.length ? gallery : item.imagen_url ? [item.imagen_url] : []).map(source => absoluteUrl(source));
+  const structuredData = { "@context": "https://schema.org", "@graph": [{ "@type": "TouristTrip", "@id": `${url}#trip`, name: item.nombre, description: item.resumen || item.descripcion, url, provider: agencyRef, isPartOf: { "@id": websiteId }, inLanguage: "es-HN", touristType: item.categoria || undefined, ...(destination ? { touristDestination: { "@type": "TouristDestination", name: destination.nombre, url: localizedUrl(`/destinos/${destination.slug}`, locale) } } : {}), itinerary: itinerary.length ? { "@type": "ItemList", itemListElement: itinerary.map((name, index) => ({ "@type": "ListItem", position: index + 1, name })) } : undefined, ...(images.length ? { image: images } : {}) }, breadcrumbSchema([{ label: common("home"), href: "/" }, { label: common("packages"), href: "/paquetes" }, { label: item.nombre, href: `/paquetes/${item.slug}` }], locale)] };
   // Facts, not controls: filled and borderless so they never read as buttons beside "Compartir".
   const chipClass = "inline-flex min-h-9 items-center gap-2 rounded-btn bg-surface px-3 t-small text-ink";
   return <main className="container-site space-y-12 pb-12 sm:space-y-16 sm:pb-24">
-    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\u003c") }} />
+    <JsonLd data={structuredData} />
     <div className="grid items-start gap-10 pt-8 sm:pt-12 lg:grid-cols-3 lg:gap-12"><div className="min-w-0 space-y-10 lg:col-span-2">
     <header className="space-y-5">
       <Breadcrumbs schema={false} items={[{ label: common("home"), href: "/" }, { label: common("packages"), href: "/paquetes" }, { label: item.nombre, href: `/paquetes/${item.slug}` }]} />
@@ -73,6 +85,7 @@ export default async function Page({ params }: Props) {
           <ShareButton title={item.nombre} />
         </div>
       </div>
+      <RatingBadge />
     </header>
       <Gallery item={item} />
       {item.resumen && <p className="t-body-lg measure text-ink-soft">{item.resumen}</p>}
@@ -81,8 +94,9 @@ export default async function Page({ params }: Props) {
       <section className="space-y-6" aria-labelledby="package-includes-title"><h2 id="package-includes-title" className="t-h2 inline-flex items-center gap-3"><ListChecks className="text-brand" aria-hidden="true" />{packagePage("includes")}</h2><div className="grid gap-5 md:grid-cols-2"><div className="rounded-card border border-line bg-canvas p-6 shadow-sm"><h3 className="t-h3 mb-5 inline-flex items-center gap-2"><Check className="text-success" aria-hidden="true" />{packagePage("included")}</h3>{item.incluye?.length ? <ul className="space-y-4">{item.incluye.map((value, index) => <li key={index} className="t-body flex gap-3"><Check size={20} strokeWidth={1.75} className="mt-1 shrink-0 text-success" aria-hidden="true" /><span>{value}</span></li>)}</ul> : <p className="t-body text-ink-soft">{packagePage("detailsOnRequest")}</p>}</div><div className="rounded-card border border-line bg-canvas p-6 shadow-sm"><h3 className="t-h3 mb-5 inline-flex items-center gap-2"><X className="text-ink-soft" aria-hidden="true" />{packagePage("notIncluded")}</h3>{item.no_incluye?.length ? <ul className="space-y-4">{item.no_incluye.map((value, index) => <li key={index} className="t-body flex gap-3"><Minus size={20} strokeWidth={1.75} className="mt-1 shrink-0 text-ink-soft" aria-hidden="true" /><span>{value}</span></li>)}</ul> : null}</div></div></section>
       {itinerary.length > 0 && <section className="space-y-6" aria-labelledby="itinerary-title"><h2 id="itinerary-title" className="t-h2 inline-flex items-center gap-3"><CalendarDays className="text-brand" aria-hidden="true" />{packagePage("itinerary")}</h2><ol>{itinerary.map((day, index) => { const [, title, body] = day.match(/^(.{1,40}?)(?::|\s[—–-])\s+([\s\S]+)$/) ?? []; return <li key={`${index}-${day}`} className="relative flex gap-5 pb-7 last:pb-0"><span aria-hidden="true" className="absolute left-3 top-7 h-[calc(100%-1.25rem)] w-px bg-line"/><span className="relative z-10 flex size-7 shrink-0 items-center justify-center rounded-full border border-brand bg-canvas t-small text-brand">{index + 1}</span><div className="min-w-0 space-y-1 pt-0.5"><h3 className="t-h3">{body ? title : `${packagePage("day")} ${index + 1}`}</h3><p className="t-body whitespace-pre-line text-ink-soft">{body ?? day}</p></div></li>; })}</ol></section>}
     </div><aside id="solicitar-cotizacion" aria-labelledby={`package-quote-title-${item.id}`} className="scroll-mt-24 rounded-panel border border-line bg-canvas p-5 shadow-md sm:p-6"><PackageQuote item={item} intro={packagePage("quoteMessage")} /></aside></div>
-    {destination && <section className="space-y-4 rounded-panel border border-line bg-surface p-6 shadow-sm sm:p-8"><h2 className="t-h2 inline-flex items-center gap-3"><Info className="text-brand" aria-hidden="true" />{packagePage("destinationInfo")}</h2><h3 className="t-h3">{destination.nombre}</h3>{destination.intro && <p className="t-body measure text-ink-soft">{destination.intro}</p>}{destination.mejor_epoca && <p className="t-body"><span className="font-semibold">{t("destinationSeason")}: </span>{destination.mejor_epoca}</p>}<Link href={`/destinos/${destination.slug}`} className="t-small inline-flex items-center gap-2 text-brand underline underline-offset-4">{packagePage("learnDestination", { name: destination.nombre })}</Link></section>}
+    {destination && <section className="space-y-4 rounded-panel border border-line bg-surface p-6 shadow-sm sm:p-8"><h2 className="t-h2 inline-flex items-center gap-3"><Info className="text-brand" aria-hidden="true" />{packagePage("destinationInfo")}</h2><h3 className="t-h3">{destination.nombre}</h3>{destination.intro && <p className="t-body measure text-ink-soft">{destination.intro}</p>}{destination.mejor_epoca && <p className="t-body"><span className="font-semibold">{t("destinationSeason")}: </span>{destination.mejor_epoca}</p>}<div className="flex flex-wrap gap-x-6 gap-y-1"><Link href={`/destinos/${destination.slug}`} className="t-small inline-flex min-h-11 items-center gap-2 text-brand underline underline-offset-4">{packagePage("learnDestination", { name: destination.nombre })}</Link><Link href={{ pathname: "/requisitos", query: { destino: destination.nombre } }} className="t-small inline-flex min-h-11 items-center gap-2 text-brand underline underline-offset-4">{ux("requirementsTitle", { name: destination.nombre })}</Link></div></section>}
     {packages.length > 0 && <section className="space-y-6" aria-labelledby="related-packages-title"><h2 id="related-packages-title" className="t-h2">{packagePage("relatedPackages")}</h2><PackageGrid items={packages} label={packagePage("relatedPackages")} /></section>}
+    {guides.length > 0 && <section className="space-y-6" aria-labelledby="package-guides-title"><h2 id="package-guides-title" className="t-h2">{ux("relatedGuides")}</h2><div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">{guides.map(post => <BlogCard key={post.id} post={post} />)}</div></section>}
     <StickyQuoteBar targetId="solicitar-cotizacion" title={item.nombre} />
   </main>;
 }

@@ -80,8 +80,9 @@ test('empty and failed hero images retain the tonal background without broken im
 test('hero rotates every 5.5 seconds, pauses for hover/focus and offers a persistent pause', () => {
   const hero = backdrop(photos);
   assert.equal(hero.photos()[0].props.preload, true);
-  assert.equal(hero.photos()[1].props.preload, false);
   assert.equal(hero.photos()[0].props.sizes, '100vw');
+  hero.photos()[0].props.onLoad(); hero.render();
+  assert.equal(hero.photos()[1].props.preload, false);
   hero.photos().forEach(photo => photo.props.onLoad()); hero.render();
   hero.tick();
   assert.equal(hero.photos()[1].props['aria-hidden'], false);
@@ -104,12 +105,23 @@ test('reduced motion displays only the first image, including when preference ch
   assert.equal(hero.photos()[0].props.src, photos[0].src);
   assert.equal(hero.timers.size, 0);
   hero.reduce(false); hero.tick();
+  hero.photos()[0].props.onLoad(); hero.render();
   hero.photos().forEach(photo => photo.props.onLoad()); hero.render(); hero.tick();
   assert.equal(hero.photos()[1].props['aria-hidden'], false);
   hero.reduce(true);
   assert.equal(hero.photos().length, 1);
   assert.equal(hero.photos()[0].props['aria-hidden'], false);
   assert.equal(hero.timers.size, 0);
+});
+
+test('the first photo is visible in the server render and later slides wait for it', () => {
+  const hero = backdrop(photos);
+  // LCP: nothing gates the first photo on hydration or on its load event.
+  assert.equal(hero.photos().length, 1);
+  assert.match(hero.photos()[0].props.className, /opacity-100/);
+  hero.photos()[0].props.onLoad(); hero.render();
+  assert.equal(hero.photos().length, 2);
+  assert.match(hero.photos()[1].props.className, /opacity-0/);
 });
 
 test('rotation waits for loaded photos and skips failures in configured order', () => {
