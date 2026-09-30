@@ -19,5 +19,6 @@ export function ShareButton({ title }: { title: string }) {
     }
     window.open(`https://wa.me/?text=${encodeURIComponent(`${text} ${url}`)}`, "_blank", "noopener,noreferrer");
   }
-  return <Button type="button" variant="ghost" onClick={share}><Share2 size={18} strokeWidth={1.75} className="text-ink-soft" aria-hidden="true" />{t("sharePage")}</Button>;
+  // Phones: a 48px icon button so it sits beside the primary action instead of wrapping under it.
+  return <Button type="button" variant="ghost" onClick={share} aria-label={t("sharePage")} className="max-sm:size-12 max-sm:p-0"><Share2 size={18} strokeWidth={1.75} className="text-ink-soft" aria-hidden="true" /><span className="max-sm:sr-only">{t("sharePage")}</span></Button>;
 }

@@ -17,8 +17,8 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ c
   return <main className="container-site pb-12 sm:pb-24">
     <PageHeader breadcrumbs={[{ label: common("home"), href: "/" }, { label: common("blog"), href: "/blog" }]} title={t("guides")} intro={t("blogIntro")} />
     <div className="mb-8 space-y-3">
-      <nav aria-label={t("allPosts")} className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0"><ul className="flex gap-2">{[["", t("allPosts")], ["guia", t("guides")], ["post", t("articles")]].map(([postType, label]) => chip(postType || "all", label, href(categoria, postType), (tipo || "") === postType))}</ul></nav>
-      {categories.length > 1 && <nav aria-label={t("allCategories")} className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0"><ul className="flex gap-2 sm:flex-wrap">{["", ...categories].map(category => chip(category || "all", category || t("allCategories"), href(category, tipo), (categoria || "") === category))}</ul></nav>}
+      <nav aria-label={t("allPosts")} className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0"><ul className="chip-row flex gap-2">{[["", t("allPosts")], ["guia", t("guides")], ["post", t("articles")]].map(([postType, label]) => chip(postType || "all", label, href(categoria, postType), (tipo || "") === postType))}</ul></nav>
+      {categories.length > 1 && <nav aria-label={t("allCategories")} className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0"><ul className="chip-row flex gap-2 sm:flex-wrap">{["", ...categories].map(category => chip(category || "all", category || t("allCategories"), href(category, tipo), (categoria || "") === category))}</ul></nav>}
     </div>
     {visible.length ? <section aria-labelledby="blog-post-list"><h2 id="blog-post-list" className="sr-only">{t("allPosts")}</h2><div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">{visible.map(post => <BlogCard key={post.id} post={post} />)}</div></section> : <p role="status" className="rounded-panel border border-line bg-surface p-8 text-center text-ink-soft">{t("noPosts")}</p>}
   </main>;

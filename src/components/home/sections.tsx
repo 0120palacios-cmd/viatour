@@ -50,7 +50,7 @@ export function Hero() {
   const t = useTranslations();
   const proof = [{ icon: UserRound, label: t("home.why1Title") }, { icon: BadgeCheck, label: t("ux.proofFree") }, { icon: CalendarCheck, label: t("home.why6Title") }];
   return <HeroBackdrop pauseLabel={t("home.pauseImages")} resumeLabel={t("home.resumeImages")}>
-    <div className="container-site grid items-center gap-8 py-10 sm:py-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,36rem)] lg:gap-16 lg:py-24">
+    <div className="container-site grid items-center gap-8 pb-16 pt-10 sm:py-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,36rem)] lg:gap-16 lg:py-24">
       <div className="space-y-6 text-ink group-data-[photo=true]/hero:text-canvas">
         <h1 id="hero-title" className="t-display max-w-xl">{t("home.heroTitle")}</h1>
         <p className="t-body-lg max-w-lg group-data-[photo=true]/hero:text-canvas/90">{t("static.aboutTitle")} {t("home.assistance")}</p>

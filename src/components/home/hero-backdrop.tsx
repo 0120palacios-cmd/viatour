@@ -56,7 +56,7 @@ export function HeroBackdrop({ children, pauseLabel, resumeLabel = pauseLabel }:
       {hasPhoto && <div className="absolute inset-0 bg-gradient-to-b from-ink/70 via-ink/45 to-ink/70 lg:bg-gradient-to-r lg:from-ink/75 lg:via-ink/45 lg:to-ink/20" />}
     </div>
     {children}
-    {loaded.filter(index => !failed.includes(index)).length > 1 && !reducedMotion && <div className="absolute right-4 top-4 sm:right-6 lg:bottom-6 lg:top-auto">
+    {loaded.filter(index => !failed.includes(index)).length > 1 && !reducedMotion && <div className="absolute bottom-3 right-4 sm:bottom-4 sm:right-6 lg:bottom-6">
       <button type="button" aria-pressed={paused} aria-label={paused ? resumeLabel : pauseLabel} title={paused ? resumeLabel : pauseLabel} onClick={() => setPaused(value => !value)}
         className="flex size-11 items-center justify-center rounded-btn border border-canvas/40 bg-ink/50 text-canvas transition-colors duration-(--duration-fast) ease-out hover:bg-ink/80 focus-visible:outline-brand-tint">
         {paused ? <PlayGlyph /> : <PauseGlyph />}
