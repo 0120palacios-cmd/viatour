@@ -37,7 +37,7 @@ export function Footer() {
   const coverageTitle = locale === "en" ? "Coverage" : "Cobertura";
   const columns: { title: string; links: readonly { href: string; label: string }[] }[] = [
     { title: t("common.services"), links: serviceLinks.map(({ href, key }) => ({ href, label: t(`common.${key}`) })) },
-    { title: t("common.discover"), links: exploreLinks.map(({ href, key }) => ({ href, label: t(`common.${key}`) })) },
+    { title: t("footer.explore"), links: exploreLinks.map(({ href, key }) => ({ href, label: t(`common.${key}`) })) },
     { title: "viatour", links: companyLinks.map(({ href, key }) => ({ href, label: t(`common.${key}`) })) },
     ...(coverage.length ? [{ title: coverageTitle, links: coverage.map(city => ({ href: `/agencia-de-viajes/${city.slug}`, label: city.name })) }] : []),
   ];
