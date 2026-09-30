@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { ArrowLeft, ArrowRight, ArrowUpRight, PenLine, X } from "lucide-react";
 import { Link } from "@/i18n/navigation";
+import { TrackedLink } from "@/components/tracked-link";
 import { localizedPageMetadata } from "@/lib/seo";
 import { getReviews, reviewSchema, type ReviewSummary } from "@/lib/reviews";
 import { RatingSummary, ReviewCards } from "@/components/reviews/display";
@@ -30,7 +31,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
   // The rating markup describes the whole review set; a one-rating view would misrepresent it.
   const schema = stars ? null : reviewSchema(summary, reviews);
   const matching = stars ? summary[`c${stars}` as keyof ReviewSummary] : summary.total;
-  const actions = <div className="space-y-3"><Button asChild className="w-full"><Link href="/opiniones/nueva"><PenLine size={18} strokeWidth={1.75} aria-hidden="true" />{t("share")}</Link></Button><Button asChild variant="ghost" className="w-full"><a href={siteConfig.googleReviewUrl} target="_blank" rel="noopener noreferrer">{t("googleCta")}<ArrowUpRight size={18} strokeWidth={1.75} aria-hidden="true" /></a></Button><p className="t-small text-center text-ink-soft">{t("googleSubline")}</p></div>;
+  const actions = <div className="space-y-3"><Button asChild className="w-full"><Link href="/opiniones/nueva"><PenLine size={18} strokeWidth={1.75} aria-hidden="true" />{t("share")}</Link></Button><Button asChild variant="ghost" className="w-full"><TrackedLink event="google_review_click" placement="reviews-page" href={siteConfig.googleReviewUrl} target="_blank" rel="noopener noreferrer">{t("googleCta")}<ArrowUpRight size={18} strokeWidth={1.75} aria-hidden="true" /></TrackedLink></Button><p className="t-small text-center text-ink-soft">{t("googleSubline")}</p></div>;
   const pages = Math.max(1, Math.ceil(matching / 30));
   return <main className="container-site pb-12 sm:pb-24">
     <PageHeader breadcrumbs={[{ label: common("home"), href: "/" }, { label: common("reviews"), href: "/opiniones" }]} title={common("reviews")} intro={home("reviewsIntro")} />

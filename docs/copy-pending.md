@@ -113,3 +113,21 @@ Detalle técnico en `docs/ux-seo-round-4.md`. No se modificó ningún texto apro
 - Boletín: en "Acepto recibir ideas de viaje y ofertas de temporada según la Política de Privacidad." el enlace ahora es "Política de Privacidad". Antes se repetía después como "Privacidad.".
 - Títulos de paquetes en buscadores: si "viatour | {paquete} a su medida desde Honduras" supera 60 caracteres, se usa "viatour | {paquete} desde Honduras" o "viatour | {paquete}", en lugar de cortar la frase.
 - Botones de envío: muestran su texto aprobado desde el inicio; "Verificando conexión segura…" (ya aprobado) solo aparece si el visitante envía antes de terminar la verificación.
+
+---
+
+# Copy de la ronda 5: UX, SEO y presencia en Google (2026-09-30), pendiente de aprobación
+
+Detalle técnico en `docs/ux-seo-round-5.md`. No se inventaron cifras, credenciales, reseñas ni plazos de respuesta.
+
+## Textos reescritos (`messages/es.json` → `static.*`; versión en inglés en `messages/en.json`)
+- `contactIntro` antes: "Contacto con sus asesores de viaje desde Honduras con viatour. Consulte la información disponible y cuéntenos qué busca para recibir asesoría sobre su viaje." Ahora: "Escríbanos por WhatsApp, por correo o con el formulario. Cuéntenos a dónde desea viajar, en qué fechas y cuántas personas viajan, y un asesor le preparará opciones."
+- `blogIntro` antes: "Consulte nuestras publicaciones para planificar su viaje." Ahora: "Guías para viajar desde Honduras: documentos y requisitos, mejor época para cada destino y cómo elegir entre opciones parecidas." (Describe solo temas que las nueve guías publicadas ya tratan.)
+
+## Texto para buscadores (no visible en las páginas)
+- Cierre de descripciones cortas: "Solicite su cotización con viatour." (antes "Conozca más y solicite su cotización con viatour.", que se cortaba). Fichas: "Solicite su cotización con viatour desde Honduras." Solo se agrega cuando cabe completo.
+- Tres descripciones aprobadas superan los 160 caracteres y ahora terminan en su última oración completa: `seo.home` (pierde "Solicite su cotización por WhatsApp."), `seo.destinations` y `seo.requirements` (pierde "Verifique siempre los requisitos con la autoridad oficial."). Si desea conservar esas frases en Google, acorte el texto a 160 caracteres.
+
+## Reutilizados, sin texto nuevo
+- Página de ciudad: los tres puntos de confianza del inicio ("Una persona real lo asesora", "Cotización sin costo ni compromiso", "Experiencia desde 2018"), la calificación real, "Cómo funciona" y las opiniones del inicio.
+- Confirmación de una opinión enviada en el sitio: agrega `reviews.googleSubline` y `reviews.googleCta` ("Déjenos su opinión en Google"), mostrados a todas las personas por igual, sin importar su calificación.

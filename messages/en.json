@@ -438,7 +438,7 @@
   "static": {
     "draft": "Functional content in draft, pending approval.",
     "beforeTravel": "Before you travel",
-    "contactIntro": "Contact your travel advisors in Honduras at viatour. Review the available information and tell us what you are looking for so we can advise you about your trip.",
+    "contactIntro": "Write to us on WhatsApp, by email or with the form. Tell us where you would like to go, your dates and how many people are travelling, and an advisor will prepare options for you.",
     "discoverEyebrow": "A guide to get you started",
     "destinationsIntro": "Explore the destinations we offer to Honduran travellers.",
     "destinationsAvailable": "Available destinations",
@@ -447,7 +447,7 @@
     "faqDraft": "Content in draft, pending review and approval.",
     "faqLoadError": "We could not load the frequently asked questions. Please try again.",
     "faqEmpty": "There are no published frequently asked questions yet.",
-    "blogIntro": "Read our publications to help plan your trip.",
+    "blogIntro": "Guides for travelling from Honduras: documents and requirements, the best season for each destination and how to choose between similar options.",
     "allCategories": "All categories",
     "allPosts": "All publications",
     "articles": "Articles",

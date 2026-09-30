@@ -1,11 +1,13 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { ConsentGate, useCookieConsent } from "@/components/cookie-consent";
 import "@/lib/analytics";
 const ga = process.env.NEXT_PUBLIC_GA4_ID?.trim();
 const meta = process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim();
 // TODO: NEXT_PUBLIC_TIKTOK_PIXEL_ID is reserved; do not load TikTok yet.
+// GA4 reads page_location and page_title (page_path is a Universal Analytics field it ignores).
+function pageView() { return { page_location: window.location.href, page_title: document.title }; }
 function Scripts() {
  const pathname = usePathname();
  useEffect(() => {
@@ -22,7 +24,7 @@ function Scripts() {
    // eslint-disable-next-line prefer-rest-params
    window.gtag ||= function () { window.dataLayer!.push(arguments); };
    window.gtag("consent", "update", { analytics_storage: "granted", ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied" });
-   if (!state.ga) load("https://www.googletagmanager.com/gtag/js?id=" + encodeURIComponent(ga), () => { state.ga = true; window.gtag!("js", new Date()); window.gtag!("config", ga, { send_page_view: false }); window.gtag!("event", "page_view", { page_path: window.location.pathname }); });
+   if (!state.ga) load("https://www.googletagmanager.com/gtag/js?id=" + encodeURIComponent(ga), () => { state.ga = true; window.gtag!("js", new Date()); window.gtag!("config", ga, { send_page_view: false }); window.gtag!("event", "page_view", pageView()); });
   }
   if (meta && /^\d+$/.test(meta)) {
    if (!window.fbq) { const pixel: NonNullable<Window["fbq"]> = function (...args: unknown[]) { if (pixel.callMethod) pixel.callMethod(...args); else pixel.queue!.push(args); }; pixel.queue = []; pixel.push = pixel; pixel.loaded = true; pixel.version = "2.0"; window.fbq = pixel; window._fbq = pixel; }
@@ -31,7 +33,10 @@ function Scripts() {
   }
   return () => { active = false; state.consent = false; if (ga) window[`ga-disable-${ga}`] = true; scripts.forEach(script => { script.onload = null; script.remove(); }); window.gtag?.("consent", "update", { analytics_storage: "denied", ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied" }); window.fbq?.("consent", "revoke"); };
  }, []);
- useEffect(() => { const state = window.viatourAnalytics; if (!state?.consent) return; if (state.ga) window.gtag?.("event", "page_view", { page_path: pathname }); if (state.meta) window.fbq?.("track", "PageView"); }, [pathname]);
+ // After a client navigation Next.js sets the new <title> a moment later; read it after that so
+ // GA4 does not file the page under the previous title.
+ const firstPath = useRef(true);
+ useEffect(() => { if (firstPath.current) { firstPath.current = false; return; } const state = window.viatourAnalytics; if (!state?.consent) return; const timer = window.setTimeout(() => { if (state.ga) window.gtag?.("event", "page_view", pageView()); if (state.meta) window.fbq?.("track", "PageView"); }, 300); return () => window.clearTimeout(timer); }, [pathname]);
  return null;
 }
 export function Analytics() { const { canTrack } = useCookieConsent(); useEffect(() => { if (window.viatourAnalytics) window.viatourAnalytics.consent = canTrack; }, [canTrack]); return <ConsentGate><Scripts /></ConsentGate>; }
