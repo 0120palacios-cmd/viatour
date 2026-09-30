@@ -359,7 +359,7 @@
     "validation": "Revise los campos indicados.",
     "error": "No se pudo enviar su opinión. Inténtelo de nuevo.",
     "ratingSummary": "{count} opiniones",
-    "starsCount": "{count} estrellas"
+    "starsCount": "{count, plural, one {# estrella} other {# estrellas}}"
   },
   "portal": {
     "headerMessage": "Consulte su reserva en línea, cuando lo necesite.",

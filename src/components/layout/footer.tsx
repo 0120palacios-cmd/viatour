@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { Mail, MapPin, MessageCircle } from "lucide-react";
+import { ChevronDown, Mail, MapPin, MessageCircle } from "lucide-react";
 import { helpLinks, legalLinks, reservationLink, serviceLinks } from "@/lib/navigation";
 import { CITY_SEO_PAGES } from "@/lib/city-seo";
 import { siteConfig } from "@/lib/site-config";
@@ -57,11 +57,21 @@ export function Footer() {
           {/* The toggle only matters once prices are shown; until then it would change nothing visible. */}
           {PACKAGE_DISPLAY_RULES.mostrar_precios && <div className="space-y-2"><p className="t-small text-canvas/85">{t("footer.currency")}</p><CurrencyToggle /></div>}
         </div>
-        <div className="grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-4">
+        <div className="hidden grid-cols-2 gap-x-6 gap-y-10 sm:grid md:grid-cols-4">
           {columns.map(({ title, links }) => <nav key={title} aria-label={title} className="space-y-3">
             <h2 className="t-small font-semibold text-canvas">{title}</h2>
             <ul>{links.map(({ href, label }) => <li key={href}><Link href={href} className={footerLink}>{label}</Link></li>)}</ul>
           </nav>)}
+        </div>
+        {/* Phones: the same groups as native disclosures, so the footer is a short list of topics
+            instead of a thousand pixels of links. Works without JavaScript. */}
+        <div className="divide-y divide-canvas/15 border-y border-canvas/15 sm:hidden">
+          {columns.map(({ title, links }) => <details key={title} className="group/footer">
+            <summary className="t-body flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 font-semibold text-canvas [&::-webkit-details-marker]:hidden">
+              <h2>{title}</h2><ChevronDown size={20} strokeWidth={1.75} className="shrink-0 text-canvas/70 transition-transform duration-(--duration-fast) ease-out group-open/footer:rotate-180" aria-hidden="true" />
+            </summary>
+            <nav aria-label={title} className="pb-4"><ul className="grid grid-cols-2 gap-x-4">{links.map(({ href, label }) => <li key={href}><Link href={href} className={footerLink}>{label}</Link></li>)}</ul></nav>
+          </details>)}
         </div>
       </div>
       <p className="t-small mt-12 text-canvas/70">{t("footer.iata")}</p>

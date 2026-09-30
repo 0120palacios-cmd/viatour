@@ -359,7 +359,7 @@
     "validation": "Please review the indicated fields.",
     "error": "We could not send your review. Please try again.",
     "ratingSummary": "{count} reviews",
-    "starsCount": "{count} stars"
+    "starsCount": "{count, plural, one {# star} other {# stars}}"
   },
   "portal": {
     "headerMessage": "Check your reservation online, whenever you need.",

@@ -8,7 +8,8 @@ export { DestinationImage } from "@/components/destinations/destination-image";
 export { DestinationSkeletons } from "@/components/destinations/destination-skeletons";
 
 const tileSizes = "(max-width: 639px) calc((100vw - 44px) / 2), (max-width: 1023px) calc((100vw - 72px) / 2), (max-width: 1199px) calc((100vw - 96px) / 3), 368px";
-export const destinationGridClass = "grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3";
+// An odd last tile spans the row on two-column layouts instead of sitting alone beside a gap.
+export const destinationGridClass = "grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3 max-lg:[&>:last-child:nth-child(odd)]:col-span-2 max-lg:[&>:last-child:nth-child(odd)]:aspect-[2/1]";
 
 // One tile for every destination listing: a 4:3 photo with the name set on a subtle gradient
 // (the only place text sits on a photo), so a grid of 11 destinations stays scannable on a phone.

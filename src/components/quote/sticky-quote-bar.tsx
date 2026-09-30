@@ -4,10 +4,12 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { WhatsAppLink } from "@/components/layout/whatsapp-link";
 
 // Below 1024px the quote form sits after long content. This bar keeps the action one tap away
-// and hides while the form itself (or the footer) is on screen. Right padding leaves room for
-// the floating WhatsApp button.
+// and hides while the form itself (or the footer) is on screen. It carries its own WhatsApp
+// button, and the floating one steps aside while it shows (globals.css), so the bottom of the
+// screen holds a single, predictable action bar.
 export function StickyQuoteBar({ targetId, title }: { targetId: string; title: string }) {
   const t = useTranslations("quote");
   const [visible, setVisible] = useState(false);
@@ -34,7 +36,11 @@ export function StickyQuoteBar({ targetId, title }: { targetId: string; title: s
     else window.setTimeout(() => target.querySelector<HTMLElement>("input:not([type=hidden]), select, textarea")?.focus({ preventScroll: true }), 400);
   }
   if (!visible) return null;
-  return <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-canvas px-4 py-3 pr-20 shadow-md lg:hidden" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
-    <div className="flex items-center gap-3"><p className="t-small min-w-0 flex-1 truncate text-ink-soft">{title}</p><Button type="button" onClick={go} className="shrink-0"><ArrowDown size={18} strokeWidth={1.75} aria-hidden="true" />{t("openForm")}</Button></div>
+  return <div className="sticky-quote-bar fixed inset-x-0 bottom-0 z-20 border-t border-line bg-canvas/95 px-4 pt-3 shadow-md backdrop-blur-sm animate-in fade-in slide-in-from-bottom-4 duration-(--duration-reveal) sm:px-6 lg:hidden" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
+    <div className="mx-auto flex max-w-[1200px] items-center gap-3">
+      <p className="t-small hidden min-w-0 flex-1 truncate text-ink-soft sm:block">{title}</p>
+      <Button type="button" onClick={go} className="flex-1 sm:flex-none"><ArrowDown size={18} strokeWidth={1.75} aria-hidden="true" />{t("openForm")}</Button>
+      <WhatsAppLink placement="sticky-bar" compact iconOnlyMobile />
+    </div>
   </div>;
 }

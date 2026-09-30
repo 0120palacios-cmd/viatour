@@ -84,6 +84,10 @@
 @layer base {
   * { border-color: var(--color-line); }
   html { -webkit-text-size-adjust: 100%; }
+  /* Double-tapping a control must not zoom the page (iOS); pinch-zoom stays available everywhere. */
+  :where(a, button, input, select, textarea, label, summary, [role="button"]) { touch-action: manipulation; }
+  /* Controls draw their own pressed state (see Button), so drop the grey tap flash. */
+  :where(a, button, summary, [role="button"]) { -webkit-tap-highlight-color: transparent; }
   body {
     background: var(--color-canvas);
     color: var(--color-ink);
@@ -95,6 +99,13 @@
     /* Horizontal scrolling belongs to carousels only, never to the page. */
     overflow-x: clip;
   }
+  /* Root-level overflow only hides the scrollbar: mobile browsers still zoom the page out to fit
+     anything wider than the screen. A positioned, clipped wrapper contains it for real (clip is not
+     a scroll container, so sticky descendants keep working). */
+  .site-content, #site-footer { position: relative; overflow-x: clip; }
+  /* Every horizontal scroller is a containing block, so absolutely positioned descendants
+     (sr-only labels, overlays) are clipped by it instead of widening the document. */
+  :where(.overflow-x-auto, .overflow-x-scroll, .overflow-auto) { position: relative; }
   /* Focus: 3px brand-tint ring on every interactive element. Never removed. */
   :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
     outline: 3px solid var(--color-brand-tint);
@@ -104,6 +115,14 @@
   :where(main, footer) :where(p, h1, h2, h3, a, label) { overflow-wrap: anywhere; }
   :where(main, footer) :where(.grid, .flex) > * { min-width: 0; }
   fieldset { min-width: 0; }
+  /* Native file pickers keep their behavior but read as a secondary button, not raw browser chrome. */
+  input[type="file"] { font-size: 16px; line-height: 24px; color: var(--color-ink-soft); cursor: pointer; }
+  input[type="file"]::file-selector-button {
+    margin-inline-end: 12px; min-height: 38px; padding: 0 16px; border: 1px solid var(--color-line); border-radius: 8px;
+    background: var(--color-surface); color: var(--color-ink); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+    transition: background-color var(--duration-fast) ease-out;
+  }
+  input[type="file"]:hover::file-selector-button { background: var(--color-brand-tint); }
   :where(input, select, textarea) { max-width: 100%; }
   :where(main, #site-footer) a:not(:where(p, label) a) { min-height: 48px; }
   /* Plain text links become 48px tap targets; links that set their own flex/block layout keep it. */
@@ -133,6 +152,12 @@
   .section-space { padding-block: 48px; }
   /* Paragraph measure: 60–75 characters. */
   .measure { max-width: 68ch; }
+  /* Filter chips: a single swipeable row on phones. Chips keep their natural width (the base
+     min-width reset would otherwise crush them to a few letters), the scrollbar is hidden, and a
+     soft edge fade signals there is more to swipe. */
+  .chip-row > * { flex-shrink: 0; }
+  :where(nav):has(> .chip-row) { scrollbar-width: none; padding-block: 4px; }
+  :where(nav):has(> .chip-row)::-webkit-scrollbar { display: none; }
   .media-card {
     transition: transform var(--duration-fast) ease-out, box-shadow var(--duration-fast) ease-out;
   }
@@ -142,6 +167,11 @@
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
   .media-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
   .media-card:hover img { transform: scale(1.03); }
+}
+
+/* Touch screens have no hover: acknowledge the tap on cards instead. */
+@media (hover: none) and (prefers-reduced-motion: no-preference) {
+  .media-card:active { transform: scale(0.985); }
 }
 
 @media (min-width: 640px) {
@@ -171,15 +201,22 @@
 .whatsapp-float {
   right: max(16px, env(safe-area-inset-right));
   bottom: max(16px, env(safe-area-inset-bottom));
+  transition: transform var(--duration-reveal) ease-out, opacity var(--duration-reveal) ease-out;
 }
+.whatsapp-float[data-tucked] { transform: translateY(calc(100% + 24px)); opacity: 0; }
 /* Keep the consent controls clear of the floating WhatsApp action. */
 body:has([aria-labelledby="cookie-title"]) .whatsapp-float { display: none; }
+/* Where the sticky quote bar is showing it carries its own WhatsApp action: one bar, not two controls. */
+@media (max-width: 1023px) {
+  body:has(.sticky-quote-bar) .whatsapp-float { display: none; }
+}
 @media (min-width: 640px) {
   .whatsapp-float { right: max(24px, env(safe-area-inset-right)); bottom: max(24px, env(safe-area-inset-bottom)); }
 }
 /* Mobile: reserve the floating button's height (48px) plus its 16px offset and
    16px of clearance below the page content, so the end of every page stays clear. */
 @media (max-width: 639px) {
+  :where(nav):has(> .chip-row) { mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); }
   .site-content { padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
 }
 
@@ -216,6 +253,7 @@ body:has([aria-labelledby="cookie-title"]) .whatsapp-float { display: none; }
    base `min-width: 0` reset and Tailwind utilities), and the two-class selector
    outranks the zero-specificity :where() reset, so item widths cannot collapse. */
 .package-carousel {
+  position: relative;
   display: flex;
   gap: 16px;
   overflow-x: auto;

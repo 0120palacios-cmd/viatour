@@ -88,7 +88,7 @@ export default async function Page({ params }: Props) {
           <div className="space-y-6">
             <h1 className="t-h1">{item.nombre}</h1>
             {item.intro && <p className="t-body-lg measure whitespace-pre-line text-ink-soft">{item.intro}</p>}
-            <div className="flex flex-wrap items-start gap-3">{quote}<ShareButton title={item.nombre} /></div>
+            <div className="flex items-start gap-3">{quote}<ShareButton title={item.nombre} /></div>
           </div>
           <div className="overflow-hidden rounded-card border border-line shadow-sm"><DestinationImage item={item} hero /></div>
         </div>
