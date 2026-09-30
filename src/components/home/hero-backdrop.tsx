@@ -4,7 +4,11 @@ import Image from "next/image";
 import { useEffect, useState, type ReactNode } from "react";
 import { heroImages } from "@/lib/hero-images";
 
-export function HeroBackdrop({ children, pauseLabel }: { children: ReactNode; pauseLabel: string }) {
+// Inline glyphs keep this component free of icon-library dependencies (its unit test runs it in isolation).
+function PauseGlyph() { return <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M9 5v14M15 5v14" /></svg>; }
+function PlayGlyph() { return <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" aria-hidden="true"><path d="M8 5l11 7-11 7z" /></svg>; }
+
+export function HeroBackdrop({ children, pauseLabel, resumeLabel = pauseLabel }: { children: ReactNode; pauseLabel: string; resumeLabel?: string }) {
   const [active, setActive] = useState(0);
   const [failed, setFailed] = useState<number[]>([]);
   const [loaded, setLoaded] = useState<number[]>([]);
@@ -32,12 +36,13 @@ export function HeroBackdrop({ children, pauseLabel }: { children: ReactNode; pa
   }, [reducedMotion, hovered, focused, paused, loaded, failed]);
 
   const visible = reducedMotion ? 0 : active;
-  return <section aria-labelledby="hero-title" data-photo={heroImages.length > 0} className="group/hero relative isolate overflow-hidden bg-surface py-8 sm:py-24"
+  const hasPhoto = heroImages.some((_, index) => !failed.includes(index));
+  return <section aria-labelledby="hero-title" data-photo={hasPhoto} className="group/hero relative isolate overflow-hidden bg-surface data-[photo=true]:bg-ink"
     onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
     onFocusCapture={() => setFocused(true)} onBlurCapture={event => {
       if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
     }}>
-    <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden bg-surface">
+    <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden bg-surface group-data-[photo=true]/hero:bg-ink">
       {heroImages.map((photo, index) => !failed.includes(index) && (!reducedMotion || index === 0) && <Image
         key={`${index}-${photo.src}`} src={photo.src} alt={photo.alt} fill sizes="100vw"
         // Next.js 16 replaces the deprecated priority prop with preload.
@@ -47,13 +52,14 @@ export function HeroBackdrop({ children, pauseLabel }: { children: ReactNode; pa
         onLoad={() => setLoaded(previous => previous.includes(index) ? previous : [...previous, index])}
         onError={() => setFailed(previous => previous.includes(index) ? previous : [...previous, index])}
       />)}
+      {/* Legibility only where text sits on the photo: darker behind the copy, lighter elsewhere. */}
+      {hasPhoto && <div className="absolute inset-0 bg-gradient-to-b from-ink/70 via-ink/45 to-ink/70 lg:bg-gradient-to-r lg:from-ink/75 lg:via-ink/45 lg:to-ink/20" />}
     </div>
     {children}
-    {loaded.filter(index => !failed.includes(index)).length > 1 && !reducedMotion && <div className="container-site relative mt-4 sm:mt-6">
-      {/* Functional accessibility copy pending approval. */}
-      <button type="button" aria-pressed={paused} onClick={() => setPaused(value => !value)}
-        className="t-small min-h-11 rounded-btn border border-canvas/50 bg-ink px-4 py-2 text-canvas focus-visible:outline-brand-tint">
-        {pauseLabel}
+    {loaded.filter(index => !failed.includes(index)).length > 1 && !reducedMotion && <div className="absolute right-4 top-4 sm:right-6 lg:bottom-6 lg:top-auto">
+      <button type="button" aria-pressed={paused} aria-label={paused ? resumeLabel : pauseLabel} title={paused ? resumeLabel : pauseLabel} onClick={() => setPaused(value => !value)}
+        className="flex size-11 items-center justify-center rounded-btn border border-canvas/40 bg-ink/50 text-canvas transition-colors duration-(--duration-fast) ease-out hover:bg-ink/80 focus-visible:outline-brand-tint">
+        {paused ? <PlayGlyph /> : <PauseGlyph />}
       </button>
     </div>}
   </section>;

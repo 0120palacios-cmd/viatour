@@ -106,7 +106,8 @@
   fieldset { min-width: 0; }
   :where(input, select, textarea) { max-width: 100%; }
   :where(main, #site-footer) a:not(:where(p, label) a) { min-height: 48px; }
-  :where(main, #site-footer) a:not(:where(p, label) a):not([class*="block"]) { display: inline-flex; align-items: center; }
+  /* Plain text links become 48px tap targets; links that set their own flex/block layout keep it. */
+  :where(main, #site-footer) a:not(:where(p, label) a):not([class*="block"]):not([class*="flex"]) { display: inline-flex; align-items: center; }
 }
 
 /* Typography roles — size / line-height / weight / tracking per Design Bible §4.

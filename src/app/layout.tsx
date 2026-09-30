@@ -47,7 +47,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           <SiteBreadcrumbJsonLd />
           <ConsentProvider><PublicChrome><Analytics /><AttributionCapture /></PublicChrome><CurrencyProvider initialCurrency={currency}>
             <PublicChrome><Header /></PublicChrome>
-            <div className="site-content flex-1">{children}</div>
+            <div id="contenido" tabIndex={-1} className="site-content flex-1 outline-none">{children}</div>
             <PublicChrome><Footer /><WhatsAppFloat /></PublicChrome>
             <PublicChrome><CookieBanner /></PublicChrome>
           </CurrencyProvider></ConsentProvider>

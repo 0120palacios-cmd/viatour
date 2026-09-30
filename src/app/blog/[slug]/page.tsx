@@ -8,6 +8,7 @@ import { getDestinations } from "@/lib/destinations";
 import { getPackagesForDestination } from "@/lib/packages";
 import { blogCoverUrl, blogDate } from "@/lib/blog-utils";
 import { Markdown } from "@/components/blog/markdown";
+import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { WhatsAppLink } from "@/components/layout/whatsapp-link";
 import { absoluteUrl, breadcrumbSchema, localizedContentMetadata, localizedUrl, detailDescription } from "@/lib/seo";
 import type { Locale } from "@/i18n/config";
@@ -30,8 +31,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function Page({ params }: Props) {
-  const t = await getTranslations("static");
   const common = await getTranslations("common");
+  const home = await getTranslations("home");
   const locale = (await getLocale()) as Locale;
   const post = await getBlogPost((await params).slug);
   if (!post) notFound();
@@ -61,10 +62,10 @@ export default async function Page({ params }: Props) {
     ],
   };
   return (
-    <main className="container-site py-12 sm:py-24">
+    <main className="container-site pb-12 pt-8 sm:pb-24 sm:pt-12">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema).replace(/</g, "\\u003c") }} />
       <article className="mx-auto max-w-[68ch]">
-        <Link className="text-brand underline" href="/blog">{t("backToBlog")}</Link>
+        <Breadcrumbs schema={false} items={[{ label: common("home"), href: "/" }, { label: common("blog"), href: "/blog" }, { label: post.titulo, href: `/blog/${post.slug}` }]} />
         <header className="my-8">
           <h1 className="t-h1">{post.titulo}</h1>
           <div className="mt-4 flex flex-wrap gap-4 t-small text-ink-soft">
@@ -79,9 +80,10 @@ export default async function Page({ params }: Props) {
           {relatedDestinations.length > 0 && <nav aria-label={common("destinations")}><h2 className="t-h3 mb-3">{common("destinations")}</h2><ul className="space-y-2">{relatedDestinations.map(destination => <li key={destination.id}><Link className="text-brand underline underline-offset-4" href={`/destinos/${destination.slug}`}>{destination.nombre}</Link></li>)}</ul></nav>}
           {relatedPackages.length > 0 && <nav aria-label={common("packages")}><h2 className="t-h3 mb-3">{common("packages")}</h2><ul className="space-y-2">{relatedPackages.map(item => <li key={item.id}><Link className="text-brand underline underline-offset-4" href={`/paquetes/${item.slug}`}>{item.nombre}</Link></li>)}</ul></nav>}
         </section>}
-        <section className="mt-12 space-y-6 rounded-panel border bg-surface p-6">
+        <section className="mt-12 space-y-4 rounded-panel border border-line bg-brand-tint p-6 sm:p-8">
           <h2 className="t-h2">{common("planTrip")}</h2>
-          <WhatsAppLink />
+          <p className="t-body text-ink-soft">{home("finalBody")}</p>
+          <WhatsAppLink placement="blog-post" />
         </section>
       </article>
     </main>

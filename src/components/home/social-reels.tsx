@@ -36,10 +36,10 @@ function profileCards(en: boolean) {
     ["TikTok", siteConfig.social.tiktok],
   ] as const;
 
-  return <div className="grid gap-4 sm:grid-cols-3">
-    {profiles.map(([label, href]) => <a key={label} href={href} target="_blank" rel="noopener noreferrer" className="group flex min-h-28 items-center justify-between gap-4 rounded-card border border-line bg-canvas p-6 shadow-sm transition-shadow duration-(--duration-fast) ease-out hover:shadow-md">
-      <span className="t-h3">{label}</span>
-      <ArrowUpRight size={20} strokeWidth={1.75} className="shrink-0 text-brand" aria-hidden="true" />
+  return <div className="flex flex-wrap gap-3">
+    {profiles.map(([label, href]) => <a key={label} href={href} target="_blank" rel="noopener noreferrer" className="t-button inline-flex min-h-12 items-center gap-2 rounded-btn border border-line bg-canvas px-5 transition-colors duration-(--duration-fast) ease-out hover:bg-surface">
+      <span>{label}</span>
+      <ArrowUpRight size={18} strokeWidth={1.75} className="shrink-0 text-brand" aria-hidden="true" />
       <span className="sr-only">{en ? `Visit viatour on ${label}` : `Visitar el perfil de viatour en ${label}`}</span>
     </a>)}
   </div>;
@@ -161,17 +161,28 @@ function EmbedCard({ platform, url }: { platform: Platform; url: string }) {
 export function SocialReels() {
   const en = useLocale() === "en";
   const posts = siteConfig.socialVideos;
+  const title = en ? "Follow us on social media" : "Síganos en redes";
+  const intro = en ? "See what we share about travel and destinations on our social channels." : "Conozca lo que compartimos sobre viajes y destinos en nuestras redes.";
+  const gira = <Link href="/gira" className="t-small inline-flex min-h-11 items-center gap-2 font-semibold text-brand underline underline-offset-4">{en ? "Share your trip and win" : "Comparta su viaje y gane"}<ArrowUpRight size={16} strokeWidth={1.75} aria-hidden="true" /></Link>;
 
-  return <section className="border-y border-line bg-surface py-12 sm:py-24" aria-labelledby="social-reels-title">
+  // Without published posts, a slim band: three large link cards would repeat the footer and add a screen of scrolling.
+  if (!posts.length) return <section className="container-site py-12 sm:py-16" aria-labelledby="social-reels-title">
+    <div className="flex flex-col gap-6 rounded-panel border border-line p-6 sm:p-8 lg:flex-row lg:items-center lg:justify-between">
+      <div className="max-w-xl space-y-2"><h2 id="social-reels-title" className="t-h3">{title}</h2><p className="t-body text-ink-soft">{intro}</p>{gira}</div>
+      {profileCards(en)}
+    </div>
+  </section>;
+
+  return <section className="section-space border-y border-line bg-surface" aria-labelledby="social-reels-title">
     <div className="container-site">
       <div className="mb-8 flex flex-wrap items-end justify-between gap-6">
-       <div className="max-w-2xl space-y-4">
-        <h2 id="social-reels-title" className="t-h2">{en ? "Follow us on social media" : "Síganos en redes"}</h2>
-        <p className="t-body-lg text-ink-soft">{en ? "See what we share about travel and destinations on our social channels." : "Conozca lo que compartimos sobre viajes y destinos en nuestras redes."}</p>
+       <div className="max-w-2xl space-y-3">
+        <h2 id="social-reels-title" className="t-h2">{title}</h2>
+        <p className="t-body-lg text-ink-soft">{intro}</p>
        </div>
-       <Link href="/gira" className="t-small inline-flex min-h-11 items-center text-brand underline underline-offset-4">{en ? "Share your trip and win" : "Comparta su viaje y gane"}</Link>
+       {gira}
       </div>
-      {posts.length ? <div className="grid gap-6 md:grid-cols-2">{posts.map(post => <EmbedCard key={post.url} {...post} />)}</div> : profileCards(en)}
+      <div className="grid gap-6 md:grid-cols-2">{posts.map(post => <EmbedCard key={post.url} {...post} />)}</div>
     </div>
   </section>;
 }

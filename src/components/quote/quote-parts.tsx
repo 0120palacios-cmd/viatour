@@ -12,18 +12,18 @@ import type { QuoteResult } from "@/lib/quote";
 const labelClass = "t-small flex items-center gap-2";
 
 // Name (optional), WhatsApp number (required) and email (optional) share one layout in every quote form.
-export function ContactFields({ idPrefix, columns = 3 }: { idPrefix: string; columns?: 1 | 2 | 3 }) {
+// hideEmail keeps the short hero form to the two fields an advisor needs; the full form still offers email.
+export function ContactFields({ idPrefix, columns = 3, hideEmail = false }: { idPrefix: string; columns?: 1 | 2 | 3; hideEmail?: boolean }) {
   const t = useTranslations("quote");
   const hintId = `${idPrefix}-phone-hint`;
-  const grid = columns === 3 ? "sm:grid-cols-2 lg:grid-cols-3" : columns === 2 ? "sm:grid-cols-2" : "";
+  const grid = columns === 3 && !hideEmail ? "sm:grid-cols-2 lg:grid-cols-3" : columns === 1 ? "" : "sm:grid-cols-2";
   return <fieldset className="min-w-0 space-y-4">
     <legend className="t-small mb-4 font-semibold text-ink">{t("contactLegend")}</legend>
-    <div className={`grid gap-4 sm:gap-6 ${grid}`}>
+    <div className={`grid gap-4 ${grid}`}>
       <div className="min-w-0 space-y-2"><label htmlFor={`${idPrefix}-name`} className={labelClass}><UserRound size={16} strokeWidth={1.75} className="text-ink-soft" aria-hidden="true" />{t("name")}</label><Input id={`${idPrefix}-name`} name="name" autoComplete="name" maxLength={120} /></div>
-      <div className="min-w-0 space-y-2"><label htmlFor={`${idPrefix}-phone`} className={labelClass}><Phone size={16} strokeWidth={1.75} className="text-ink-soft" aria-hidden="true" />{t("phone")}<span aria-hidden="true">*</span></label><Input id={`${idPrefix}-phone`} name="phone" type="tel" inputMode="tel" autoComplete="tel" required maxLength={40} pattern="[+0-9() .\-]{8,40}" placeholder="+504 9999-9999" aria-describedby={hintId} /></div>
-      <div className="min-w-0 space-y-2"><label htmlFor={`${idPrefix}-email`} className={labelClass}><Mail size={16} strokeWidth={1.75} className="text-ink-soft" aria-hidden="true" />{t("email")}</label><Input id={`${idPrefix}-email`} name="email" type="email" autoComplete="email" maxLength={254} /></div>
+      <div className="min-w-0 space-y-2"><label htmlFor={`${idPrefix}-phone`} className={labelClass}><Phone size={16} strokeWidth={1.75} className="text-ink-soft" aria-hidden="true" />{t("phone")}<span aria-hidden="true" className="text-ink-soft">*</span></label><Input id={`${idPrefix}-phone`} name="phone" type="tel" inputMode="tel" autoComplete="tel" required maxLength={40} pattern="[+0-9() .\-]{8,40}" placeholder="+504 9999-9999" aria-describedby={hintId} /><p id={hintId} className="t-small text-ink-soft">{t("phoneHint")}</p></div>
+      {!hideEmail && <div className="min-w-0 space-y-2"><label htmlFor={`${idPrefix}-email`} className={labelClass}><Mail size={16} strokeWidth={1.75} className="text-ink-soft" aria-hidden="true" />{t("email")}</label><Input id={`${idPrefix}-email`} name="email" type="email" autoComplete="email" maxLength={254} /></div>}
     </div>
-    <p id={hintId} className="t-small text-ink-soft">{t("phoneHint")}</p>
   </fieldset>;
 }
 

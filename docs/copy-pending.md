@@ -37,3 +37,34 @@ Todo el texto siguiente se agregó durante la implementación. Está activo en e
 ## Pendiente de decisión del propietario (no implementado)
 - Renombrar "Factura" a "Recibo" en PDF, correos y portal: confirme con su contador (auditoría D4).
 - Política de privacidad: agregar la captura del número de WhatsApp, la atribución de origen (página, fuente de campaña) y los plazos de conservación. Es texto legal; requiere su aprobación.
+
+---
+
+# Copy de la revisión UX/UI (2026-09-29) — pendiente de aprobación
+
+Detalle de la revisión en `docs/ux-overhaul.md`. No se modificó ningún texto aprobado (titular del inicio, Nosotros, legales). Los textos nuevos son de interfaz; están en `messages/es.json` → `ux.*` y `home.*` (con versión en inglés en `messages/en.json`).
+
+## Nuevos (`ux.*`)
+- `skipToContent` "Saltar al contenido" (accesibilidad, visible solo con teclado).
+- `proofFree` "Cotización sin costo ni compromiso" — prueba en el inicio; resume `quote.how1`, ya aprobado.
+- `proofRating` "{rating} de 5 en {count} opiniones" — se calcula de las opiniones aprobadas; no se muestra si no hay.
+- `allPackages` "Ver todos los paquetes", `allReviews` "Ver todas las opiniones".
+- `filterLabel` "Filtrar por región", `filterAll` "Todos", `packageCount` "{n} paquetes" (filtros de /paquetes; las regiones son las categorías de los paquetes).
+- `copyright` "{año} viatour. Todos los derechos reservados." (el símbolo © se agrega en el pie)
+- `notFoundNext` "Puede continuar por aquí:" (página 404).
+- `menu` "Menú" (botón del menú móvil).
+- `quickFacts` "Datos del viaje" (etiqueta accesible de los datos del paquete).
+
+## Movidos o reutilizados
+- `home.discoverTitle` / `home.discoverBody`: el texto de "Descubra su destino" estaba escrito en el código solo en español; ahora está en los mensajes (inglés en borrador).
+- `home.resumeImages` "Reanudar imágenes": etiqueta del botón de pausa del inicio al reanudar.
+- En el inicio se combinan textos aprobados: "Somos sus asesores de viaje, no una página más." + `home.assistance`, y como pruebas `home.why1Title` y `home.why6Title`.
+- El pie usa "Somos sus asesores de viaje, no una página más." como línea de marca.
+
+## Correcciones
+- `reviews.googleSubline`: "Su opini?n nos ayuda mucho." → "Su opinión nos ayuda mucho." (error de codificación visible).
+- `quote.otherDestination` y `packageQuote.otherDestination`: "Otro / Other" → "Otro destino" (mezclaba idiomas).
+
+## Avisos internos ocultos
+- Los avisos "Contenido funcional en borrador, pendiente de aprobación." (Contacto, Preguntas frecuentes) y "Texto en borrador, pendiente de aprobación." (banner de cookies) ya no se muestran al público. Para volver a mostrarlos en Contacto y Preguntas frecuentes: `siteConfig.showDraftNotices = true`. El aviso de borrador de los textos legales en inglés se mantiene.
+- El recuadro vacío del logotipo IATA en el pie se retiró; la línea de texto IATA se mantiene.

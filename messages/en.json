@@ -131,7 +131,10 @@
     "finalBody": "Write to us and let’s start putting together your ideal trip.",
     "photoAlt": "Photograph of a trip to {name}",
     "photoPlaceholder": "Placeholder for a photograph of {name}",
-    "pauseImages": "Pause images"
+    "pauseImages": "Pause images",
+    "resumeImages": "Resume images",
+    "discoverTitle": "Discover your destination",
+    "discoverBody": "Answer a few questions and we will suggest destinations and packages that match what you are looking for."
   },
   "quote": {
     "serviceType": "Trip type",
@@ -514,6 +517,20 @@
     "submit": "Continue on WhatsApp",
     "sending": "Saving request",
     "error": "We could not save your request. Please try again."
+  },
+  "ux": {
+    "skipToContent": "Skip to content",
+    "proofFree": "Free quote with no obligation",
+    "proofRating": "{rating} out of 5 in {count} reviews",
+    "allPackages": "See all packages",
+    "allReviews": "See all reviews",
+    "filterLabel": "Filter by region",
+    "filterAll": "All",
+    "packageCount": "{count, plural, one {# package} other {# packages}}",
+    "copyright": "{year} viatour. All rights reserved.",
+    "notFoundNext": "You can continue here:",
+    "menu": "Menu",
+    "quickFacts": "Trip details"
   },
   "seo": {
     "home": { "title": "viatour | Travel agency and advice from Honduras", "description": "Travel agency in Honduras for flights, hotels, packages and custom trips with personal guidance from viatour. Request your quote on WhatsApp." },
