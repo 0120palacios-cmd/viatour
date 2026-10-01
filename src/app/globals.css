@@ -352,3 +352,17 @@ select:not([multiple], [size]) {
   .promo-phone { animation: promo-float 7s ease-in-out infinite; }
 }
 @keyframes promo-float { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-10px) rotate(-2deg); } }
+
+/* Articles: a thin brand line across the top that fills as the page is read. Pure CSS (scroll
+   timeline); browsers without it, and reduced motion, simply do not show it. */
+.reading-progress { display: none; }
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reading-progress {
+      display: block; position: fixed; inset-inline: 0; top: 0; z-index: 40; height: 3px;
+      background: var(--color-brand); transform-origin: 0 50%;
+      animation: reading-progress linear both; animation-timeline: scroll(root block);
+    }
+  }
+}
+@keyframes reading-progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }

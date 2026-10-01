@@ -10,20 +10,21 @@ const coverSizes = "(max-width: 639px) calc(100vw - 32px), (max-width: 1023px) c
 
 // The whole card is one link (title as its name). Without its own cover, a guide about one
 // destination shows that destination's real photo; only general guides keep the tonal cover.
-export function BlogCard({ post }: { post: BlogPost }) {
+// `featured`: the listing's lead story, photo beside the text from 1024px.
+export function BlogCard({ post, featured = false }: { post: BlogPost; featured?: boolean }) {
   const t = useTranslations();
   const cover = blogCoverUrl(post.cover_url);
   const destination = cover ? null : guideDestination(post.titulo);
   const image = cover ?? destination?.image ?? null;
-  return <article className="media-card group relative flex h-full flex-col overflow-hidden rounded-card border border-line bg-canvas shadow-sm">
-    <div className={`relative overflow-hidden bg-surface ${image ? "aspect-[3/2]" : "aspect-[4/1] sm:aspect-[3/2]"}`}>
+  return <article className={`media-card group relative flex h-full flex-col overflow-hidden rounded-card border border-line bg-canvas shadow-sm ${featured ? "lg:grid lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]" : ""}`}>
+    <div className={`relative overflow-hidden bg-surface ${image ? "aspect-[3/2]" : "aspect-[4/1] sm:aspect-[3/2]"} ${featured ? "lg:aspect-auto lg:min-h-96" : ""}`}>
       {image
-        ? <Image fill sizes={coverSizes} src={image} alt={cover ? post.titulo : t("home.photoAlt", { name: destination!.nombre })} className="object-cover" />
+        ? <Image fill sizes={featured ? "(max-width: 1023px) calc(100vw - 32px), 690px" : coverSizes} preload={featured} src={image} alt={cover ? post.titulo : t("home.photoAlt", { name: destination!.nombre })} className="object-cover" />
         : <div className="flex h-full items-center justify-center bg-brand-tint text-brand" aria-hidden="true"><BookOpen size={32} strokeWidth={1.5} /></div>}
     </div>
-    <div className="flex flex-1 flex-col gap-3 p-6">
+    <div className={`flex flex-1 flex-col gap-3 p-6 ${featured ? "lg:justify-center lg:gap-4 lg:p-10" : ""}`}>
       <p className="t-small text-brand">{post.categoria} · {post.tipo === "guia" ? t("common.guides") : t("common.articles")}</p>
-      <h3 className="t-h3 group-hover:text-brand"><Link href={"/blog/" + post.slug} className="after:absolute after:inset-0 after:rounded-card">{post.titulo}</Link></h3>
+      <h3 className={`${featured ? "t-h2" : "t-h3"} group-hover:text-brand`}><Link href={"/blog/" + post.slug} className="after:absolute after:inset-0 after:rounded-card">{post.titulo}</Link></h3>
       <p className="t-body line-clamp-3 text-ink-soft">{post.extracto}</p>
       <div className="t-small mt-auto flex items-center justify-between gap-4 pt-2 text-ink-soft">
         {post.publicado_en ? <time dateTime={post.publicado_en}>{blogDate(post.publicado_en)}</time> : <span />}

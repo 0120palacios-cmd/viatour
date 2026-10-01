@@ -13,6 +13,7 @@
     "contact": "Contacto",
     "reservation": "Mi reserva",
     "sharePromo": "Comparta su viaje y gane",
+    "closeMenu": "Cerrar menú",
     "services": "Servicios",
     "flights": "Vuelos",
     "hotels": "Hoteles",
@@ -624,6 +625,9 @@
     "catalogueNoteTitle": "¿No ve el viaje que busca?",
     "catalogueNoteBody": "Los paquetes publicados son ideas para inspirarse. También cotizamos otros destinos, fechas y estilos de viaje.",
     "catalogueNoteCta": "Cuéntenos su idea",
-    "packageFor": "Ideal para"
+    "packageFor": "Ideal para",
+    "reviewsPolicyTitle": "Cómo publicamos las opiniones",
+    "reviewsPolicyBody": "Cada opinión se revisa antes de publicarse. Toque una calificación para ver solo esas opiniones, también las más bajas.",
+    "travellersSummary": "{adults, plural, one {# adulto} other {# adultos}}{children, plural, =0 {} one {, # niño} other {, # niños}}"
   }
 }

@@ -92,12 +92,52 @@ Severity: **H** misleads or loses the visitor, **M** friction or lost opportunit
   - They need `NEXT_PUBLIC_SITE_URL=https://miviatour.com`; `.env.local` uses `http://localhost:3000`.
 - **Not submitted:** forms. `.env.local` points to the real database and email.
 
-## 4. Still open (next passes)
+## 4. Second pass: quote reliability, reviews, blog and tests
 
-- **Photos:** 17 of 34 packages have no photo and show the tonal placeholder. Real photos are the biggest remaining visual gain. Packages with a destination photo could reuse it, if you approve that.
-- **Reviews and blog pages:** a presentation pass for the review cards (verified marker only where supported) and the article reading layout. Not started in this pass.
-- **Quote forms:** the hero tool was left as approved. A step-by-step mobile variant could reduce its height (about 1.5 screens at 390px).
-- **Stale smoke tests:** update the six smoke tests listed in section 3.
+### Bugs found and fixed (they affect the live site)
+Repairing the stale smoke tests exposed real defects in the quote flow. All existed on `main` before V3.
+
+| # | Sev | Bug | Fix |
+|---|---|---|---|
+| B1 | **H** | **Compact home flight quotes were rejected.** The hero form's default service is Vuelos, and its compact view has no cabin-class field. `validateLead` required `class` for every flight, so these submissions failed with "No se pudo enviar su solicitud". Visitors who never opened "Más opciones" could not send a flight quote from the home page. | The class is optional on the server and still validated when present. When missing, the advisor sees no "Clase" line. Regression test in `tests/leads.test.mjs`. |
+| B2 | **H** | **Multi-city quotes with "Otro destino" were rejected.** Choosing "Otro destino" in a segment also sends `destination-N-choice`, which the segment count read as an extra field ("Segments"). | The count matches exact segment names only (`/^(origin|destination|date)-d+$/`). Regression test added. |
+| B3 | M | **"Más opciones" erased what the visitor had typed.** The compact and full layouts render different element trees, so the uncontrolled fields remounted empty. | The form keeps every typed value (it already tracked them for the summaries) and seeds the fields from it. "Otro destino" values are restored in their text field. |
+| B4 | M | **The phone format check never ran.** Browsers compile `pattern` with the `v` flag, where `(` and `)` must be escaped inside a character class. The phone pattern was invalid, and Chrome silently skipped it (console error). | `[+0-9() .-]{8,40}`, checked under both the `v` and `u` flags. |
+| B5 | L | **Success panel overflow.** At about 1280px, "Hacer otra solicitud" overflowed the quote success panel. | The button row wraps. |
+| B6 | L | **Cramped expanded hero form.** The expanded form used window breakpoints, so it put 3 contact columns and 4 field columns inside the ~512px hero panel. | Container queries: the quote and contact grids follow the form's own width. Hero and `/vuelos` now get two even columns. |
+
+### UX
+- **Mobile hero form:** service, destination, dates and travellers sit two per row. An opened group takes the full row. The traveller summary is shorter ("2 adultos, 1 niño"). The form is about 190px shorter at 390px.
+- **Blog:**
+  - The newest post with a real photo leads the listing as a wide feature card.
+  - The listing ends with the standard planning call to action.
+  - Articles show a thin reading-progress line. It is pure CSS, and hidden without scroll timelines and with reduced motion.
+- **Reviews:**
+  - A short "Cómo publicamos las opiniones" note: every review is checked before publishing, and every rating can be filtered, low ones included. Both are existing behaviour.
+  - The summary column is sticky only on windows at least 880px tall, so it is never cut off on laptops.
+  - The page ends with the planning call to action.
+- **Accessibility:** the mobile menu's close button is named "Cerrar menú" (it was "Cerrar").
+
+### Smoke tests updated (all 7 pass)
+- `stage9`: legal pages are approved, so the test checks noindex and that no draft banner shows.
+- `blog`: the seed example was replaced by real posts.
+- `destinations`:
+  - Meta descriptions are checked under the round-5 trimming and closing-sentence rules.
+  - The 404 copy is read from the messages file.
+- `hero`:
+  - The destination field is a select, the trip type uses radios, and the phone number is required.
+  - The handoff is the "Continuar en WhatsApp" click.
+  - The Turnstile mock gains `reset()`.
+  - The test waits for the held capture.
+- `polish`: the H1 now sits beside the tool.
+- `discovery`: the phone is required, and the handoff is a click.
+- **Site URL:** sitemap checks use the site URL the server was built with (`SMOKE_SITE_URL` / `NEXT_PUBLIC_SITE_URL`).
+- **CLAUDE.md:** the lead-flow note was corrected (no automatic redirect).
+
+## 5. Still open
+
+- **Photos:** 17 of 34 packages have no photo and show the tonal placeholder. Real photos are the biggest remaining visual gain.
+- **Production impact of B1 and B2:** both are fixed only once this branch is deployed. Until then, compact home flight quotes and multi-city quotes with an unlisted destination fail on the live site. Deploying soon is recommended. Check the leads inbox after deploy.
 - **Owner decisions:**
   - **Home H1:** "Cotice con nosotros." is kept as approved (round 5, D1).
-  - **New copy:** approve the new copy (`docs/copy-pending.md`), especially "también planificamos viajes a muchos otros lugares del mundo".
+  - **New copy:** approve the new copy (`docs/copy-pending.md`).

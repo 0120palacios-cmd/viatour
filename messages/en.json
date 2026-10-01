@@ -12,6 +12,7 @@
     "about": "About us",
     "contact": "Contact",
     "sharePromo": "Share your trip and win",
+    "closeMenu": "Close menu",
     "reservation": "My reservation",
     "services": "Services",
     "flights": "Flights",
@@ -624,6 +625,9 @@
     "catalogueNoteTitle": "Don't see the trip you want?",
     "catalogueNoteBody": "Published packages are ideas to inspire you. We also quote other destinations, dates and travel styles.",
     "catalogueNoteCta": "Tell us your idea",
-    "packageFor": "Ideal for"
+    "packageFor": "Ideal for",
+    "reviewsPolicyTitle": "How we publish reviews",
+    "reviewsPolicyBody": "Every review is checked before it is published. Tap a rating to see only those reviews, including the lowest.",
+    "travellersSummary": "{adults, plural, one {# adult} other {# adults}}{children, plural, =0 {} one {, # child} other {, # children}}"
   }
 }

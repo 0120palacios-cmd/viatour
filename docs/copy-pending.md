@@ -165,3 +165,9 @@ Detalle técnico en `docs/ux-v3.md`. No se inventaron cifras, reseñas, credenci
 
 ## Reutilizados, sin texto nuevo
 - /gira conserva su título, introducción, pasos y condiciones; solo cambió el diseño y se agregaron migas de pan ("Inicio > Comparta su viaje y gane").
+
+## V3, segunda pasada (2026-09-30), pendiente de aprobación
+- Opiniones: "Cómo publicamos las opiniones" / "Cada opinión se revisa antes de publicarse. Toque una calificación para ver solo esas opiniones, también las más bajas." (describe la moderación y el filtro que ya existen).
+- Resumen de viajeros en el formulario del inicio: "1 adulto", "2 adultos, 1 niño" (antes "Adultos: 2; Niños: 1").
+- Etiqueta accesible del botón que cierra el menú móvil: "Cerrar menú" (antes "Cerrar").
+- Sin texto nuevo: la guía destacada del blog y los cierres de /blog y /opiniones reutilizan textos aprobados.

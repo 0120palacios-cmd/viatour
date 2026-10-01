@@ -38,7 +38,10 @@ try {
           await page.getByRole('dialog').waitFor({ state: 'hidden' });
         }
         assert.equal(await page.locator('h1').count(), 1);
-        assert.equal(await page.locator('[data-orientation="horizontal"]').filter({ has: page.locator('h1') }).count() > 0, true);
+        // The H1 sits beside the quote tool (round 2 layout): the hero holds both the heading and the tabs.
+        const heroSection = page.locator('section[aria-labelledby="hero-title"]');
+        assert.equal(await heroSection.locator('h1').count(), 1);
+        assert.equal(await heroSection.locator('[data-orientation="horizontal"]').count() > 0, true);
         if (process.env.POLISH_SCREENSHOTS) await page.screenshot({ path: `${process.env.POLISH_SCREENSHOTS}/hero-compact-${width}.png` });
         await page.getByRole('button', { name: 'Más opciones', exact: true }).click();
         for (const name of ['Vuelos', 'Hoteles', 'Paquetes', 'Viaje a medida']) {

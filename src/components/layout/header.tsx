@@ -74,7 +74,7 @@ export function Header() {
             <SheetTrigger asChild><Button variant="ghost" className="gap-2 px-3" aria-label={t("common.openMenu")}><Menu className="text-ink" size={22} strokeWidth={1.75} aria-hidden="true" /><span className="t-small max-sm:sr-only">{t("ux.menu")}</span></Button></SheetTrigger>
             <SheetContent>
               <div className="container-site flex min-h-full flex-col gap-6 py-4">
-                <div className="flex items-center justify-between gap-4"><SheetTitle asChild><span><Image src={blackLogo} alt="viatour" className="h-auto w-28" sizes="112px" /></span></SheetTitle><SheetClose asChild><Button variant="ghost" className="px-3" aria-label={t("common.close")}><X className="text-ink" size={22} strokeWidth={1.75} aria-hidden="true" /></Button></SheetClose></div>
+                <div className="flex items-center justify-between gap-4"><SheetTitle asChild><span><Image src={blackLogo} alt="viatour" className="h-auto w-28" sizes="112px" /></span></SheetTitle><SheetClose asChild><Button variant="ghost" className="px-3" aria-label={t("common.closeMenu")}><X className="text-ink" size={22} strokeWidth={1.75} aria-hidden="true" /></Button></SheetClose></div>
                 <WhatsAppLink placement="mobile-menu" onClick={() => setOpen(false)} block />
                 <nav aria-label={t("header.menuLabel")} className="space-y-6">
                   <ul className="divide-y divide-line border-y border-line">
