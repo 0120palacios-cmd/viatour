@@ -171,3 +171,8 @@ Detalle técnico en `docs/ux-v3.md`. No se inventaron cifras, reseñas, credenci
 - Resumen de viajeros en el formulario del inicio: "1 adulto", "2 adultos, 1 niño" (antes "Adultos: 2; Niños: 1").
 - Etiqueta accesible del botón que cierra el menú móvil: "Cerrar menú" (antes "Cerrar").
 - Sin texto nuevo: la guía destacada del blog y los cierres de /blog y /opiniones reutilizan textos aprobados.
+
+## V3, tercera pasada (2026-09-30), pendiente de aprobación
+- Mi reserva: "Todo su viaje en un solo lugar" / "Por su seguridad, le enviaremos un código de verificación al correo registrado en su reserva." / "¿No encuentra su código de reserva?" / "Escríbanos por WhatsApp y su asesor le ayuda a ingresar." La lista de secciones reutiliza los nombres que ya usa el portal.
+- Nosotros: la tarjeta lateral reutiliza textos aprobados ("Experiencia desde 2018", "Una persona real lo asesora", "Gestione su reserva en línea", la nota IATA del pie de página y "Encuéntrenos en Google"). El texto aprobado de la página no cambió.
+- Requisitos: "Guías relacionadas" (texto existente).

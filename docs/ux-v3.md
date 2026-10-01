@@ -141,3 +141,48 @@ Repairing the stale smoke tests exposed real defects in the quote flow. All exis
 - **Owner decisions:**
   - **Home H1:** "Cotice con nosotros." is kept as approved (round 5, D1).
   - **New copy:** approve the new copy (`docs/copy-pending.md`).
+
+## 6. Third pass: remaining pages, accessibility and performance
+
+### Accessibility (axe-core, WCAG 2.0–2.2 A/AA + best practice; 20 pages at 1440 and 390px)
+**Result:** all clean after these fixes. No colour-contrast, label or name issues were found before or after.
+
+| Sev | Finding | Fix |
+|---|---|---|
+| Critical | **Broken tab-to-panel link.** The quote tabs used their service names as Radix values. "Viaje a medida" contains spaces, so the tab's \`aria-controls\` pointed at three ids that do not exist, and assistive tech could not link that tab to its panel. | Tab values are now the service keys (\`flights\`, \`customTrip\`…). |
+| Serious | **Unnamed container.** The Turnstile container was a \`div\` with \`aria-label\` and no role. It appeared on every page with a form. | \`role="group"\`. |
+| Moderate | **Duplicate landmarks.** Several sections had the same accessible name as the carousel or grid inside them, so landmark lists showed duplicates: home packages and guides, related packages, destination packages. | The duplicate name was removed from the outer section; the heading stays. |
+| Moderate | **Content outside landmarks.** The floating WhatsApp button sat outside every landmark. | It is now an \`<aside>\` labelled "Escríbanos por WhatsApp". |
+
+### Pages
+- **Mi reserva (signed out):**
+  - The access card leads.
+  - Beside it, a panel lists what the portal shows: trip detail, payments, invoices, documents and support requests. These are the portal's own section names.
+  - It adds the verification-code note and "¿No encuentra su código de reserva?" with WhatsApp.
+  - The stray, off-centre intro line now shows only after sign-in.
+- **Nosotros:**
+  - The approved text is unchanged.
+  - A side card lists existing facts: since 2018, a real advisor, online reservation management, and the IATA host-agency disclosure.
+  - It also shows the live rating and the Google profile link (measured as \`google_profile_click\`, placement \`about\`).
+- **Requisitos:** the published "Requisitos de viaje" guides are linked under the checker.
+- **Hotel quote form:**
+  - The destination takes the full row, with check-in and check-out side by side.
+  - Adults, children and rooms share one row.
+
+### Performance (production build, mobile 390px, 4× CPU, ~1.6 Mbps / 150 ms RTT)
+
+| Page | FCP | LCP | CLS | JS (raw) |
+|---|---|---|---|---|
+| / | 2.2 s | 2.2 s | 0 | 928 KB |
+| /paquetes | 1.3 s | 1.3 s | 0 | 833 KB |
+| package | 1.4 s | 1.4 s | 0 | 889 KB |
+| destination | 1.3 s | 1.3 s | 0 | 810 KB |
+| article | 1.3 s | 1.4 s | 0 | 797 KB |
+
+- **Layout and server time:** layout shift is zero everywhere, and TTFB is under 120 ms.
+- **Largest client chunk:** 372 KB raw / 119 KB gzip, and it is mostly the Sentry SDK.
+  - Sentry's \`bundleSizeOptimizations\` were tried and reverted: Turbopack ignores them, so the chunk size did not change.
+  - The 150 KB markdown chunk is admin-only, not loaded on public pages.
+- **Follow-up options for the Sentry chunk:**
+  - **Is Sentry in use?** Confirm \`NEXT_PUBLIC_SENTRY_DSN\` is set in production. Without it the SDK ships but does nothing, and it could be removed from the client.
+  - **Load it later:** with a DSN, load the client SDK lazily after the page is interactive.
