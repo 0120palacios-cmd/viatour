@@ -12,7 +12,8 @@ import { getReviews, getReviewSummary } from "@/lib/reviews";
 import { RatingSummary, ReviewCard } from "@/components/reviews/display";
 import { getPackages } from "@/lib/packages";
 import { PackageGrid } from "@/components/packages/package-card";
-import { DestinationSkeletons, DestinationTile, destinationGridClass, wideFirstTile } from "@/components/destinations/destination-card";
+import { DestinationSkeletons, DestinationTile, MoreDestinationsTile, destinationGridClass, wideFirstTile } from "@/components/destinations/destination-card";
+import { MoreDestinations } from "@/components/home/journeys";
 import { getDestinations } from "@/lib/destinations";
 import { homeDestinations } from "@/lib/home-destinations";
 import { FlightTool } from "@/components/home/flight-tool";
@@ -42,7 +43,8 @@ export function SectionMore({ action }: { action: SectionAction }) {
 async function FeaturedDestinationData() {
   let destinationSlugs = new Set<string>();
   try { destinationSlugs = new Set((await getDestinations()).map(item => item.slug)); } catch { /* Local launch catalogue remains useful when the CMS is unavailable. */ }
-  return <div className={destinationGridClass}>{homeDestinations.map((destination, index) => <DestinationTile key={destination.slug} href={destinationSlugs.has(destination.slug) ? `/destinos/${destination.slug}` : "/destinos"} name={destination.nombre} image={destination.image} wide={index === 0 && wideFirstTile(homeDestinations.length)} />)}</div>;
+  // The closing tile says the list is a selection; the grid counts it so rows stay full.
+  return <div className={`${destinationGridClass} reveal-rise`}>{homeDestinations.map((destination, index) => <DestinationTile key={destination.slug} href={destinationSlugs.has(destination.slug) ? `/destinos/${destination.slug}` : "/destinos"} name={destination.nombre} image={destination.image} wide={index === 0 && wideFirstTile(homeDestinations.length + 1)} />)}<MoreDestinationsTile /></div>;
 }
 
 async function HeroRating() {
@@ -75,7 +77,7 @@ export function Hero() {
 
 export function HowItWorks() { const t = useTranslations(); const steps = [{ icon: MessageSquare, title: t("home.how1Title"), body: t("home.how1Body") }, { icon: SlidersHorizontal, title: t("home.how2Title"), body: t("home.how2Body") }, { icon: ShieldCheck, title: t("home.how3Title"), body: t("home.how3Body") }]; return <section className="section-space" aria-labelledby="how-title"><div className="container-site"><SectionHeading id="how-title" title={t("home.howTitle")} intro={t("home.howIntro")} /><ol className="grid gap-6 md:grid-cols-3">{steps.map(({ icon: Icon, title, body }, index) => <li key={title} className="relative rounded-card border border-line bg-canvas p-6 shadow-sm"><div className="mb-6 flex items-center gap-3"><span className="t-small flex size-10 items-center justify-center rounded-btn bg-brand text-canvas" aria-hidden="true">{index + 1}</span><Icon size={24} strokeWidth={1.75} className="text-brand" aria-hidden="true" /></div><h3 className="t-h3 mb-3">{title}</h3><p className="t-body text-ink-soft">{body}</p></li>)}</ol></div></section>; }
 
-export function FeaturedDestinations() { const t = useTranslations(); const action = { href: "/destinos", label: t("home.allDestinations") }; return <section className="container-site section-space" aria-labelledby="destinations-title"><SectionHeading id="destinations-title" title={t("common.destinations")} intro={t("home.destinationsIntro")} action={action} /><Suspense fallback={<DestinationSkeletons />}><FeaturedDestinationData /></Suspense><SectionMore action={action} /></section>; }
+export function FeaturedDestinations() { const t = useTranslations(); const action = { href: "/destinos", label: t("home.allDestinations") }; return <section className="container-site section-space" aria-labelledby="destinations-title"><SectionHeading id="destinations-title" title={t("common.destinations")} intro={t("v3.destinationsIntro")} action={action} /><Suspense fallback={<DestinationSkeletons />}><FeaturedDestinationData /></Suspense><Suspense fallback={null}><MoreDestinations /></Suspense><SectionMore action={action} /></section>; }
 
 export function FeaturedPackages() { return <Suspense fallback={null}><FeaturedPackageData /></Suspense>; }
 async function FeaturedPackageData() { const t = await getTranslations(); let items; try { items = await getPackages(true); } catch { return null; } if (!items.length) return null; return <section className="section-space border-y border-line bg-surface" aria-labelledby="packages-title"><div className="container-site"><SectionHeading id="packages-title" title={t("home.featuredPackages")} intro={t("home.packagesIntro")} action={{ href: "/paquetes", label: t("ux.allPackages") }} /><PackageGrid items={items.slice(0, 6)} label={t("home.featuredPackages")} /><SectionMore action={{ href: "/paquetes", label: t("ux.allPackages") }} /></div></section>; }

@@ -47,3 +47,23 @@ test('WhatsApp link exists only after capture and never on HTTP, malformed, netw
     assert.equal(navigations.length,0);
   }
 });
+
+// Regression: the compact home form (default service Vuelos) has no cabin class field. Requiring it
+// rejected every compact flight quote with a 400.
+test('a compact flight quote without cabin class is accepted; an unknown class is still rejected', () => {
+  const compact = { servicio: 'Vuelos', service: 'Vuelos', currency: 'USD', turnstileToken: 'valid', fields: { Nombre: '', Tipo: 'Ida y vuelta', Origen: 'SAP', Destino: 'Cartagena', Fechas: '2027-10-01 / 2027-10-10', Pasajeros: 'Adultos: 1; niños: 0' }, formData: { origin: 'SAP', destination: 'Cartagena', start: '2027-10-01', end: '2027-10-10', adults: '1', children: '0', name: '', phone: '+504 9999-9999', website: '' } };
+  const result = validation.validateLead(compact);
+  assert.equal(result.fields.Destino, 'Cartagena');
+  assert.equal('Clase' in result.fields, false);
+  assert.equal(validation.validateLead({ ...compact, formData: { ...compact.formData, class: 'Ejecutiva' } }).fields.Clase, 'Ejecutiva');
+  assert.throws(() => validation.validateLead({ ...compact, formData: { ...compact.formData, class: 'Lujo' } }), /Enum/);
+});
+
+// Regression: a multi-city segment set to "Otro destino" also sends destination-N-choice, which was
+// counted as an extra segment field and rejected the whole quote.
+test('a multi-city quote with a typed "other" destination is accepted', () => {
+  const formData = { 'origin-0': 'SAP', 'destination-0-choice': '__other__', 'destination-0': 'Madrid', 'date-0': '2027-10-01', 'origin-1': 'Madrid', 'destination-1': 'Cartagena', 'date-1': '2027-10-10', adults: '1', children: '0', class: 'Económica', phone: '+504 9999-9999' };
+  const result = validation.validateLead({ servicio: 'Vuelos', currency: 'USD', fields: { Tipo: 'Multidestino' }, formData });
+  assert.match(result.fields['Tramo 1'], /Destino: Madrid/);
+  assert.throws(() => validation.validateLead({ servicio: 'Vuelos', currency: 'USD', fields: { Tipo: 'Multidestino' }, formData: { ...formData, 'date-9': '2027-10-12' } }), /Segments/);
+});

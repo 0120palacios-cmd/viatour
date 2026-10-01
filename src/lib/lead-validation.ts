@@ -71,12 +71,16 @@ export function validateLead(input: unknown) {
     if (Number(adults) + Number(children) > 20) throw Error("Passengers");
     fields[servicio === "Hoteles" ? "Huéspedes" : "Pasajeros"] = `Adultos: ${adults}; niños: ${children}`;
     if (servicio === "Vuelos") {
-      fields.Tipo = str(labels.Tipo, 20, true); fields.Clase = get("class", 20, true);
-      if (!["Ida y vuelta", "Solo ida", "Multidestino"].includes(fields.Tipo) || !["Económica", "Premium", "Ejecutiva", "Primera"].includes(fields.Clase)) throw Error("Enum");
+      // The compact home form has no cabin class (the advisor asks for it); when a class is sent it must be a known one.
+      fields.Tipo = str(labels.Tipo, 20, true); fields.Clase = get("class", 20);
+      if (!["Ida y vuelta", "Solo ida", "Multidestino"].includes(fields.Tipo) || (fields.Clase && !["Económica", "Premium", "Ejecutiva", "Primera"].includes(fields.Clase))) throw Error("Enum");
+      if (!fields.Clase) delete fields.Clase;
     }
     if (fields.Tipo === "Multidestino") {
       const ids = Object.keys(raw).filter(k => /^origin-\d+$/.test(k)).map(k => k.slice(7));
-      if (ids.length < 2 || ids.length > 6 || Object.keys(raw).filter(k => /^(origin|destination|date)-/.test(k)).length !== ids.length * 3) throw Error("Segments");
+      // Exact segment names only: "Otro destino" renames a segment's select to destination-N-choice,
+      // which must not count as an extra field.
+      if (ids.length < 2 || ids.length > 6 || Object.keys(raw).filter(k => /^(origin|destination|date)-\d+$/.test(k)).length !== ids.length * 3) throw Error("Segments");
       let previous = "";
       ids.forEach((id, i) => { const origin = get(`origin-${id}`, 200, true), destination = get(`destination-${id}`, 200, true), when = date(`date-${id}`); if (when < previous) throw Error("Order"); previous = when; fields[`Tramo ${i + 1}`] = `Origen: ${origin}; Destino: ${destination}; Fecha: ${when}`; });
       fields.Fechas = ids.map(id => formData[`date-${id}`]).join(" / ");

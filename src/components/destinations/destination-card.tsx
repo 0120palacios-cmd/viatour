@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
-import { ArrowUpRight, MapPin } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Compass, MapPin } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { Destination } from "@/lib/destinations";
 import { canOptimizeImage } from "@/lib/image-optimization";
@@ -28,5 +28,20 @@ export function DestinationTile({ href, name, image, wide = false }: { href: str
   </Link>;
 }
 
+// Closes every destination grid: the tiles are examples, not the limit of what viatour plans.
+// Same shell and ratio as a destination tile so the grid stays even; brand fill because it is an action.
+export function MoreDestinationsTile() {
+  const t = useTranslations("v3");
+  return <Link href="/viaje-a-medida" className="media-card group relative flex aspect-[4/3] flex-col justify-between overflow-hidden rounded-card border border-brand bg-brand p-3 text-canvas shadow-sm sm:p-5">
+    <Compass size={28} strokeWidth={1.75} className="shrink-0 opacity-90 max-sm:size-6" aria-hidden="true" />
+    <span className="space-y-1 sm:space-y-2">
+      <span className="t-h3 block [overflow-wrap:normal] [word-break:normal] max-sm:text-base! max-sm:leading-snug!">{t("moreTileTitle")}</span>
+      <span className="t-small block font-normal text-canvas/90 max-sm:hidden">{t("moreTileBody")}</span>
+      <span className="t-small inline-flex items-center gap-2 font-semibold"><span className="max-sm:sr-only">{t("stylesOtherCta")}</span><ArrowRight size={16} strokeWidth={1.75} className="transition-transform duration-(--duration-fast) group-hover:translate-x-1 motion-reduce:transition-none" aria-hidden="true" /></span>
+    </span>
+  </Link>;
+}
+
 export function DestinationCard({ item, wide = false }: { item: Destination; wide?: boolean }) { return <DestinationTile href={"/destinos/" + item.slug} name={item.nombre} image={item.imagen_url} wide={wide} />; }
-export function DestinationGrid({ items }: { items: Destination[] }) { const t = useTranslations("static"); if (!items.length) return <div role="status" className="rounded-panel border border-line bg-surface p-8 text-center"><p className="t-body text-ink-soft">{t("noPosts")}</p></div>; return <div className={destinationGridClass}>{items.map((item, index) => <DestinationCard key={item.id} item={item} wide={index === 0 && wideFirstTile(items.length)} />)}</div>; }
+// The closing "can't find it" tile counts as a tile, so the wide-first rule sees the real total.
+export function DestinationGrid({ items }: { items: Destination[] }) { const t = useTranslations("static"); if (!items.length) return <div role="status" className="rounded-panel border border-line bg-surface p-8 text-center"><p className="t-body text-ink-soft">{t("noPosts")}</p></div>; return <div className={`${destinationGridClass} reveal-rise`}>{items.map((item, index) => <DestinationCard key={item.id} item={item} wide={index === 0 && wideFirstTile(items.length + 1)} />)}<MoreDestinationsTile /></div>; }

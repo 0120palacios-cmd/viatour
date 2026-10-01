@@ -12,7 +12,7 @@ const origin = process.env.SMOKE_ORIGIN || 'http://localhost:3011';
 const errors = [], captures = [], navigations = [];
 let outcome = 'success', releaseCapture;
 page.on('pageerror', error => errors.push(error.message));
-await page.route('https://challenges.cloudflare.com/**', route => route.fulfill({ contentType: 'application/javascript', body: `window.turnstile={render(el,options){setTimeout(()=>options.callback('test-token'),0);return 'test-widget'},remove(){}};` }));
+await page.route('https://challenges.cloudflare.com/**', route => route.fulfill({ contentType: 'application/javascript', body: `window.turnstile={render(el,options){setTimeout(()=>options.callback('test-token'),0);return 'test-widget'},remove(){},reset(){}};` }));
 let humanExpires = 0;
 await page.route('**/api/human', route => {
   if (route.request().method() === 'POST') humanExpires = Date.now() + 1800000;
@@ -39,8 +39,8 @@ async function fill(service = 'Vuelos') {
   if (service !== 'Vuelos') await form.getByLabel('Tipo de viaje', { exact: true }).selectOption(service);
   await form.locator('summary').filter({ hasText: 'Destino' }).click();
   if (service === 'Vuelos') await form.locator('[name="origin"]').fill('SAP');
-  if (service === 'Paquetes') await form.locator('[name="destination"]').selectOption({ index: 1 });
-  else await form.locator('[name="destination"]').fill('Cartagena');
+  // Destination is a select of the launch destinations (plus "Otro destino", which reveals a text field).
+  await form.locator('select[name="destination"]').selectOption('Cartagena');
   await form.locator('summary').filter({ hasText: 'Destino' }).click();
   await form.locator('summary').filter({ hasText: 'Fechas' }).click();
   if (['Vuelos', 'Hoteles'].includes(service)) {
@@ -51,6 +51,15 @@ async function fill(service = 'Vuelos') {
   await form.locator('summary').filter({ hasText: 'Pasajeros' }).click();
   await form.locator('[name="adults"]').fill('2');
   await form.locator('summary').filter({ hasText: 'Pasajeros' }).click();
+  // The WhatsApp number is required, so the advisor can follow up when the message is never sent.
+  await form.locator('[name="phone"]').fill('+504 9999-9999');
+}
+// After the lead is saved the hero shows the reference and a "Continuar en WhatsApp" button; the visitor
+// opens WhatsApp with their own click (no automatic redirect).
+async function handoff() {
+  await hero.getByRole('status').filter({ hasText: 'Recibimos su solicitud' }).waitFor({ timeout: 5000 });
+  await hero.getByRole('link', { name: 'Continuar en WhatsApp' }).click();
+  await page.waitForURL('**/wa.me/**', { timeout: 5000 });
 }
 try {
   for (const width of [320, 390, 1024, 1440]) {
@@ -73,7 +82,7 @@ try {
     await form.getByRole('button', { name: 'Más opciones' }).focus();
     await page.keyboard.press('Enter');
     assert.equal(await hero.getByRole('tab').count(), 4);
-    assert.equal(await form.locator('[name="destination"]').inputValue(), 'Cartagena');
+    assert.equal(await form.locator('select[name="destination"]').inputValue(), 'Cartagena');
     assert.equal(await form.locator('[name="start"]').inputValue(), '2027-10-01');
     assert.equal(await form.locator('[name="adults"]').inputValue(), '2');
     assert.ok(await page.evaluate(() => document.activeElement?.getAttribute('role') === 'tab'));
@@ -92,27 +101,35 @@ try {
   assert.equal(navigations.length, 0);
   assert.equal(page.url(), `${origin}/`);
   outcome = 'pending'; await submit();
+  // Wait until the capture request is being held (the human check can take a moment), then confirm
+  // nothing has opened WhatsApp while the server has not answered.
+  for (let waited = 0; !releaseCapture && waited < 5000; waited += 50) await page.waitForTimeout(50);
   await page.waitForTimeout(200);
   assert.equal(navigations.length, 0, 'no handoff before server confirms capture');
   assert.ok(releaseCapture); releaseCapture();
-  await page.waitForURL('**/wa.me/**', { timeout: 5000 });
+  await handoff();
   assert.equal(navigations.length, 1);
   assert.ok(navigations[0].startsWith('https://wa.me/50488668704?text='));
   outcome = 'success';
   for (const service of ['Hoteles', 'Paquetes', 'Viaje a medida']) {
     await ready(); await fill(service); await submit();
-    await page.waitForURL('**/wa.me/**', { timeout: 5000 });
+    await handoff();
     assert.equal(captures.at(-1).service, service);
   }
   await ready(); await fill();
   await form.getByRole('button', { name: 'Más opciones' }).click();
-  await form.getByLabel('Tipo de viaje').selectOption('Multidestino');
+  // Trip type is a segmented control (radio buttons) in the expanded form.
+  await form.getByText('Multidestino', { exact: true }).click();
+  // The full flight form asks for the cabin class (the compact one leaves it to the advisor).
+  await form.locator('select[name="class"]').selectOption('Económica');
   for (const id of [0, 1]) {
     await form.locator(`[name="origin-${id}"]`).fill(id ? 'Madrid' : 'SAP');
-    await form.locator(`[name="destination-${id}"]`).fill(id ? 'SAP' : 'Madrid');
+    // A destination outside the list goes through "Otro destino" and its text field.
+    await form.locator(`select[name="destination-${id}"]`).selectOption('__other__');
+    await form.locator(`input[name="destination-${id}"]`).fill(id ? 'SAP' : 'Madrid');
     await form.locator(`[name="date-${id}"]`).fill(id ? '2027-10-10' : '2027-10-01');
   }
-  await submit(); await page.waitForURL('**/wa.me/**', { timeout: 5000 });
+  await submit(); await handoff();
   assert.equal(captures.at(-1).fields.Tipo, 'Multidestino');
   assert.equal(navigations.length, 5);
   assert.deepEqual(errors, []);

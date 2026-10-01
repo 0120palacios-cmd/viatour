@@ -48,8 +48,11 @@ try {
     if (width === 320) {
       await page.getByRole("button", { name: "Reciba estas opciones por WhatsApp" }).waitFor({ state: "visible" });
       await page.waitForTimeout(100);
+      // The WhatsApp number is required; once the lead is saved the visitor opens WhatsApp with their own click.
+      await page.locator("#discovery-contact-phone").fill("+504 9999-9999");
       await page.getByRole("button", { name: "Reciba estas opciones por WhatsApp" }).click();
-      await page.waitForTimeout(150);
+      await page.getByRole("link", { name: "Continuar en WhatsApp" }).click({ timeout: 5000 });
+      await page.waitForURL("**/wa.me/**", { timeout: 5000 });
       assert.deepEqual(handoffOrder, ["lead", "whatsapp"]);
     }
     console.log(`PASS discovery ${width}px`);

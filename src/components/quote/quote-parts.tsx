@@ -13,15 +13,19 @@ const labelClass = "t-small flex items-center gap-2";
 
 // Name (optional), WhatsApp number (required) and email (optional) share one layout in every quote form.
 // hideEmail keeps the short hero form to the two fields an advisor needs; the full form still offers email.
+// Browsers compile `pattern` with the v flag, where ( and ) must be escaped inside a character class;
+// unescaped, the pattern is invalid and the browser silently skips the phone check.
 export function ContactFields({ idPrefix, columns = 3, hideEmail = false }: { idPrefix: string; columns?: 1 | 2 | 3; hideEmail?: boolean }) {
   const t = useTranslations("quote");
   const hintId = `${idPrefix}-phone-hint`;
-  const grid = columns === 3 && !hideEmail ? "sm:grid-cols-2 lg:grid-cols-3" : columns === 1 ? "" : "sm:grid-cols-2";
-  return <fieldset className="min-w-0 space-y-4">
+  // Columns follow the width of the form (container queries), not the window: the same fields sit in a
+  // narrow hero panel and on full-width service pages.
+  const grid = columns === 3 && !hideEmail ? "@md:grid-cols-2 @3xl:grid-cols-3" : columns === 1 ? "" : "@md:grid-cols-2";
+  return <fieldset className="@container min-w-0 space-y-4">
     <legend className="t-small mb-4 font-semibold text-ink">{t("contactLegend")}</legend>
     <div className={`grid gap-4 ${grid}`}>
       <div className="min-w-0 space-y-2"><label htmlFor={`${idPrefix}-name`} className={labelClass}><UserRound size={16} strokeWidth={1.75} className="text-ink-soft" aria-hidden="true" />{t("name")}</label><Input id={`${idPrefix}-name`} name="name" autoComplete="name" maxLength={120} /></div>
-      <div className="min-w-0 space-y-2"><label htmlFor={`${idPrefix}-phone`} className={labelClass}><Phone size={16} strokeWidth={1.75} className="text-ink-soft" aria-hidden="true" />{t("phone")}<span aria-hidden="true" className="text-ink-soft">*</span></label><Input id={`${idPrefix}-phone`} name="phone" type="tel" inputMode="tel" autoComplete="tel" required maxLength={40} pattern="[+0-9() .\-]{8,40}" placeholder="+504 9999-9999" aria-describedby={hintId} /><p id={hintId} className="t-small text-ink-soft">{t("phoneHint")}</p></div>
+      <div className="min-w-0 space-y-2"><label htmlFor={`${idPrefix}-phone`} className={labelClass}><Phone size={16} strokeWidth={1.75} className="text-ink-soft" aria-hidden="true" />{t("phone")}<span aria-hidden="true" className="text-ink-soft">*</span></label><Input id={`${idPrefix}-phone`} name="phone" type="tel" inputMode="tel" autoComplete="tel" required maxLength={40} pattern="[+0-9\(\) .\-]{8,40}" placeholder="+504 9999-9999" aria-describedby={hintId} /><p id={hintId} className="t-small text-ink-soft">{t("phoneHint")}</p></div>
       {!hideEmail && <div className="min-w-0 space-y-2"><label htmlFor={`${idPrefix}-email`} className={labelClass}><Mail size={16} strokeWidth={1.75} className="text-ink-soft" aria-hidden="true" />{t("email")}</label><Input id={`${idPrefix}-email`} name="email" type="email" autoComplete="email" maxLength={254} /></div>}
     </div>
   </fieldset>;
@@ -60,7 +64,7 @@ export function QuoteSuccess({ result, service, onReset }: { result: QuoteResult
   return <section role="status" aria-labelledby={titleId} className="space-y-6 rounded-panel border border-line bg-surface p-6 text-left sm:p-8">
     <div className="flex items-start gap-3"><CheckCircle2 size={28} strokeWidth={1.75} className="mt-1 shrink-0 text-success" aria-hidden="true" /><div className="space-y-2"><h2 id={titleId} ref={heading} tabIndex={-1} className="t-h3 outline-none">{t("savedTitle")}</h2>{result.referencia && <p className="t-body"><span className="text-ink-soft">{t("savedReference")}: </span><strong className="font-semibold tracking-wide">{result.referencia}</strong></p>}</div></div>
     <p className="t-body measure text-ink-soft">{t("savedBody")}</p>
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
       <Button asChild variant="whatsapp" className="h-auto min-h-12 w-full sm:w-auto"><a href={result.href} onClick={() => trackEvent("whatsapp_click", { service, placement: "quote-success" })}><MessageCircle size={24} strokeWidth={1.75} aria-hidden="true" />{t("continueWhatsapp")}</a></Button>
       {onReset && <Button type="button" variant="ghost" className="w-full sm:w-auto" onClick={onReset}><RotateCcw size={18} strokeWidth={1.75} className="text-ink-soft" aria-hidden="true" />{t("newRequest")}</Button>}
     </div>

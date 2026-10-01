@@ -11,7 +11,7 @@ Design and product decisions live in `bible_desing.md` (Design Bible) and `build
 - `npm run dev` — dev server (needs `.env.local`; copy from `.env.example`). The middleware fails every request without `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 - `npm run build`, `npm run lint`, `npm run typecheck` (`next typegen && tsc --noEmit`) — the standard verification trio.
 - Unit tests (Node's built-in runner, no framework): `node --test "tests/*.test.mjs"`; one file: `node --test tests/leads.test.mjs`; one test: add `--test-name-pattern="<name>"`.
-- Smoke tests (`tests/*-smoke.mjs`) hit a running server: `SMOKE_ORIGIN` sets the origin (default varies per file, e.g. `http://localhost:3011`). Browser smokes (`polish-smoke`, `hero-smoke`) need `PLAYWRIGHT_PACKAGE` pointing to an installed Playwright `package.json`.
+- Smoke tests (`tests/*-smoke.mjs`) hit a running server: `SMOKE_ORIGIN` sets the origin (default varies per file, e.g. `http://localhost:3011`). Browser smokes (`polish-smoke`, `hero-smoke`, `discovery-smoke`) need `PLAYWRIGHT_PACKAGE` pointing to an installed Playwright `package.json` and Microsoft Edge (or `HERO_BROWSER`/`DISCOVERY_BROWSER` set to another channel); they intercept leads, Turnstile and WhatsApp, so they never write real data. Sitemap checks expect URLs on the site URL the server was built with (`SMOKE_SITE_URL`, else `NEXT_PUBLIC_SITE_URL`).
 - Data scripts in `scripts/` run with Node and write to Supabase using the service role, e.g. `node --env-file=.env.local scripts/import-reviews.ts <csv> --dry-run`. `.mjs` scripts load `.env.local` via dotenv. They sync content from `data/*.json|.mjs` into DB tables; they are not part of the app.
 - Schema is not managed by the app: SQL lives in `docs/sql/*.sql` and is run manually in Supabase.
 
@@ -26,7 +26,7 @@ Design and product decisions live in `bible_desing.md` (Design Bible) and `build
 - `src/lib/supabase/admin.ts` — service role, `server-only`; used by public write endpoints (`/api/leads`, `/api/reviews`, …), rate limiting and the client portal. Never import into client code.
 - `src/lib/supabase/client.ts` — browser.
 
-**Lead → WhatsApp flow** (`src/lib/quote.ts`): `requestQuote()` awaits `captureLead()` (POST `/api/leads`), then does a same-tab `window.location.assign` to `wa.me/50488668704` with the composed message. The route validates (`lead-validation.ts`), checks Turnstile/rate limit, strips unknown fields, inserts, and calls `notifySubmission()` (`src/lib/notifications.ts`, Resend). Keep this capture-first ordering.
+**Lead → WhatsApp flow** (`src/lib/quote.ts`): `requestQuote()` awaits `captureLead()` (POST `/api/leads`) and returns the reference plus the `wa.me/50488668704` link with the composed message; the form then shows `QuoteSuccess` (reference + "Continuar en WhatsApp"), and the visitor opens WhatsApp with their own click. Every field a form can send must pass `validateLead` — a field the UI does not render (e.g. cabin class in the compact hero) must stay optional there. The route validates (`lead-validation.ts`), checks Turnstile/rate limit, strips unknown fields, inserts, and calls `notifySubmission()` (`src/lib/notifications.ts`, Resend). Keep this capture-first ordering.
 
 **Public form security** (`src/lib/public-security.ts`): every public POST uses `rateLimit()` (DB RPC `hit_rate_limit`), `readBody()` size limits, and `verifyTurnstile()`. `/api/human` exchanges one Turnstile token for a signed 30-minute HttpOnly cookie (key derived from `TURNSTILE_SECRET_KEY`) so later forms skip Siteverify.
 

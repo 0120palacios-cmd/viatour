@@ -1,4 +1,4 @@
-export type AnalyticsEvent = "whatsapp_click" | "quote_submit" | "contact_submit" | "newsletter_signup" | "review_submit" | "share" | "google_review_click" | "google_profile_click" | "email_click";
+export type AnalyticsEvent = "whatsapp_click" | "quote_submit" | "contact_submit" | "newsletter_signup" | "review_submit" | "share" | "google_review_click" | "google_profile_click" | "email_click" | "promo_click" | "reservation_click" | "trip_style_click" | "custom_trip_click";
 export type EventParams = { service?: string; page?: string; placement?: string; status?: "requested" | "saved" };
 type Pixel = ((...args: unknown[]) => void) & { queue?: unknown[][]; callMethod?: (...args: unknown[]) => void; loaded?: boolean; version?: string; push?: Pixel };
 declare global { interface Window { [key: `ga-disable-${string}`]: boolean | undefined; dataLayer?: unknown[]; gtag?: (...args: unknown[]) => void; fbq?: Pixel; _fbq?: Pixel; viatourAnalytics?: { consent: boolean; ga: boolean; meta: boolean; gaId?: string }; } }

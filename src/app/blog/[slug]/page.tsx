@@ -95,6 +95,7 @@ export default async function Page({ params }: Props) {
   };
   return (
     <main className="pb-12 pt-8 sm:pb-24 sm:pt-12">
+      <div className="reading-progress" aria-hidden="true" />
       <JsonLd data={schema} />
       <article className="container-site">
         <div className="mx-auto max-w-[68ch]">

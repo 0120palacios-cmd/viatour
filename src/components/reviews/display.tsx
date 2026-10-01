@@ -40,4 +40,4 @@ export function ReviewCard({ review, clamp = false }: { review: PublicReview; cl
   </article>;
 }
 export function ReviewCards({ reviews }: { reviews: PublicReview[] }) { return <div className="grid gap-6">{reviews.map(review => <ReviewCard key={review.id} review={review} />)}</div>; }
-export function ReviewSkeletons() { const t = useTranslations("reviews"); return <div role="status" className="space-y-6"><span className="sr-only">{t("loading")}</span>{[1, 2].map(n => <div key={n} className="h-48 animate-pulse rounded-card border border-line bg-surface" aria-hidden="true" />)}</div>; }
+export function ReviewSkeletons() { const t = useTranslations("reviews"); return <div role="status" className="space-y-6"><span className="sr-only">{t("loading")}</span>{[1, 2].map(n => <div key={n} className="skeleton h-48 rounded-card border border-line" aria-hidden="true" />)}</div>; }
