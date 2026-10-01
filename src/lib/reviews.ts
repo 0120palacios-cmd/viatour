@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createPublicClient } from "@/lib/supabase/public";
 import { cachedContent } from "@/lib/content-cache";
 import { agencySchema } from "@/lib/seo";
+import { normalizePlace } from "@/lib/destination-match";
 
 export type PublicReview = { id: string; nombre: string; calificacion: number; texto: string; destino: string | null; foto_path: string | null; foto_url: string | null; fecha: string; verificada: boolean; created_at: string };
 export type ReviewSummary = { total: number; promedio: number; c5: number; c4: number; c3: number; c2: number; c1: number };
@@ -36,6 +37,20 @@ export async function getReviews(limit = 30, page = 1, stars?: number) {
   } satisfies ReviewSummary;
   const signedReviews = await Promise.all((reviews.data ?? []).map(async review => ({ ...review, foto_url: review.foto_path ? await getReviewPhotoSignedUrl(review.foto_path) : null })));
   return { summary: aggregate, reviews: signedReviews as PublicReview[] };
+}
+
+// Contextual proof for a destination page: recent approved reviews that name this place, without photos
+// (no signed URLs, so the list can be cached). Empty until reviews carry a destination.
+const readDestinationReviews = cachedContent(async (names: string[]): Promise<PublicReview[]> => {
+  const { data, error } = await createPublicClient().from("reviews_publicas").select("id,nombre,calificacion,texto,destino,fecha,verificada,created_at").not("destino", "is", null).order("fecha", { ascending: false }).limit(300).abortSignal(AbortSignal.timeout(8000));
+  if (error) throw new Error("No se pudieron cargar las opiniones.");
+  return ((data ?? []) as Omit<PublicReview, "foto_path" | "foto_url">[])
+    .filter(review => review.destino && names.some(name => `-${normalizePlace(review.destino!)}-`.includes(`-${name}-`)))
+    .map(review => ({ ...review, foto_path: null, foto_url: null }));
+}, "destination-reviews", "reviews");
+
+export async function getDestinationReviews(destination: { slug: string; nombre: string }) {
+  return readDestinationReviews([normalizePlace(destination.slug), normalizePlace(destination.nombre)]);
 }
 
 export async function getReviewPhotoSignedUrl(path: string, expiresIn = 300) {

@@ -17,6 +17,8 @@ import { canOptimizeImage } from "@/lib/image-optimization";
 import { PackageGrid } from "@/components/packages/package-card";
 import { BlogCard } from "@/components/blog/card";
 import { RatingBadge } from "@/components/reviews/rating-badge";
+import { ReviewCard } from "@/components/reviews/display";
+import { getDestinationReviews } from "@/lib/reviews";
 import { QuoteButton } from "@/components/home/quote-button";
 import { StickyQuoteBar } from "@/components/quote/sticky-quote-bar";
 import { ShareButton } from "@/components/share-button";
@@ -57,7 +59,10 @@ export default async function Page({ params }: Props) {
   const locale = (await getLocale()) as Locale;
   const item = await getDestination((await params).slug);
   if (!item) notFound();
-  const [packages, destinations, posts] = await Promise.all([getPackagesForDestination(item), getDestinations().catch(() => []), getBlogPosts().catch(() => [])]);
+  const [packages, destinations, posts, placeReviews] = await Promise.all([getPackagesForDestination(item), getDestinations().catch(() => []), getBlogPosts().catch(() => []), getDestinationReviews(item).catch(() => [])]);
+  // Real reviews that name this place; the section stays hidden until approved reviews carry a destination.
+  const reviews = placeReviews.filter(review => review.texto.trim().length >= 60).slice(0, 3);
+  const v4 = await getTranslations("v4");
   const guides = destinationGuides(item, posts);
   // Keeps the catalogue order and continues after this destination, so every page links onward.
   const position = destinations.findIndex(destination => destination.id === item.id);
@@ -136,7 +141,11 @@ export default async function Page({ params }: Props) {
         <h2 id="destination-packages" className="t-h2 mb-8">{t("destinationPackages", { name: item.nombre })}</h2>
         {packages.length ? <PackageGrid layout={packages.length > 3 ? "grid" : "carousel"} items={packages} label={t("destinationPackages", { name: item.nombre })} /> : <div className="space-y-4 rounded-panel border border-line bg-surface p-6 sm:p-8"><p className="t-body text-ink-soft">{t("noDestinationPackages")}</p><Button asChild variant="ghost"><Link href="/paquetes">{ux("allPackages")}<ArrowRight size={18} strokeWidth={1.75} aria-hidden="true" /></Link></Button></div>}
       </section>
-      {guides.length > 0 && <section className="container-site pb-12 sm:pb-24" aria-labelledby="destination-guides">
+      {reviews.length > 0 && <section className="border-y border-line bg-surface py-12 sm:py-24" aria-labelledby="destination-reviews"><div className="container-site">
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-4"><h2 id="destination-reviews" className="t-h2">{v4("destinationReviews", { name: item.nombre })}</h2><Link href="/opiniones" className="t-small inline-flex min-h-11 items-center gap-2 text-brand underline underline-offset-4">{ux("allReviews")}<ArrowRight size={16} strokeWidth={1.75} aria-hidden="true" /></Link></div>
+        <div className="grid gap-6 lg:grid-cols-3">{reviews.map(review => <ReviewCard key={review.id} review={review} clamp />)}</div>
+      </div></section>}
+      {guides.length > 0 && <section className={`container-site ${reviews.length ? "py-12 sm:py-24" : "pb-12 sm:pb-24"}`} aria-labelledby="destination-guides">
         <h2 id="destination-guides" className="t-h2 mb-8">{ux("destinationGuides", { name: item.nombre })}</h2>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">{guides.map(post => <BlogCard key={post.id} post={post} />)}</div>
       </section>}

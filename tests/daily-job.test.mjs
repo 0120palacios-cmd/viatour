@@ -29,7 +29,7 @@ function job(extra = {}) {
   const leadAdmin = load('src/lib/lead-admin.ts');
   const api = load('src/lib/daily-job.ts', {
     'server-only': {},
-    '@/lib/review-invitation-send': { inviteToReview: async (_c, nombre, email) => { invites.push([nombre, email]); return { ok: true, id: 'i' }; } },
+    '@/lib/review-invitation-send': { inviteToReview: async (_c, nombre, email, destino) => { invites.push([nombre, email, destino]); return { ok: true, id: 'i' }; } },
     '@/lib/notifications': { sendResendEmail: async value => { emails.push(value); }, captureNotificationFailure() {} },
     '@/lib/site-config': { siteConfig: { url: 'https://miviatour.com', supportEmail: 'soporte@miviatour.com' } },
     '@/lib/lead-admin': leadAdmin,
@@ -45,7 +45,7 @@ const tables = {
   'quotations:update': { data: [{ codigo: 'COT-1', cliente_nombre: 'Luis', destino: 'Cancún' }], error: null },
   'quotations:select': { data: [{ codigo: 'COT-2', cliente_nombre: 'Rosa', destino: 'Madrid', validez: '2026-10-10', created_at: '2026-09-20T00:00:00Z' }], error: null },
   'reservations:select': q => q.filters.some(f => f[0] === 'eq' && f[2] === 'completada')
-    ? { data: [{ id: 'r3', codigo: 'RES-3', cliente_nombre: 'Eva', cliente_email: 'eva@example.invalid', fecha_fin: '2026-09-27' }, { id: 'r4', codigo: 'RES-4', cliente_nombre: 'Ivo', cliente_email: 'ivo@example.invalid', fecha_fin: '2026-09-10' }], error: null }
+    ? { data: [{ id: 'r3', codigo: 'RES-3', cliente_nombre: 'Eva', cliente_email: 'eva@example.invalid', destino: 'Cancún', fecha_fin: '2026-09-27' }, { id: 'r4', codigo: 'RES-4', cliente_nombre: 'Ivo', cliente_email: 'ivo@example.invalid', fecha_fin: '2026-09-10' }], error: null }
     : q.filters.some(f => f[0] === 'lt' && f[1] === 'fecha_fin') ? { data: [{ id: R9, codigo: 'RES-9' }], error: null }
     : { data: [{ id: 'r1', codigo: 'RES-1', cliente_nombre: 'Juan', cliente_email: 'juan@example.invalid', destino: 'Punta Cana', fecha_inicio: '2026-10-06', total: 2000, moneda: 'USD', estado: 'confirmada' }, { id: 'r2', codigo: 'RES-2', cliente_nombre: 'Sara', cliente_email: 'sara@example.invalid', destino: 'Roma', fecha_inicio: '2026-10-13', total: 3000, moneda: 'USD', estado: 'pendiente' }], error: null },
   'payments:select': { data: [{ reservation_id: 'r1', monto: 2000, moneda: 'USD' }, { reservation_id: 'r2', monto: 1000, moneda: 'USD' }, { reservation_id: 'r2', monto: 500, moneda: 'HNL' }], error: null },
@@ -80,7 +80,8 @@ test('opt-in automations fire only on their exact day', async () => {
   const { api, emails, invites } = job();
   await api.runDailyJob(client(tables, log), { now, autoReviews: true, customerReminders: true, docRetentionDays: 90 });
   // Eva returned exactly two days ago; Ivo already has an invitation.
-  assert.deepEqual(JSON.parse(JSON.stringify(invites)), [['Eva', 'eva@example.invalid']]);
+  // The trip's destination travels with the invitation so the review can appear on that destination's page.
+  assert.deepEqual(JSON.parse(JSON.stringify(invites)), [['Eva', 'eva@example.invalid', 'Cancún']]);
   // Juan travels in exactly 7 days; Sara travels in 14 days with a balance.
   assert.deepEqual(emails.map(e => e.to[0]).sort(), ['juan@example.invalid', 'sara@example.invalid']);
   assert.ok(emails.every(e => /^(trip-7|balance-14)\/r[12]\/2026-09-29$/.test(e.idempotencyKey)));

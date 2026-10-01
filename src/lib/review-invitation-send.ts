@@ -7,7 +7,8 @@ import { siteConfig } from "@/lib/site-config";
 export type InvitationResult = { ok: true; id: string } | { ok: false; error: string };
 
 // Shared by the admin action (session client, RLS) and the daily job (service role).
-export async function inviteToReview(client: SupabaseClient, nombre: string, email: string): Promise<InvitationResult> {
+// destino (optional) pre-selects the trip's destination in the form; a place name, never personal data.
+export async function inviteToReview(client: SupabaseClient, nombre: string, email: string, destino?: string): Promise<InvitationResult> {
   let invitation: { id: string; token: string } | undefined;
   for (let attempt = 0; attempt < 3 && !invitation; attempt += 1) {
     const token = randomBytes(32).toString("base64url");
@@ -19,6 +20,7 @@ export async function inviteToReview(client: SupabaseClient, nombre: string, ema
 
   const link = new URL("/opiniones/nueva", siteConfig.url);
   link.searchParams.set("token", invitation.token);
+  if (destino?.trim()) link.searchParams.set("destino", destino.trim().slice(0, 120));
   // Borrador pendiente de aprobación: la línea de Google ayuda a sumar opiniones en el perfil de empresa.
   const google = siteConfig.googleReviewUrl ? `\n\nSi lo desea, también puede dejar su opinión en nuestro perfil de Google:\n${siteConfig.googleReviewUrl}` : "";
   try {

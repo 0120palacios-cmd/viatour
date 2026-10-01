@@ -694,6 +694,7 @@
       "changesLink": "Ver la política de cancelaciones",
       "restart": "Ingresar otros datos"
     },
-    "faqTitle": "Preguntas frecuentes sobre viajes desde Honduras"
+    "faqTitle": "Preguntas frecuentes sobre viajes desde Honduras",
+    "destinationReviews": "Opiniones de viajeros que fueron a {name}"
   }
 }

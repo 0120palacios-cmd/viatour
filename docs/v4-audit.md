@@ -223,3 +223,41 @@ There are no new animations.
 5. **Reply publicly to the 1–3 star reviews**, using the same concerns this round addresses. Do this wherever reviews allow replies (the Google profile).
 6. **GA4:** mark `quote_start` and `portal_verified` as custom events. Compare `quote_start` with `quote_submit` / `generate_lead` to see form abandonment.
 7. **Quotation PDF (decision):** consider a fixed "Importante" block covering rate validity and destination charges. It is not built because it would state a business policy.
+
+---
+
+## 14. Second pass
+
+### Findings
+| # | Sev | Finding |
+|---|---|---|
+| S1 | **H** | **Canonical domain conflict.** Every canonical tag, hreflang link, sitemap entry and JSON-LD `@id` uses `https://miviatour.com`. The hosting 308-redirects that host to `https://www.miviatour.com`. `http://miviatour.com` takes two hops. Search engines are told the canonical URL is one that redirects away. The fix is a hosting setting, not code (see owner actions). |
+| S2 | **H** | **Destination pages missed their packages.** Matching used only an exact name or a database link that was never set for these. Six destinations linked no packages at all: Europa (8 in the catalogue), Medio Oriente (3), Cruceros (2), Panamá (1, "Cartagena y Ciudad de Panamá"), and Salinitas, which has none. Package pages could not find their region either; Egypt had no destination link. |
+| S3 | M | **23 of 34 packages store "Consulte con su asesor" as their duration.** Shown with a clock icon on every card and package page, it read as missing data. |
+| S4 | M | **No contextual social proof.** None of the 176 published reviews has a destination, so reviews can't be shown where they would help most. Invitations sent after a completed trip did not carry the trip's destination either. |
+| S5 | L | **The structured data address gave only the country.** The approved Terms publish the city (San Pedro Sula). |
+| S6 | L | **Contacto lists `soporte@` and `ayuda@` with the same label.** The visitor can't tell which to use (owner decision). |
+
+### Implemented
+- **`src/lib/destination-match.ts`:** one rule shared by destination pages and package pages.
+  - A database link always wins.
+  - Otherwise a name matches as a whole word ("Panamá" in "Cartagena y Ciudad de Panamá", never part of another word).
+  - Region destinations match their package category (Europa, Medio Oriente, Cruceros).
+  - Package pages prefer the specific place before the region. Dubái links to Dubái, Egypt to Medio Oriente.
+- **Durations:** only real durations (containing a number) are shown on cards, package pages and `llms.txt` (`displayDuration` in `src/lib/display-rules.ts`).
+- **Destination reviews:** each destination page has a "Opiniones de viajeros que fueron a {destino}" section with recent approved reviews naming the place. It stays hidden until such reviews exist.
+  - Review invitations from completed trips now carry the destination in the link, and the form pre-selects it.
+  - The destination is a place name, never personal data.
+- **JSON-LD:** `addressLocality: San Pedro Sula`, `addressRegion: Cortés`. Still no street address; `areaServed` stays Honduras.
+
+### Verification
+- **Static checks:** typecheck and lint pass.
+- **Unit tests:** 112/112. New: `tests/destination-match.test.mjs`, which runs against the real `data/` catalogue. Updated: daily-job (invitation destination) and llms.
+- **Local build:** Europa links 8 packages, Medio Oriente 3, Cruceros 2, Panamá 1, Dubái 1. The Egypt package links Medio Oriente. The JSON-LD carries the city.
+- **Screenshots:** Europa at 390 and 1440px. Nosotros, Contacto, Mi reserva and the FAQ at 390px.
+
+### Owner actions (added)
+8. **Vercel → Settings → Domains:** make `miviatour.com` the primary domain and redirect `www.miviatour.com` to it. That matches every canonical tag, the sitemap and the business listings. Afterwards, check in Search Console that the `miviatour.com` property shows the pages as indexed. If you would rather keep `www`, set `NEXT_PUBLIC_SITE_URL=https://www.miviatour.com` in Vercel and redeploy instead. Either works; they only need to agree.
+9. **Reviews:** when approving reviews, add the destination wherever you know it. Reviews then appear on that destination's page.
+10. **Contacto:** decide what `ayuda@` is for, or remove it from the page (`siteConfig.helpEmail`).
+11. **Package durations:** fill in a real duration where one exists. Cards show it automatically.

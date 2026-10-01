@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { load } from './security-support.mjs';
 
-const { buildLlmsTxt, buildLlmsFullTxt } = load('src/lib/llms.ts');
+const { buildLlmsTxt, buildLlmsFullTxt } = load('src/lib/llms.ts', { '@/lib/display-rules': load('src/lib/display-rules.ts') });
 
 const content = {
   siteUrl: 'https://miviatour.com',

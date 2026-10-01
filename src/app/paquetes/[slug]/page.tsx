@@ -19,14 +19,15 @@ import { PackageGrid } from "@/components/packages/package-card";
 import { PackageGallery } from "@/components/packages/package-gallery";
 import { StickyQuoteBar } from "@/components/quote/sticky-quote-bar";
 import { PaymentClarity } from "@/components/trust/payment-clarity";
+import { displayDuration } from "@/lib/display-rules";
 import { ShareButton } from "@/components/share-button";
 import { canOptimizeImage } from "@/lib/image-optimization";
 import type { Package } from "@/lib/packages";
 import { matchesTravelStyle, travelStyles } from "@/lib/travel-styles";
+import { packageMatchesDestination, regionCategories } from "@/lib/destination-match";
 import type { Locale } from "@/i18n/config";
 
 type Props = { params: Promise<{ slug: string }> };
-function normalizeDestination(value: string) { return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); }
 
 function Gallery({ item }: { item: Package }) {
   const sources = (Array.isArray(item.galeria) ? item.galeria : []).filter(source => typeof source === "string" && source.trim());
@@ -55,7 +56,8 @@ export default async function Page({ params }: Props) {
   if (!item) notFound();
   let destination = item.destination_id ? await getDestination(item.destination_id, "id") : null;
   if (!destination) {
-    try { const target = normalizeDestination(item.destino); destination = (await getDestinations()).find(value => normalizeDestination(value.nombre) === target || normalizeDestination(value.slug) === target) ?? null; } catch { destination = null; }
+    // A specific place ("Dubái", "Panamá") before the region that also covers it ("Medio Oriente").
+    try { const all = await getDestinations(); destination = all.find(value => !regionCategories[value.slug] && packageMatchesDestination(item, value)) ?? all.find(value => packageMatchesDestination(item, value)) ?? null; } catch { destination = null; }
   }
   let packages: Package[] = [];
   try { packages = (await getPackages()).filter(value => value.id !== item.id && ((item.categoria && value.categoria === item.categoria) || value.destino.trim().toLocaleLowerCase() === item.destino.trim().toLocaleLowerCase())).slice(0, 3); } catch { packages = []; }
@@ -80,7 +82,7 @@ export default async function Page({ params }: Props) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <ul className="flex flex-wrap gap-2" aria-label={ux("quickFacts")}>
           <li className={chipClass}><MapPin size={16} strokeWidth={1.75} className="text-brand" aria-hidden="true" />{item.destino}</li>
-          {item.duracion && <li className={chipClass}><Clock3 size={16} strokeWidth={1.75} className="text-brand" aria-hidden="true" />{item.duracion}</li>}
+          {displayDuration(item.duracion) && <li className={chipClass}><Clock3 size={16} strokeWidth={1.75} className="text-brand" aria-hidden="true" />{displayDuration(item.duracion)}</li>}
           {item.categoria && <li className={chipClass}><Compass size={16} strokeWidth={1.75} className="text-brand" aria-hidden="true" />{item.categoria}</li>}
         </ul>
         {/* Below 1024px the quote panel follows the content; this puts the next step in the first screen, beside sharing. */}

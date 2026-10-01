@@ -694,6 +694,7 @@
       "changesLink": "See the cancellation policy",
       "restart": "Enter different details"
     },
-    "faqTitle": "Frequently asked questions about travelling from Honduras"
+    "faqTitle": "Frequently asked questions about travelling from Honduras",
+    "destinationReviews": "Reviews from travellers who went to {name}"
   }
 }
