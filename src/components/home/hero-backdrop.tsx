@@ -50,7 +50,8 @@ export function HeroBackdrop({ children, pauseLabel, resumeLabel = pauseLabel }:
         // Next.js 16 replaces the deprecated priority prop with preload.
         preload={index === 0}
         aria-hidden={index !== visible}
-        className={`object-cover object-[center_38%] sm:object-center transition-opacity duration-(--duration-reveal) ease-out motion-reduce:transition-none ${index === visible && (index === 0 || loaded.includes(index)) ? "opacity-100" : "opacity-0"}`}
+        // hero-drift restarts each time a photo becomes the visible one (the class is re-added); CSS skips it for reduced motion.
+        className={`object-cover object-[center_38%] sm:object-center transition-opacity duration-(--duration-reveal) ease-out motion-reduce:transition-none ${index === visible && (index === 0 || loaded.includes(index)) ? "hero-drift opacity-100" : "opacity-0"}`}
         onLoad={() => setLoaded(previous => previous.includes(index) ? previous : [...previous, index])}
         onError={() => setFailed(previous => previous.includes(index) ? previous : [...previous, index])}
       />)}

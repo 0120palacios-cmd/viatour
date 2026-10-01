@@ -7,6 +7,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { ChevronDown, Compass, Hotel, Menu, Plane, Sparkles, TicketCheck, X, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { trackEvent } from "@/lib/analytics";
 import { headerLinks, headerSecondaryLinks, headerServiceLinks, reservationLink } from "@/lib/navigation";
 import { localizedPath } from "@/i18n/config";
 import { WhatsAppLink } from "./whatsapp-link";
@@ -64,7 +65,8 @@ export function Header() {
       </nav>
 
       <div className="flex items-center gap-2">
-        <Link href={reservationLink.href} aria-current={isActive(pathname, reservationLink.href) ? "page" : undefined} className={`${linkBase.replace("inline-flex ", "")} hidden gap-2 min-[1280px]:inline-flex ${isActive(pathname, reservationLink.href) ? "text-brand" : "text-ink-soft"}`}><TicketCheck size={18} strokeWidth={1.75} aria-hidden="true" />{t(`common.${reservationLink.key}`)}</Link>
+        {/* Travellers who already booked find their way in at every width; on phones it is an icon with its name kept for screen readers. */}
+        <Link href={reservationLink.href} onClick={() => trackEvent("reservation_click", { placement: "header" })} aria-current={isActive(pathname, reservationLink.href) ? "page" : undefined} className={`${linkBase} gap-2 max-sm:min-w-11 max-sm:justify-center max-sm:px-2 ${isActive(pathname, reservationLink.href) ? "text-brand" : "text-ink-soft"}`}><TicketCheck size={18} strokeWidth={1.75} aria-hidden="true" /><span className="max-[379px]:sr-only">{t(`common.${reservationLink.key}`)}</span></Link>
         <div className="hidden min-[1280px]:block"><LanguageSwitcher pathname={pathname} locale={locale} /></div>
         <div className="hidden sm:block"><WhatsAppLink compact placement="header" /></div>
         <div className="min-[1280px]:hidden">

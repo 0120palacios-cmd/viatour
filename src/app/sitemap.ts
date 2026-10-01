@@ -8,7 +8,7 @@ import { localizedPath, type Locale } from "@/i18n/config";
 import { absoluteUrl } from "@/lib/seo";
 import { CITY_SEO_PAGES } from "@/lib/city-seo";
 export const dynamic = "force-dynamic";
-const staticPaths = [...mainLinks.map(link => link.href), ...serviceLinks.map(link => link.href), "/preguntas-frecuentes", "/requisitos", "/opiniones/nueva"];
+const staticPaths = [...mainLinks.map(link => link.href), ...serviceLinks.map(link => link.href), "/preguntas-frecuentes", "/requisitos", "/opiniones/nueva", "/gira"];
 function localizedEntries(path: string, lastModified?: string | Date): MetadataRoute.Sitemap { return (["es", "en"] as Locale[]).map(locale => ({ url: absoluteUrl(localizedPath(path, locale)), ...(lastModified ? { lastModified } : {}) })); }
 // Image entries let search engines index the real photos with the page they belong to.
 function imageUrls(...sources: (string | null | undefined)[]) { return [...new Set(sources.filter((source): source is string => typeof source === "string" && source.trim().length > 0).map(source => absoluteUrl(source)))]; }

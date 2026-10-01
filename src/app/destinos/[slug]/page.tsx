@@ -11,7 +11,9 @@ import { getDestination, getDestinations, type Destination } from "@/lib/destina
 import { getBlogPosts, type BlogPost } from "@/lib/blog";
 import { guideDestination } from "@/lib/guide-utils";
 import { getPackagesForDestination } from "@/lib/packages";
-import { DestinationImage, DestinationTile, destinationGridClass } from "@/components/destinations/destination-card";
+import Image from "next/image";
+import { DestinationTile, MoreDestinationsTile } from "@/components/destinations/destination-card";
+import { canOptimizeImage } from "@/lib/image-optimization";
 import { PackageGrid } from "@/components/packages/package-card";
 import { BlogCard } from "@/components/blog/card";
 import { RatingBadge } from "@/components/reviews/rating-badge";
@@ -104,19 +106,21 @@ export default async function Page({ params }: Props) {
   return (
     <main>
       <JsonLd data={structuredData} />
-      <header className="container-site space-y-6 pb-12 pt-8 sm:pb-16 sm:pt-12">
-        <Breadcrumbs schema={false} items={[{ label: common("home"), href: "/" }, { label: common("destinations"), href: "/destinos" }, { label: item.nombre, href: `/destinos/${item.slug}` }]} />
-        <div className="grid items-center gap-8 lg:grid-cols-2 lg:gap-12">
-          <div className="space-y-6">
-            <h1 className="t-h1">{item.nombre}</h1>
-            {item.intro && <p className="t-body-lg measure whitespace-pre-line text-ink-soft">{item.intro}</p>}
-            <div className="flex items-start gap-3">{quote}<ShareButton title={item.nombre} /></div>
-            <RatingBadge />
+      <div className="container-site pb-4 pt-6 sm:pt-8"><Breadcrumbs schema={false} items={[{ label: common("home"), href: "/" }, { label: common("destinations"), href: "/destinos" }, { label: item.nombre, href: `/destinos/${item.slug}` }]} /></div>
+      {/* The destination's own photo carries the first screen; the gradient sits only where the text is. */}
+      <header className="container-site">
+        <div className={`relative isolate flex min-h-[440px] items-end overflow-hidden rounded-panel sm:min-h-[520px] ${item.imagen_url ? "bg-ink" : "bg-brand-deep"}`}>
+          {item.imagen_url && <Image src={item.imagen_url} alt={home("photoAlt", { name: item.nombre })} fill preload unoptimized={!canOptimizeImage(item.imagen_url)} sizes="(max-width: 1199px) calc(100vw - 32px), 1152px" className="hero-drift -z-10 object-cover" />}
+          <div className="absolute inset-0 -z-10 bg-gradient-to-t from-ink/85 via-ink/45 to-ink/5 lg:bg-gradient-to-r lg:from-ink/80 lg:via-ink/40 lg:to-transparent" />
+          <div className="w-full space-y-5 p-6 text-canvas sm:p-10 lg:max-w-2xl lg:p-12">
+            <h1 className="t-display">{item.nombre}</h1>
+            {item.intro && <p className="t-body-lg measure whitespace-pre-line text-canvas/90">{item.intro}</p>}
+            <div className="flex items-start gap-3">{quote}<ShareButton title={item.nombre} tone="dark" /></div>
           </div>
-          <div className="overflow-hidden rounded-card border border-line shadow-sm"><DestinationImage item={item} hero /></div>
         </div>
+        <div className="py-4"><RatingBadge /></div>
       </header>
-      <div className="border-y border-line bg-surface py-12 sm:py-24"><div className="container-site grid items-start gap-12 lg:grid-cols-3">
+      <div className="mt-4 border-y border-line bg-surface py-12 sm:mt-8 sm:py-24"><div className="container-site grid items-start gap-12 lg:grid-cols-3">
         {item.cuerpo && <div className="space-y-6 lg:col-span-2">{item.cuerpo.split(/\r?\n\s*\r?\n/).filter(paragraph => paragraph.trim()).map((paragraph, index) => <p key={index} className="t-body measure whitespace-pre-line">{paragraph}</p>)}</div>}
         <div className="space-y-6">
           {item.mejor_epoca && <section aria-labelledby="season-title" className="space-y-4"><h2 id="season-title" className="t-h2">{t("destinationSeason")}</h2><p className="t-body measure whitespace-pre-line text-ink-soft">{item.mejor_epoca}</p></section>}
@@ -146,7 +150,7 @@ export default async function Page({ params }: Props) {
       </section>
       {others.length > 0 && <nav className="container-site pb-12 sm:pb-24" aria-labelledby="other-destinations">
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4"><h2 id="other-destinations" className="t-h2">{ux("otherDestinations")}</h2><Link href="/destinos" className="t-small inline-flex min-h-11 items-center gap-2 text-brand underline underline-offset-4"><ArrowLeft size={16} strokeWidth={1.75} aria-hidden="true" />{t("backToDestinations")}</Link></div>
-        <div className={destinationGridClass}>{others.map(destination => <DestinationTile key={destination.id} href={`/destinos/${destination.slug}`} name={destination.nombre} image={destination.imagen_url} />)}</div>
+        <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-4">{others.map(destination => <DestinationTile key={destination.id} href={`/destinos/${destination.slug}`} name={destination.nombre} image={destination.imagen_url} />)}<MoreDestinationsTile /></div>
       </nav>}
       <StickyQuoteBar targetId="solicitar-cotizacion" title={item.nombre} />
     </main>

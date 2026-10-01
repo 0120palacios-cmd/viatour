@@ -132,9 +132,11 @@
 /* Typography roles — size / line-height / weight / tracking per Design Bible §4.
    Headings 700–800 with tight tracking; body/lead NEVER heavy weight. */
 @layer components {
-  .t-display  { font-size: 56px; line-height: 60px; font-weight: 800; letter-spacing: -0.02em; }
-  .t-h1       { font-size: 40px; line-height: 46px; font-weight: 700; letter-spacing: -0.02em; }
-  .t-h2       { font-size: 30px; line-height: 38px; font-weight: 700; letter-spacing: -0.01em; }
+  /* Fluid between the Bible's mobile and desktop sizes (32→56, 28→40, 24→30) over 360–1200px,
+     so tablets get an in-between size instead of a jump at a breakpoint. */
+  .t-display  { font-size: clamp(32px, calc(21.7px + 2.857vw), 56px); line-height: 1.08; font-weight: 800; letter-spacing: -0.02em; text-wrap: balance; }
+  .t-h1       { font-size: clamp(28px, calc(22.9px + 1.429vw), 40px); line-height: 1.16; font-weight: 700; letter-spacing: -0.02em; text-wrap: balance; }
+  .t-h2       { font-size: clamp(24px, calc(21.4px + 0.714vw), 30px); line-height: 1.26; font-weight: 700; letter-spacing: -0.01em; text-wrap: balance; }
   .t-h3       { font-size: 22px; line-height: 30px; font-weight: 600; letter-spacing: -0.01em; }
   .t-body-lg  { font-size: 18px; line-height: 30px; font-weight: 400; }
   .t-body     { font-size: 16px; line-height: 26px; font-weight: 400; }
@@ -181,14 +183,38 @@
 
 /* Responsive headline scale-down: one step smaller on mobile, display eased on tablet. */
 @media (max-width: 639px) {
-  .t-display { font-size: 32px; line-height: 38px; }
-  .t-h1      { font-size: 28px; line-height: 34px; }
-  .t-h2      { font-size: 24px; line-height: 30px; }
   .t-h3      { font-size: 20px; line-height: 28px; }
 }
-@media (min-width: 640px) and (max-width: 1023px) {
-  .t-display { font-size: 44px; line-height: 50px; }
+
+/* Motion (Design Bible §7): one subtle rise, used on a few content grids only, never on every section.
+   Scroll-driven, so it costs no JavaScript; browsers without view timelines simply show the content. */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .reveal-rise > * {
+      animation: reveal-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 55%;
+    }
+    /* A short offset per column so a row settles left to right instead of all at once. */
+    .reveal-rise > :nth-child(3n+2) { animation-range: entry 6% entry 61%; }
+    .reveal-rise > :nth-child(3n+3) { animation-range: entry 12% entry 67%; }
+  }
+  /* The active hero photo drifts slowly toward its resting frame while it is shown. */
+  .hero-drift { animation: hero-drift 9s ease-out both; }
 }
+@keyframes reveal-rise { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+@keyframes hero-drift { from { transform: scale(1.06); } to { transform: scale(1); } }
+
+/* Skeletons: a soft sweep instead of a blink, so loading areas read as "arriving", not as broken. */
+.skeleton { position: relative; overflow: hidden; background: var(--color-surface); }
+@media (prefers-reduced-motion: no-preference) {
+  .skeleton::after {
+    content: ""; position: absolute; inset: 0; transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.7), transparent);
+    animation: skeleton-sweep 1.4s ease-in-out infinite;
+  }
+}
+@keyframes skeleton-sweep { to { transform: translateX(100%); } }
 
 .mobile-sheet[data-state="open"] {
   animation: menu-reveal var(--duration-reveal) ease-out;
@@ -320,3 +346,9 @@ select:not([multiple], [size]) {
   padding-inline-end: 40px;
   text-overflow: ellipsis;
 }
+
+/* Home promotion: the illustrative phone rises and settles once, and floats gently while in view. */
+@media (prefers-reduced-motion: no-preference) {
+  .promo-phone { animation: promo-float 7s ease-in-out infinite; }
+}
+@keyframes promo-float { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-10px) rotate(-2deg); } }

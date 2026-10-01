@@ -131,3 +131,37 @@ Detalle técnico en `docs/ux-seo-round-5.md`. No se inventaron cifras, credencia
 ## Reutilizados, sin texto nuevo
 - Página de ciudad: los tres puntos de confianza del inicio ("Una persona real lo asesora", "Cotización sin costo ni compromiso", "Experiencia desde 2018"), la calificación real, "Cómo funciona" y las opiniones del inicio.
 - Confirmación de una opinión enviada en el sitio: agrega `reviews.googleSubline` y `reviews.googleCta` ("Déjenos su opinión en Google"), mostrados a todas las personas por igual, sin importar su calificación.
+
+---
+
+# Copy de la V3: descubrimiento, promoción y confianza (2026-09-30), pendiente de aprobación
+
+Detalle técnico en `docs/ux-v3.md`. No se inventaron cifras, reseñas, credenciales, precios ni plazos de respuesta. Los conteos de paquetes y la lista de destinos adicionales salen de los paquetes publicados. Versión en inglés en `messages/en.json` → `v3.*`.
+
+## Textos nuevos (`messages/es.json` → `v3.*`)
+- **Tipos de viaje (inicio):** "¿Qué tipo de viaje busca?" / "Elija un estilo y vea los paquetes que encajan con usted. Si su idea es otra, la armamos a su medida." Estilos: "Playa y Caribe", "Luna de miel", "En pareja", "En familia", "En grupo", "Cultura e historia", "Aventura y naturaleza", "Cruceros". Conteo: "{n} paquetes". Cierre: "¿Busca otro tipo de viaje? Cuéntenos su idea".
+- **Destinos:**
+  - Intro: "Algunos de los destinos favoritos de nuestros viajeros. Son solo el comienzo: también planificamos viajes a muchos otros lugares del mundo." **Confirme que esta afirmación es correcta para su operación.**
+  - Ficha final: "¿No encuentra su destino?" / "También lo planificamos. Cuéntenos a dónde quiere viajar."
+  - Bloque: "Y muchos destinos más" / "Algunos de los viajes que también preparamos:"
+- **Promoción (inicio):**
+  - Etiqueta: "Promoción para viajeros de viatour".
+  - Título: "Viaje. Comparta. Gane."
+  - Intro: "Si viajó con viatour, comparta el video de su viaje y participe en nuestra ruleta de premios para viajeros."
+  - Pasos: "Viaje con viatour." / "Grabe un video de su viaje y publíquelo en TikTok, Instagram o Facebook." / "Etiquete a @miviatour y envíenos el enlace por WhatsApp." / "Al aprobar su publicación, reciba su código y gire la ruleta."
+  - Botón: "Descubra cómo participar".
+  - Condiciones: "Aplican condiciones. Un giro por viaje; premios sujetos a disponibilidad y a confirmación de su asesor."
+  - Redes: "Síganos en".
+  - Imagen ilustrativa: "Mi viaje con @miviatour", con el texto alternativo "Vista de ejemplo de una publicación de viaje que etiqueta a @miviatour".
+- **Cierre del inicio:**
+  - Cotización: "¿Está planificando un viaje?" / "Cuéntenos a dónde quiere ir, sus fechas y quiénes viajan. Un asesor le prepara opciones sin costo ni compromiso."
+  - Reserva: "¿Ya tiene una reserva?" / "En Mi reserva puede consultar su itinerario, sus documentos, sus pagos y sus solicitudes de ayuda." / "Ir a Mi reserva".
+- **Paquetes (/paquetes):**
+  - Búsqueda: "Buscar paquetes", "Destino, país o tipo de viaje", "Buscar", "Tipo de viaje", "Región", "Quitar filtros", "Resultados para «…»".
+  - Sin resultados: "No encontramos un paquete publicado con estos filtros" / "Podemos preparar una opción personalizada para usted. Cuéntenos a dónde quiere viajar y un asesor le arma la propuesta." / "Planifiquemos su viaje".
+  - Después de la lista: "¿No ve el viaje que busca?" / "Los paquetes publicados son ideas para inspirarse. También cotizamos otros destinos, fechas y estilos de viaje." / "Cuéntenos su idea".
+- **Ficha de paquete:** "Ideal para:" antes de los estilos del paquete.
+- **Pie de página:** enlace "Comparta su viaje y gane" (`common.sharePromo`).
+
+## Reutilizados, sin texto nuevo
+- /gira conserva su título, introducción, pasos y condiciones; solo cambió el diseño y se agregaron migas de pan ("Inicio > Comparta su viaje y gane").
