@@ -7,6 +7,7 @@ import { Turnstile, useHumanToken } from "@/components/turnstile";
 import { useCurrency } from "@/components/currency-provider";
 import { ContactFields, QuoteHowItWorks, QuoteSubmit, QuoteSuccess, contactFormData } from "@/components/quote/quote-parts";
 import { requestQuote, type QuoteResult } from "@/lib/quote";
+import { trackQuoteStart } from "@/lib/analytics";
 import type { Package } from "@/lib/packages";
 
 export function PackageQuote({ item, intro }: { item: Package; intro?: string }) {
@@ -52,7 +53,7 @@ export function PackageQuote({ item, intro }: { item: Package; intro?: string })
 
   if (result) return <QuoteSuccess result={result} service="Paquete" onReset={() => setResult(null)} />;
   const selectClass = "t-body h-12 w-full min-w-0 rounded-btn border border-line bg-canvas px-3 py-2 text-ink focus-visible:border-brand";
-  return <form onSubmit={submit} className="quote-form space-y-5">
+  return <form onSubmit={submit} onFocusCapture={event => trackQuoteStart(event.currentTarget, "Paquete")} className="quote-form space-y-5">
     <div className="space-y-2"><h2 id={`package-quote-title-${item.id}`} className="t-h3">{t("title")}</h2>{intro && <p className="t-small text-ink-soft">{intro}</p>}</div>
     <div className="grid gap-4">
       <div className="space-y-2"><label htmlFor={`quote-origin-${item.id}`} className="t-small block">{t("origin")} <span aria-hidden="true" className="text-ink-soft">*</span></label><Input id={`quote-origin-${item.id}`} name="origin" required maxLength={120} autoComplete="address-level2" /></div>

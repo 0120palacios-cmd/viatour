@@ -25,7 +25,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ c
   const rest = lead ? visible.filter(post => post !== lead) : visible;
   return <main><div className="container-site pb-12 sm:pb-16">
     <JsonLd data={collectionSchema("/blog", t("guides"), posts.map(post => ({ name: post.titulo, path: `/blog/${post.slug}`, image: blogCoverUrl(post.cover_url) })), locale)} />
-    <PageHeader breadcrumbs={[{ label: common("home"), href: "/" }, { label: common("blog"), href: "/blog" }]} title={t("guides")} intro={t("blogIntro")} />
+    <PageHeader breadcrumbs={[{ label: common("home"), href: "/" }, { label: common("blog"), href: "/blog" }]} title={(await getTranslations("v4"))("h1.blog")} intro={t("blogIntro")} />
     <div className="mb-8 space-y-3">
       <nav aria-label={t("allPosts")} className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0"><ul className="chip-row flex gap-2">{[["", t("allPosts")], ["guia", t("guides")], ["post", t("articles")]].map(([postType, label]) => chip(postType || "all", label, href(categoria, postType), (tipo || "") === postType))}</ul></nav>
       {categories.length > 1 && <nav aria-label={t("allCategories")} className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0"><ul className="chip-row flex gap-2 sm:flex-wrap">{["", ...categories].map(category => chip(category || "all", category || t("allCategories"), href(category, tipo), (categoria || "") === category))}</ul></nav>}

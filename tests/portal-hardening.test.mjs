@@ -106,9 +106,8 @@ test('private portal documents and ticket notifications have no public-storage p
   const documentsRoute = fs.readFileSync('src/app/api/mi-reserva/documentos/route.ts', 'utf8');
   const portalData = fs.readFileSync('src/lib/portal-data.ts', 'utf8');
   const ticketsRoute = fs.readFileSync('src/app/api/mi-reserva/tickets/route.ts', 'utf8');
-  assert.match(documentsRoute, /from\("portal-docs"\)/);
-  assert.doesNotMatch(documentsRoute, /getPublicUrl|object\/public/);
-  assert.match(portalData, /createSignedUrl\(path, 300\)/);
+  // Signing and path checks are covered by behaviour in tests/portal-documents.test.mjs.
+  assert.doesNotMatch(documentsRoute + portalData, /getPublicUrl|object\/public/);
   assert.match(ticketsRoute, /sendResendEmail/);
   assert.match(ticketsRoute, /support-ticket\//);
 });

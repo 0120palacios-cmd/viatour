@@ -3,7 +3,8 @@ import { useTranslations } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
-import { ArrowRight, ArrowUpRight, BadgeCheck, CalendarCheck, FileCheck2, MessageSquare, ShieldCheck, SlidersHorizontal, Star, UserRound } from "lucide-react";
+import { ArrowRight, ArrowUpRight, BadgeCheck, CalendarCheck, FileCheck2, Star } from "lucide-react";
+import { PaymentClarity } from "@/components/trust/payment-clarity";
 import { getBlogPosts } from "@/lib/blog";
 import { BlogCard } from "@/components/blog/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -21,8 +22,6 @@ import { HeroBackdrop } from "@/components/home/hero-backdrop";
 import { QuoteButton } from "@/components/home/quote-button";
 
 export { SocialReels } from "@/components/home/social-reels";
-export { Services } from "@/components/home/services";
-export { WhyViatour } from "@/components/home/why-viatour";
 
 type SectionAction = { href: string; label: string };
 
@@ -58,12 +57,13 @@ async function HeroRating() {
 // Above the fold: who viatour is, why to trust it, and the quote tool, side by side from 1024px.
 export function Hero() {
   const t = useTranslations();
-  const proof = [{ icon: UserRound, label: t("home.why1Title") }, { icon: BadgeCheck, label: t("ux.proofFree") }, { icon: CalendarCheck, label: t("home.why6Title") }];
+  // The H1 says what viatour is and how it differs (a real advisor), so "real person" is not repeated as proof.
+  const proof = [{ icon: BadgeCheck, label: t("ux.proofFree") }, { icon: CalendarCheck, label: t("home.why6Title") }];
   return <HeroBackdrop pauseLabel={t("home.pauseImages")} resumeLabel={t("home.resumeImages")}>
     <div className="container-site grid items-center gap-8 pb-16 pt-10 sm:py-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,36rem)] lg:gap-16 lg:py-24">
       <div className="space-y-6 text-ink group-data-[photo=true]/hero:text-canvas">
-        <h1 id="hero-title" className="t-display max-w-xl">{t("home.heroTitle")}</h1>
-        <p className="t-body-lg max-w-lg group-data-[photo=true]/hero:text-canvas/90">{t("static.aboutTitle")} {t("home.assistance")}</p>
+        <h1 id="hero-title" className="t-display max-w-xl">{t("v4.heroTitle")}</h1>
+        <p className="t-body-lg max-w-lg group-data-[photo=true]/hero:text-canvas/90">{t("v4.heroIntro")}</p>
         <ul className="t-body space-y-1 font-medium">
           {proof.map(({ icon: Icon, label }) => <li key={label} className="flex min-h-11 items-center gap-3"><Icon size={20} strokeWidth={1.75} className="shrink-0" aria-hidden="true" />{label}</li>)}
           {/* Not suspended: the summary is cached, and streaming it in shifted the form below. */}
@@ -75,12 +75,37 @@ export function Hero() {
   </HeroBackdrop>;
 }
 
-export function HowItWorks() { const t = useTranslations(); const steps = [{ icon: MessageSquare, title: t("home.how1Title"), body: t("home.how1Body") }, { icon: SlidersHorizontal, title: t("home.how2Title"), body: t("home.how2Body") }, { icon: ShieldCheck, title: t("home.how3Title"), body: t("home.how3Body") }]; return <section className="section-space" aria-labelledby="how-title"><div className="container-site"><SectionHeading id="how-title" title={t("home.howTitle")} intro={t("home.howIntro")} /><ol className="grid gap-6 md:grid-cols-3">{steps.map(({ icon: Icon, title, body }, index) => <li key={title} className="relative rounded-card border border-line bg-canvas p-6 shadow-sm"><div className="mb-6 flex items-center gap-3"><span className="t-small flex size-10 items-center justify-center rounded-btn bg-brand text-canvas" aria-hidden="true">{index + 1}</span><Icon size={24} strokeWidth={1.75} className="text-brand" aria-hidden="true" /></div><h3 className="t-h3 mb-3">{title}</h3><p className="t-body text-ink-soft">{body}</p></li>)}</ol></div></section>; }
+// How it works, from the first message to the trip, beside what is confirmed before paying.
+// It replaces three home sections ("Cómo funciona", "Por qué viatour", "Servicios") that repeated one promise.
+export function HowItWorks() {
+  const t = useTranslations();
+  const steps = [
+    { title: t("home.how1Title"), body: t("home.how1Body") },
+    { title: t("home.how2Title"), body: t("home.how2Body") },
+    { title: t("home.how3Title"), body: t("home.how3Body") },
+    { title: t("v4.how4Title"), body: t("v4.how4Body"), link: { href: "/mi-reserva", label: t("common.reservation") } },
+  ];
+  return <section className="section-space border-y border-line bg-surface" aria-labelledby="how-title"><div className="container-site">
+    <SectionHeading id="how-title" title={t("home.howTitle")} intro={t("home.howIntro")} />
+    <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-16">
+      <ol className="space-y-0">{steps.map(({ title, body, link }, index) => <li key={title} className="relative flex gap-5 pb-8 last:pb-0">
+        {index < steps.length - 1 && <span aria-hidden="true" className="absolute left-5 top-12 h-[calc(100%-3rem)] w-px bg-line" />}
+        <span className="t-small relative flex size-10 shrink-0 items-center justify-center rounded-btn bg-brand font-semibold text-canvas" aria-hidden="true">{index + 1}</span>
+        <div className="min-w-0 space-y-2 pt-1.5">
+          <h3 className="t-h3">{title}</h3>
+          <p className="t-body text-ink-soft">{body}</p>
+          {link && <Link href={link.href} className="t-small inline-flex min-h-11 items-center gap-2 font-semibold text-brand underline-offset-4 hover:underline">{link.label}<ArrowRight size={16} strokeWidth={1.75} aria-hidden="true" /></Link>}
+        </div>
+      </li>)}</ol>
+      <PaymentClarity headingLevel={3} />
+    </div>
+  </div></section>;
+}
 
 export function FeaturedDestinations() { const t = useTranslations(); const action = { href: "/destinos", label: t("home.allDestinations") }; return <section className="container-site section-space" aria-labelledby="destinations-title"><SectionHeading id="destinations-title" title={t("common.destinations")} intro={t("v3.destinationsIntro")} action={action} /><Suspense fallback={<DestinationSkeletons />}><FeaturedDestinationData /></Suspense><Suspense fallback={null}><MoreDestinations /></Suspense><SectionMore action={action} /></section>; }
 
 export function FeaturedPackages() { return <Suspense fallback={null}><FeaturedPackageData /></Suspense>; }
-async function FeaturedPackageData() { const t = await getTranslations(); let items; try { items = await getPackages(true); } catch { return null; } if (!items.length) return null; return <section className="section-space border-y border-line bg-surface"><div className="container-site"><SectionHeading id="packages-title" title={t("home.featuredPackages")} intro={t("home.packagesIntro")} action={{ href: "/paquetes", label: t("ux.allPackages") }} /><PackageGrid items={items.slice(0, 6)} label={t("home.featuredPackages")} /><SectionMore action={{ href: "/paquetes", label: t("ux.allPackages") }} /></div></section>; }
+async function FeaturedPackageData() { const t = await getTranslations(); let items; try { items = await getPackages(true); } catch { return null; } if (!items.length) return null; return <section className="section-space"><div className="container-site"><SectionHeading id="packages-title" title={t("home.featuredPackages")} intro={t("home.packagesIntro")} action={{ href: "/paquetes", label: t("ux.allPackages") }} /><PackageGrid items={items.slice(0, 6)} label={t("home.featuredPackages")} /><SectionMore action={{ href: "/paquetes", label: t("ux.allPackages") }} /></div></section>; }
 
 export function ReviewsTeaser() { return <Suspense fallback={null}><ReviewTeaserData /></Suspense>; }
 async function ReviewTeaserData() {

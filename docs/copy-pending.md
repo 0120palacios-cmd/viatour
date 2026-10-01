@@ -176,3 +176,28 @@ Detalle técnico en `docs/ux-v3.md`. No se inventaron cifras, reseñas, credenci
 - Mi reserva: "Todo su viaje en un solo lugar" / "Por su seguridad, le enviaremos un código de verificación al correo registrado en su reserva." / "¿No encuentra su código de reserva?" / "Escríbanos por WhatsApp y su asesor le ayuda a ingresar." La lista de secciones reutiliza los nombres que ya usa el portal.
 - Nosotros: la tarjeta lateral reutiliza textos aprobados ("Experiencia desde 2018", "Una persona real lo asesora", "Gestione su reserva en línea", la nota IATA del pie de página y "Encuéntrenos en Google"). El texto aprobado de la página no cambió.
 - Requisitos: "Guías relacionadas" (texto existente).
+
+# Copy de la V4 (2026-09-30), pendiente de aprobación
+
+Detalle técnico en `docs/v4-audit.md`. Los textos están en `messages/es.json` → `v4.*` (con versión en inglés en `messages/en.json`). No se inventaron cifras, credenciales, plazos de respuesta ni políticas: cada línea sobre dinero repite lo que ya dicen los Términos (§4–6) y la Política de Cancelaciones (§1–5), o es una lista de verificación para el cliente.
+
+## Requiere su decisión
+- **Titular del inicio (reemplaza el texto aprobado "Cotice con nosotros.").** Nuevo: "Su agencia de viajes en Honduras, con un asesor real." con la entrada "Le cotizamos vuelos, hoteles, paquetes y viajes a la medida según su presupuesto y sus fechas, y lo acompañamos antes, durante y después de su viaje." (la última parte repite `home.why4Body`, ya aprobado). Motivo: el titular anterior no decía qué es viatour (ronda 5, decisión D1). Para volver al anterior: en `src/components/home/sections.tsx`, cambiar `v4.heroTitle` por `home.heroTitle`.
+
+## Transparencia de precios ("Antes de pagar, todo claro")
+Aparece en el inicio (junto a "Cómo funciona"), en cada paquete (después del itinerario) y en Vuelos, Hoteles y Viaje a medida.
+- "Su asesor le confirma antes de que usted pague": "El precio final de su viaje." / "Qué incluye y qué no incluye." / "Si hace falta un depósito, su monto y sus condiciones." / "Las condiciones de cambio, cancelación y reembolso de cada proveedor."
+- "Revise también en su cotización": "Hasta qué fecha es válida la tarifa." / "Impuestos o cargos que se pagan en el aeropuerto o en el destino." / "Servicios del hotel que se cobran aparte o dependen de disponibilidad."
+- Cierre: "No hay cargo alguno hasta que usted acepta una opción y realiza el pago. El pago se coordina con su asesor, con tarjeta o transferencia; este sitio no procesa pagos."
+- En la tarjeta "No incluye" de cada paquete: "¿Hay cargos que se pagan en el destino? Pregunte a su asesor cuáles aplican a su viaje antes de pagar."
+- Paso 4 de "Cómo funciona": "Lo acompañamos durante el viaje" / "Con Mi reserva consulta su itinerario, sus pagos y sus documentos. Si surge algo, escríbanos con su código de reserva."
+- Inicio: "¿Solo necesita una parte del viaje?" (enlaces a Vuelos, Hoteles, Viaje a medida, Descubra su destino).
+
+## Títulos (H1)
+"Paquetes de viaje desde Honduras", "Destinos para viajar desde Honduras", "Guías para viajar desde Honduras", "Opiniones de nuestros viajeros", "Preguntas frecuentes sobre viajes desde Honduras".
+
+## Mi reserva
+"Reserva {código}" · "Faltan N días para su viaje" / "Su viaje comienza hoy" / "Su viaje está en curso" / "Su viaje terminó el {fecha}" · "Fechas" · "Saldo pendiente" · "Próximo paso" con uno de: "Esta reserva está cancelada. Si tiene preguntas, escríbanos por WhatsApp." / "Tiene un saldo pendiente de {monto}. Coordine el pago con su asesor." / "Su reserva está pendiente de confirmación con los proveedores." / "Sus documentos de viaje aparecerán en esta página cuando su asesor los comparta." / "Revise sus documentos y los requisitos de su destino antes de viajar." · "Durante su viaje" / "Si surge algo durante su viaje, escríbanos por WhatsApp o por correo e indique su código de reserva {código}." · "Compartidos por viatour" / "Enviados por usted" y sus estados vacíos · "Cambios, cancelaciones y reembolsos se rigen por las condiciones de cada proveedor." · "Ingresar otros datos" · Mensaje de WhatsApp desde el portal: "Hola, necesito ayuda con mi reserva {código}." (antes estaba en inglés para todos) · Subida de documentos: "máximo 4 MB; las fotos más grandes se reducen automáticamente" y "El documento pesa más de 4 MB. Si es un PDF, comprímalo o envíelo a su asesor por WhatsApp."
+
+## Preguntas frecuentes nuevas (`data/faqs.mjs`, órdenes 12–21)
+Tres categorías nuevas: "Precios y cargos", "Cambios y cancelaciones" y "Después de reservar". Diez preguntas; las respuestas repiten los Términos y la Política de Cancelaciones. No se publican hasta que usted ejecute `node scripts/import-faqs.mjs`. Ojo: el script también vuelve a escribir las 11 preguntas existentes con el texto de `data/faqs.mjs` (busca por el texto de la pregunta). Si editó alguna respuesta desde el panel, copie primero esa respuesta en `data/faqs.mjs`, o agregue las diez preguntas nuevas desde el panel en lugar de usar el script.

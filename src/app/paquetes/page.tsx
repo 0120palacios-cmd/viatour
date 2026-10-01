@@ -97,7 +97,7 @@ export default async function Page({ searchParams }: Props) {
   const filters = { region: typeof region === "string" ? region : undefined, estilo: typeof estilo === "string" ? estilo : undefined, q: typeof q === "string" ? q : undefined };
   return <main>
     <div className="container-site">
-      <PageHeader breadcrumbs={[{ label: common("home"), href: "/" }, { label: common("packages"), href: "/paquetes" }]} title={common("packages")} intro={t("packagesIntro")} />
+      <PageHeader breadcrumbs={[{ label: common("home"), href: "/" }, { label: common("packages"), href: "/paquetes" }]} title={(await getTranslations("v4"))("h1.packages")} intro={t("packagesIntro")} />
       <section aria-label={t("packagesAvailable")}><h2 className="sr-only">{t("packagesAvailable")}</h2><Suspense fallback={<PackageSkeletons layout="grid" count={6} />}><Packages filters={filters} /></Suspense></section>
     </div>
     <FinalCta />

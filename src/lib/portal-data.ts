@@ -3,6 +3,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Currency } from "@/lib/quotation-types";
 import type { Invoice, Payment, ReservationItem } from "@/lib/reservation-types";
+import { listReservationDocuments, portalDocsBucket, type StoredDocument } from "@/lib/portal-documents";
 
 export type PortalReservation = {
   id: string;
@@ -15,7 +16,7 @@ export type PortalReservation = {
   fecha_fin: string | null;
 };
 
-export type PortalDocument = { name: string; path: string; url: string };
+export type PortalDocument = StoredDocument;
 export type PortalTicket = { id: string; asunto: string; mensaje: string; estado: string; created_at: string; respuesta: string | null };
 
 const portalReservationFields = "id,codigo,destino,moneda,total,estado,fecha_inicio,fecha_fin";
@@ -69,15 +70,10 @@ export async function getPortalInvoice(client: SupabaseClient, reservationId: st
   return result.data as Invoice;
 }
 
-export async function getPortalDocuments(client: SupabaseClient, reservationId: string) {
-  const listed = await client.storage.from("portal-docs").list(reservationId, { limit: 100, sortBy: { column: "created_at", order: "desc" } });
-  if (listed.error) return [] as PortalDocument[];
-  const documents = await Promise.all((listed.data ?? []).filter(file => file.name).map(async file => {
-    const path = `${reservationId}/${file.name}`;
-    const signed = await client.storage.from("portal-docs").createSignedUrl(path, 300);
-    return signed.data?.signedUrl ? { name: file.name, path, url: signed.data.signedUrl } : null;
-  }));
-  return documents.filter((document): document is PortalDocument => Boolean(document));
+// Listed without URLs: each link points to /api/mi-reserva/documentos, which checks the session and
+// signs a short-lived URL at click time, so a page left open never shows an expired link.
+export async function getPortalDocuments(client: SupabaseClient, reservationId: string): Promise<PortalDocument[]> {
+  try { return await listReservationDocuments(client.storage.from(portalDocsBucket), reservationId); } catch { return []; }
 }
 
 export async function getPortalTickets(client: SupabaseClient, reservationId: string) {

@@ -10,6 +10,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useCurrency } from "@/components/currency-provider";
 import { launchDestinations } from "@/lib/launch-destinations";
 import { requestQuote, type QuoteResult } from "@/lib/quote";
+import { trackQuoteStart } from "@/lib/analytics";
 import { ContactFields, QuoteSubmit, QuoteSuccess } from "@/components/quote/quote-parts";
 
 const serviceData = [{ value: "Vuelos", key: "flights", icon: Plane }, { value: "Hoteles", key: "hotels", icon: Hotel }, { value: "Paquetes", key: "packages", icon: Package }, { value: "Viaje a medida", key: "customTrip", icon: Compass }];
@@ -59,7 +60,7 @@ function QuoteForm({ service, compact = false, serviceControl, optionsControl, o
     : <Field label={t("quote.approxDates")} name="approximate" icon={CalendarDays} required defaultValue={kept("approximate")} />;
   const travelerFields = <><Field label={t("quote.adults")} name="adults" type="number" inputMode="numeric" min={1} step={1} defaultValue={kept("adults") ?? 1} icon={Users} required /><Field label={t("quote.children")} name="children" type="number" inputMode="numeric" min={0} step={1} defaultValue={kept("children") ?? 0} icon={Users} required />{hotel && <Field label={t("quote.rooms")} name="rooms" type="number" inputMode="numeric" min={1} step={1} defaultValue={kept("rooms") ?? 1} icon={Hotel} required />}</>;
 
-  return <form onSubmit={submit} onInvalid={event => { const group = (event.target as HTMLInputElement).closest("details"); if (group) group.open = true; (event.target as HTMLInputElement).setAttribute("aria-invalid", "true"); setError(t("quote.requiredError")); }} onInput={event => { const field = event.target as HTMLInputElement; if (field.validity?.valid) field.removeAttribute("aria-invalid"); if (field.name) setSummary(previous => ({ ...previous, [field.name]: field.value })); }} className="quote-form @container flex flex-col gap-6" aria-label={t("quote.quoteFor", { service: t(`common.${serviceData.find(item => item.value === service)?.key || "flights"}`) })} aria-describedby={error ? errorId : undefined}>
+  return <form onSubmit={submit} onFocusCapture={event => trackQuoteStart(event.currentTarget, service)} onInvalid={event => { const group = (event.target as HTMLInputElement).closest("details"); if (group) group.open = true; (event.target as HTMLInputElement).setAttribute("aria-invalid", "true"); setError(t("quote.requiredError")); }} onInput={event => { const field = event.target as HTMLInputElement; if (field.validity?.valid) field.removeAttribute("aria-invalid"); if (field.name) setSummary(previous => ({ ...previous, [field.name]: field.value })); }} className="quote-form @container flex flex-col gap-6" aria-label={t("quote.quoteFor", { service: t(`common.${serviceData.find(item => item.value === service)?.key || "flights"}`) })} aria-describedby={error ? errorId : undefined}>
     {compact
       ? <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:gap-x-4">
           <div className="min-w-0">{serviceControl}</div>
