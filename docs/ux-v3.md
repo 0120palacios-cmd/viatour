@@ -149,10 +149,10 @@ Repairing the stale smoke tests exposed real defects in the quote flow. All exis
 
 | Sev | Finding | Fix |
 |---|---|---|
-| Critical | **Broken tab-to-panel link.** The quote tabs used their service names as Radix values. "Viaje a medida" contains spaces, so the tab's \`aria-controls\` pointed at three ids that do not exist, and assistive tech could not link that tab to its panel. | Tab values are now the service keys (\`flights\`, \`customTrip\`…). |
-| Serious | **Unnamed container.** The Turnstile container was a \`div\` with \`aria-label\` and no role. It appeared on every page with a form. | \`role="group"\`. |
+| Critical | **Broken tab-to-panel link.** The quote tabs used their service names as Radix values. "Viaje a medida" contains spaces, so the tab's `aria-controls` pointed at three ids that do not exist, and assistive tech could not link that tab to its panel. | Tab values are now the service keys (`flights`, `customTrip`…). |
+| Serious | **Unnamed container.** The Turnstile container was a `div` with `aria-label` and no role. It appeared on every page with a form. | `role="group"`. |
 | Moderate | **Duplicate landmarks.** Several sections had the same accessible name as the carousel or grid inside them, so landmark lists showed duplicates: home packages and guides, related packages, destination packages. | The duplicate name was removed from the outer section; the heading stays. |
-| Moderate | **Content outside landmarks.** The floating WhatsApp button sat outside every landmark. | It is now an \`<aside>\` labelled "Escríbanos por WhatsApp". |
+| Moderate | **Content outside landmarks.** The floating WhatsApp button sat outside every landmark. | It is now an `<aside>` labelled "Escríbanos por WhatsApp". |
 
 ### Pages
 - **Mi reserva (signed out):**
@@ -163,7 +163,7 @@ Repairing the stale smoke tests exposed real defects in the quote flow. All exis
 - **Nosotros:**
   - The approved text is unchanged.
   - A side card lists existing facts: since 2018, a real advisor, online reservation management, and the IATA host-agency disclosure.
-  - It also shows the live rating and the Google profile link (measured as \`google_profile_click\`, placement \`about\`).
+  - It also shows the live rating and the Google profile link (measured as `google_profile_click`, placement `about`).
 - **Requisitos:** the published "Requisitos de viaje" guides are linked under the checker.
 - **Hotel quote form:**
   - The destination takes the full row, with check-in and check-out side by side.
@@ -181,8 +181,8 @@ Repairing the stale smoke tests exposed real defects in the quote flow. All exis
 
 - **Layout and server time:** layout shift is zero everywhere, and TTFB is under 120 ms.
 - **Largest client chunk:** 372 KB raw / 119 KB gzip, and it is mostly the Sentry SDK.
-  - Sentry's \`bundleSizeOptimizations\` were tried and reverted: Turbopack ignores them, so the chunk size did not change.
+  - Sentry's `bundleSizeOptimizations` were tried and reverted: Turbopack ignores them, so the chunk size did not change.
   - The 150 KB markdown chunk is admin-only, not loaded on public pages.
 - **Follow-up options for the Sentry chunk:**
-  - **Is Sentry in use?** Confirm \`NEXT_PUBLIC_SENTRY_DSN\` is set in production. Without it the SDK ships but does nothing, and it could be removed from the client.
+  - **Is Sentry in use?** Confirm `NEXT_PUBLIC_SENTRY_DSN` is set in production. Without it the SDK ships but does nothing, and it could be removed from the client.
   - **Load it later:** with a DSN, load the client SDK lazily after the page is interactive.
