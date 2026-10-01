@@ -201,3 +201,11 @@ Aparece en el inicio (junto a "Cómo funciona"), en cada paquete (después del i
 
 ## Preguntas frecuentes nuevas (`data/faqs.mjs`, órdenes 12–21)
 Tres categorías nuevas: "Precios y cargos", "Cambios y cancelaciones" y "Después de reservar". Diez preguntas; las respuestas repiten los Términos y la Política de Cancelaciones. No se publican hasta que usted ejecute `node scripts/import-faqs.mjs`. Ojo: el script también vuelve a escribir las 11 preguntas existentes con el texto de `data/faqs.mjs` (busca por el texto de la pregunta). Si editó alguna respuesta desde el panel, copie primero esa respuesta en `data/faqs.mjs`, o agregue las diez preguntas nuevas desde el panel en lugar de usar el script.
+
+## Cotización en PDF: bloque "Importante" (aprobado por el propietario el 2026-10-01)
+Aparece en cada cotización en PDF, antes del pie (`quotationNotices` en `src/lib/quotation-types.ts`):
+- "Tarifa válida hasta el {fecha de validez}, sujeta a disponibilidad. El precio final se confirma con su asesor antes de cualquier pago."
+- "Impuestos o cargos que se pagan en el destino no están incluidos, salvo que se indique."
+- "Las condiciones de cambio, cancelación y reembolso dependen de cada proveedor; su asesor se las informa antes de que usted pague."
+- "No hay cargo alguno hasta que usted acepta una opción y realiza el pago."
+El pie dejó de repetir "Los precios indicados son referenciales y están sujetos a confirmación." (ahora lo dice la primera línea) y une el contacto en una línea.

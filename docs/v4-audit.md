@@ -261,3 +261,12 @@ There are no new animations.
 9. **Reviews:** when approving reviews, add the destination wherever you know it. Reviews then appear on that destination's page.
 10. **Contacto:** decide what `ayuda@` is for, or remove it from the page (`siteConfig.helpEmail`).
 11. **Package durations:** fill in a real duration where one exists. Cards show it automatically.
+
+---
+
+## 15. Third pass: quotation PDF (owner approved the wording on 2026-10-01)
+- **"Importante" block:** every quotation PDF now carries it. It covers the rate validity date (from the quote's `validez`), destination charges not included unless stated, change, cancellation and refund conditions per supplier, and no charge until the customer accepts and pays.
+  - The wording lives in `quotationNotices()` (`src/lib/quotation-types.ts`) and is covered by `tests/quotation-notices.test.mjs`.
+- **Pre-existing PDF bug fixed:** quotation and invoice PDFs rendered notes and footers double-spaced, because react-pdf 4 does not treat a unitless `lineHeight` as a multiplier. On a typical quotation this pushed the footer onto an otherwise empty second page. Line heights are now absolute, and the quotation footer is one contact line kept together.
+- **Invoice status:** the invoice PDF shows the status label ("Emitida") instead of the raw value ("emitida").
+- **Verified by rendering both PDFs** from the real components with sample data. A two-item quotation with notes fits on one page.

@@ -2,8 +2,10 @@ import "server-only";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { Document, Image, Page, StyleSheet, Text, View, renderToBuffer } from "@react-pdf/renderer";
-import { formatQuotationAmount, type Quotation, type QuotationItem } from "@/lib/quotation-types";
+import { formatQuotationAmount, quotationNotices, type Quotation, type QuotationItem } from "@/lib/quotation-types";
 
+// react-pdf 4 does not apply a unitless lineHeight as a multiplier here (lines came out double-spaced and
+// pushed the footer to a second page), so line heights are absolute.
 const styles = StyleSheet.create({
   page: { padding: 42, fontFamily: "Helvetica", fontSize: 9, color: "#12161C" },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", paddingBottom: 22, borderBottom: "2 solid #1656D6" },
@@ -27,9 +29,11 @@ const styles = StyleSheet.create({
   totalBox: { marginTop: 16, marginLeft: "auto", width: 220, padding: 14, backgroundColor: "#1656D6", color: "#FFFFFF" },
   totalLabel: { fontSize: 9, marginBottom: 4 },
   total: { fontSize: 18, fontFamily: "Helvetica-Bold" },
-  notes: { backgroundColor: "#F5F7F8", padding: 12, lineHeight: 1.4 },
-  footer: { marginTop: 30, paddingTop: 12, borderTop: "1 solid #E4E8EB", color: "#5A6672", lineHeight: 1.5 },
+  notes: { backgroundColor: "#F5F7F8", padding: 12, lineHeight: "13pt" },
+  footer: { marginTop: 20, paddingTop: 10, borderTop: "1 solid #E4E8EB", color: "#5A6672", lineHeight: "13pt" },
   fine: { marginTop: 8, fontSize: 8, color: "#5A6672" },
+  notice: { border: "1 solid #E4E8EB", borderLeft: "3 solid #1656D6", paddingHorizontal: 12, paddingTop: 10, paddingBottom: 6 },
+  noticeLine: { marginBottom: 4, lineHeight: "13pt" },
 });
 
 function PdfDocument({ quotation, items }: { quotation: Quotation; items: QuotationItem[] }) {
@@ -50,7 +54,8 @@ function PdfDocument({ quotation, items }: { quotation: Quotation; items: Quotat
       </View>
       <View style={styles.section}><Text style={styles.sectionTitle}>Ítems de la cotización</Text><View style={styles.table}><View style={[styles.tableRow, styles.tableHead]}><Text style={styles.description}>Descripción</Text><Text style={styles.type}>Tipo</Text><Text style={styles.quantity}>Cantidad</Text><Text style={styles.unit}>Precio unitario</Text><Text style={styles.subtotal}>Subtotal</Text></View>{items.map((item, index) => <View style={styles.tableRow} key={item.id ?? `${item.descripcion}-${index}`}><Text style={styles.description}>{item.descripcion}</Text><Text style={styles.type}>{item.tipo}</Text><Text style={styles.quantity}>{item.cantidad}</Text><Text style={styles.unit}>{formatQuotationAmount(item.precio_unitario, quotation.moneda)}</Text><Text style={styles.subtotal}>{formatQuotationAmount(item.cantidad * item.precio_unitario, quotation.moneda)}</Text></View>)}</View><View style={styles.totalBox}><Text style={styles.totalLabel}>Total referencial ({quotation.moneda})</Text><Text style={styles.total}>{formatQuotationAmount(quotation.total, quotation.moneda)}</Text></View></View>
       {quotation.notas ? <View style={styles.section}><Text style={styles.sectionTitle}>Notas</Text><Text style={styles.notes}>{quotation.notas}</Text></View> : null}
-      <View style={styles.footer}><Text>Los precios indicados son referenciales y están sujetos a confirmación.</Text><Text>Para consultar su cotización, comuníquese con su asesor de viatour.</Text><Text>WhatsApp: +504 8866-8704 | soporte@miviatour.com</Text><Text style={styles.fine}>viatour | asesores de viaje</Text></View>
+      <View style={styles.section}><Text style={styles.sectionTitle} minPresenceAhead={80}>Importante</Text><View style={styles.notice} wrap={false}>{quotationNotices(expiration).map(line => <Text key={line} style={styles.noticeLine}>• {line}</Text>)}</View></View>
+      <View style={styles.footer} wrap={false}><Text>Para consultar su cotización, comuníquese con su asesor de viatour: WhatsApp +504 8866-8704 | soporte@miviatour.com</Text><Text style={styles.fine}>viatour | asesores de viaje</Text></View>
     </Page>
   </Document>;
 }
