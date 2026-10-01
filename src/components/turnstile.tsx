@@ -110,7 +110,7 @@ export function Turnstile({ onToken }: { onToken: (token: string) => void; reset
       if (!consumers.size) { clearTimeout(timer); removeWidget(); }
     };
   }, [onToken]);
-  return <>{loadScript && <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" onReady={render} />}<div ref={element} className="min-w-0 max-h-0 overflow-hidden data-interactive:max-h-none data-interactive:overflow-visible" aria-label="Verificación de seguridad" /></>;
+  return <>{loadScript && <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" onReady={render} />}<div ref={element} className="min-w-0 max-h-0 overflow-hidden data-interactive:max-h-none data-interactive:overflow-visible" role="group" aria-label="Verificación de seguridad" /></>;
 }
 
 // One hook per form: the submit button keeps its real label, and a submission made before

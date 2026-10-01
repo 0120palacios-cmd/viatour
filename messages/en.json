@@ -628,6 +628,10 @@
     "packageFor": "Ideal for",
     "reviewsPolicyTitle": "How we publish reviews",
     "reviewsPolicyBody": "Every review is checked before it is published. Tap a rating to see only those reviews, including the lowest.",
+    "portalBenefitsTitle": "Your whole trip in one place",
+    "portalSecurity": "For your security, we will send a verification code to the email registered on your reservation.",
+    "portalHelpTitle": "Can't find your booking code?",
+    "portalHelpBody": "Message us on WhatsApp and your advisor will help you sign in.",
     "travellersSummary": "{adults, plural, one {# adult} other {# adults}}{children, plural, =0 {} one {, # child} other {, # children}}"
   }
 }

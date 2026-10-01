@@ -628,6 +628,10 @@
     "packageFor": "Ideal para",
     "reviewsPolicyTitle": "Cómo publicamos las opiniones",
     "reviewsPolicyBody": "Cada opinión se revisa antes de publicarse. Toque una calificación para ver solo esas opiniones, también las más bajas.",
+    "portalBenefitsTitle": "Todo su viaje en un solo lugar",
+    "portalSecurity": "Por su seguridad, le enviaremos un código de verificación al correo registrado en su reserva.",
+    "portalHelpTitle": "¿No encuentra su código de reserva?",
+    "portalHelpBody": "Escríbanos por WhatsApp y su asesor le ayuda a ingresar.",
     "travellersSummary": "{adults, plural, one {# adulto} other {# adultos}}{children, plural, =0 {} one {, # niño} other {, # niños}}"
   }
 }

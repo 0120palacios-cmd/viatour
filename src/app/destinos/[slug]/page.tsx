@@ -132,7 +132,7 @@ export default async function Page({ params }: Props) {
           </section>
         </div>
       </div></div>
-      <section className="container-site py-12 sm:py-24" aria-labelledby="destination-packages">
+      <section className="container-site py-12 sm:py-24">
         <h2 id="destination-packages" className="t-h2 mb-8">{t("destinationPackages", { name: item.nombre })}</h2>
         {packages.length ? <PackageGrid layout={packages.length > 3 ? "grid" : "carousel"} items={packages} label={t("destinationPackages", { name: item.nombre })} /> : <div className="space-y-4 rounded-panel border border-line bg-surface p-6 sm:p-8"><p className="t-body text-ink-soft">{t("noDestinationPackages")}</p><Button asChild variant="ghost"><Link href="/paquetes">{ux("allPackages")}<ArrowRight size={18} strokeWidth={1.75} aria-hidden="true" /></Link></Button></div>}
       </section>

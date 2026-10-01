@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { WhatsAppLink } from "./whatsapp-link";
 
 export function WhatsAppFloat() {
+  const t = useTranslations("common");
   const [footerVisible, setFooterVisible] = useState(true);
   // Reading down the page, the button steps aside so it never sits on top of copy;
   // any upward scroll (the "looking for something" gesture) brings it straight back.
@@ -34,5 +36,6 @@ export function WhatsAppFloat() {
   // The footer has its own WhatsApp action. Remove this one from tab order when
   // the footer approaches, preventing overlap at any screen size.
   if (footerVisible) return null;
-  return <div inert={tucked} data-tucked={tucked || undefined} className="whatsapp-float fixed z-20"><WhatsAppLink placement="floating" compact iconOnlyMobile /></div>;
+  // A labelled landmark, so the floating action is not loose content outside the page regions.
+  return <aside aria-label={t("whatsapp")} inert={tucked} data-tucked={tucked || undefined} className="whatsapp-float fixed z-20"><WhatsAppLink placement="floating" compact iconOnlyMobile /></aside>;
 }
