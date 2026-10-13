@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { itinerary, parser } from './flight-support.mjs';
 
-const fixture = name => fs.readFileSync(`tests/fixtures/${name}`, 'utf8');
+const fixture = name => fs.readFileSync(`tests/fixtures/${name}`, 'utf8').replace(/\r\n/g, '\n');
 const parse = (text, referencia = '2026-10-12') => JSON.parse(JSON.stringify(parser.parseItinerary(text, { referencia })));
 const route = journey => journey.segmentos.map(segment => `${segment.origen}-${segment.destino}`).join(' ');
 const plain = value => JSON.parse(JSON.stringify(value));

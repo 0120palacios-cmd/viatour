@@ -56,3 +56,14 @@ select count(*) as aceptadas from public.quotations where estado = 'aceptada';
 -- 12. Disparadores existentes en quotations y quotation_items (para saber si algo más los modifica).
 select event_object_table, trigger_name, action_timing, event_manipulation from information_schema.triggers
 where event_object_schema = 'public' and event_object_table in ('quotations', 'quotation_items');
+
+-- 13. Facturación: columnas actuales y restricciones de invoices (para docs/sql/invoices_v5.sql). El panel
+--     crea facturas con estado 'borrador'; si una restricción de estado no lo incluye, avise antes de migrar.
+select column_name, data_type, is_nullable, column_default from information_schema.columns
+where table_schema = 'public' and table_name = 'invoices' order by ordinal_position;
+select conname, pg_get_constraintdef(oid) as definicion from pg_constraint where conrelid = 'public.invoices'::regclass;
+select policyname, cmd, roles, qual, with_check from pg_policies where schemaname = 'public' and tablename = 'invoices';
+
+-- 14. Restricciones de quotations y quotation_items (estado, moneda, cantidades) y sus políticas.
+select conrelid::regclass as tabla, conname, pg_get_constraintdef(oid) as definicion from pg_constraint
+where conrelid in ('public.quotations'::regclass, 'public.quotation_items'::regclass, 'public.reservations'::regclass) and contype = 'c';

@@ -13,6 +13,7 @@ import { captureNotificationFailure } from "@/lib/notifications";
 import { customerWhatsappHref } from "@/lib/lead-admin";
 import { leadSegments, normalizePhone } from "@/lib/lead-validation";
 import { totalAmount } from "@/lib/money";
+import { isMissingInvoiceColumn } from "@/lib/invoice-query";
 
 export type ReservationActionState = { error?: string; success?: string; reservationId?: string };
 export type InvoiceActionState = { error?: string; success?: string; whatsappUrl?: string; invoiceId?: string };
@@ -165,6 +166,7 @@ export async function createInvoice(_: InvoiceActionState, form: FormData): Prom
     items: record.items, total: record.reservation.total, moneda: record.reservation.moneda,
     fecha_emision: new Date().toISOString().slice(0, 10), fecha_vencimiento, estado: "borrador", notas: record.reservation.notas,
   }).select("id").single();
+  if (isMissingInvoiceColumn(result.error)) return { error: "La facturación necesita las columnas de docs/sql/invoices_v5.sql en Supabase. No se creó ninguna factura." };
   if (result.error || !result.data) return { error: "No se pudo crear la factura." };
   refreshReservationPaths(reservationId);
   return { success: "Factura creada.", invoiceId: String(result.data.id) };

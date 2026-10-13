@@ -3,15 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, ImagePlus, Plus, Star, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { emptyHotel, emptyRoom, mealPlans, nights, type HotelPhoto, type HotelRoom, type HotelStay, type QuotationDetails, type Refundability, type TaxState } from "@/lib/quotation-details";
+import { emptyHotel, emptyRoom, hotelInclusionSuggestions, mealPlans, nights, type HotelPhoto, type HotelRoom, type HotelStay, type QuotationDetails, type Refundability, type TaxState } from "@/lib/quotation-details";
 import { AreaField, Field, IconButton, inputClass, Notice, Section, SelectField, SmallButton, TextField } from "./fields";
+import { InclusionsEditor } from "./inclusions-editor";
 
 type Props = { details: QuotationDetails; update: (change: (details: QuotationDetails) => QuotationDetails) => void; recentHotels: HotelStay[] };
 
 const bucket = "quotation-media";
 const maxSourceBytes = 25 * 1024 * 1024;
 const maxSide = 1600;
-const amenitySuggestions = ["Wi-Fi", "Piscina", "Desayuno buffet", "Gimnasio", "Spa", "Acceso a la playa", "Estacionamiento", "Traslado al aeropuerto", "Kids club", "Restaurante"];
 
 // Re-encodes in the browser: applies the camera orientation, limits the long side to 1600 px and
 // produces a JPEG (the PDF renderer cannot embed WebP or HEIC). Only the resized copy is uploaded.
@@ -123,13 +123,12 @@ function HotelEditor({ hotel, index, onChange, onRemove, removable, recentHotels
   const set = <K extends keyof HotelStay>(field: K, value: HotelStay[K]) => onChange({ ...hotel, [field]: value });
   const stay = nights(hotel.checkIn, hotel.checkOut);
   const recent = recentHotels.find(item => item.nombre.trim().toLowerCase() === hotel.nombre.trim().toLowerCase() && item.id !== hotel.id);
-  const amenities = hotel.amenidades.split("\n").map(item => item.trim()).filter(Boolean);
   return <div className="space-y-4 rounded-card border border-line p-3 sm:p-4">
     <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="font-semibold text-ink">Hotel {index + 1}{hotel.nombre ? `: ${hotel.nombre}` : ""}</h3>{removable ? <SmallButton tone="danger" onClick={onRemove}><Trash2 size={16} strokeWidth={2} aria-hidden="true" />Quitar hotel</SmallButton> : null}</div>
     <div className="grid gap-3 sm:grid-cols-2">
       <Field label="Nombre del hotel">{id => <><input id={id} list="recent-hotels" className={inputClass} value={hotel.nombre} maxLength={160} onChange={event => set("nombre", event.target.value)} /><datalist id="recent-hotels">{recentHotels.map(item => <option key={item.id} value={item.nombre} />)}</datalist></>}</Field>
       <TextField label="Destino" value={hotel.destino} onChange={value => set("destino", value)} maxLength={160} placeholder="Cancún, México" />
-      {recent ? <div className="sm:col-span-2"><Notice>Este hotel aparece en una cotización anterior. <button type="button" className="font-semibold text-brand underline underline-offset-4" onClick={() => onChange({ ...hotel, destino: hotel.destino || recent.destino, direccion: recent.direccion, amenidades: recent.amenidades, planComidas: hotel.planComidas || recent.planComidas, impuestos: recent.impuestos, cargoResort: recent.cargoResort, fotos: recent.fotos })}>Usar su dirección, servicios y fotos</button>. Fechas, habitaciones y condiciones no se copian.</Notice></div> : null}
+      {recent ? <div className="sm:col-span-2"><Notice>Este hotel aparece en una cotización anterior. <button type="button" className="font-semibold text-brand underline underline-offset-4" onClick={() => onChange({ ...hotel, destino: hotel.destino || recent.destino, direccion: recent.direccion, amenidades: recent.amenidades, inclusiones: recent.inclusiones.map(item => ({ ...item })), inclusionesConfirmadas: false, planComidas: hotel.planComidas || recent.planComidas, impuestos: recent.impuestos, cargoResort: recent.cargoResort, fotos: recent.fotos })}>Usar su dirección, servicios y fotos</button>. Fechas, habitaciones y condiciones no se copian.</Notice></div> : null}
       <TextField label="Dirección o zona" value={hotel.direccion} onChange={value => set("direccion", value)} maxLength={300} className="sm:col-span-2" />
       <TextField label="Entrada (check-in)" type="date" value={hotel.checkIn} onChange={value => set("checkIn", value)} />
       <TextField label="Salida (check-out)" type="date" value={hotel.checkOut} onChange={value => set("checkOut", value)} hint={stay ? `${stay} ${stay === 1 ? "noche" : "noches"}` : hotel.checkIn && hotel.checkOut ? "La salida debe ser posterior a la entrada." : undefined} />
@@ -143,8 +142,8 @@ function HotelEditor({ hotel, index, onChange, onRemove, removable, recentHotels
       <SelectField<TaxState> label="Impuestos del hotel" value={hotel.impuestos} onChange={value => set("impuestos", value)} options={[["incluidos", "Incluidos"], ["no_incluidos", "No incluidos"], ["parcial", "Incluidos parcialmente"]]} placeholder="Sin indicar" />
       <TextField label="Cargos que se pagan en el hotel" value={hotel.cargoResort} onChange={value => set("cargoResort", value)} maxLength={300} placeholder="Cargo de resort de USD 25 por noche" hint="Opcional" />
       <SelectField<Refundability> label="Reembolso" value={hotel.reembolso} onChange={value => set("reembolso", value)} options={[["reembolsable", "Reembolsable"], ["parcial", "Reembolso parcial"], ["no_reembolsable", "No reembolsable"]]} placeholder="Sin indicar" />
-      <AreaField label="Servicios incluidos (uno por línea)" value={hotel.amenidades} onChange={value => set("amenidades", value.slice(0, 1500))} rows={4} className="sm:col-span-2" />
-      <div className="flex flex-wrap gap-1.5 sm:col-span-2">{amenitySuggestions.filter(item => !amenities.includes(item)).map(item => <SmallButton key={item} className="min-h-8 px-2 text-[13px]" onClick={() => set("amenidades", [...amenities, item].join("\n"))}><Plus size={14} strokeWidth={2} aria-hidden="true" />{item}</SmallButton>)}</div>
+      <div className="sm:col-span-2"><InclusionsEditor title="¿Qué incluye su estadía?" items={hotel.inclusiones} confirmed={hotel.inclusionesConfirmadas} suggestions={hotelInclusionSuggestions} onChange={(inclusiones, inclusionesConfirmadas) => onChange({ ...hotel, inclusiones, inclusionesConfirmadas })} /></div>
+      {hotel.amenidades ? <AreaField label="Servicios en texto libre (cotizaciones anteriores)" value={hotel.amenidades} onChange={value => set("amenidades", value.slice(0, 1500))} rows={3} className="sm:col-span-2" hint="Se muestran en el PDF solo si la lista de arriba está vacía. Páselos a la lista para indicar si están incluidos." /> : null}
       <AreaField label="Política de cancelación" value={hotel.cancelacion} onChange={value => set("cancelacion", value.slice(0, 1000))} rows={2} className="sm:col-span-2" />
       <AreaField label="Condiciones especiales" value={hotel.condiciones} onChange={value => set("condiciones", value.slice(0, 1500))} rows={2} className="sm:col-span-2" hint="Opcional: depósito de garantía, edad mínima, horarios de llegada" />
     </div>

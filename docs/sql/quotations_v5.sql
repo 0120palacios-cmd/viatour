@@ -22,7 +22,7 @@ alter table public.quotations add column if not exists version integer not null 
 alter table public.quotations add column if not exists version_aceptada integer;
 
 do $$ begin
-  alter table public.quotations add constraint quotations_tipo_check check (tipo in ('general', 'vuelo', 'hotel', 'paquete'));
+  alter table public.quotations add constraint quotations_tipo_check check (tipo in ('general', 'vuelo', 'hotel', 'ferry', 'paquete'));
 exception when duplicate_object then null; end $$;
 
 -- Límite de tamaño de los detalles (el servidor ya los recorta; esto es una segunda barrera).

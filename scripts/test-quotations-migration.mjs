@@ -27,6 +27,9 @@ create table public.customers (id uuid primary key default gen_random_uuid(), no
 create table public.quotations (id uuid primary key default gen_random_uuid(), codigo text unique not null, customer_id uuid references public.customers(id), cliente_nombre text not null, cliente_email text not null, cliente_telefono text, destino text not null, moneda text not null check (moneda in ('USD','HNL')), validez date not null, notas text, total numeric(12,2) not null default 0, estado text not null default 'borrador' check (estado in ('borrador','enviada','aceptada','rechazada','expirada')), agente_id uuid not null, created_at timestamptz not null default now(), updated_at timestamptz not null default now());
 create table public.quotation_items (id uuid primary key default gen_random_uuid(), quotation_id uuid not null references public.quotations(id) on delete cascade, descripcion text not null, tipo text, cantidad integer not null default 1 check (cantidad > 0), precio_unitario numeric not null default 0 check (precio_unitario >= 0), orden integer not null default 0);
 create table public.reservations (id uuid primary key default gen_random_uuid(), quotation_id uuid references public.quotations(id), codigo text);
+create table public.invoices (id uuid primary key default gen_random_uuid(), numero text not null default 'FAC-' || substr(md5(random()::text), 1, 6), reservation_id uuid not null references public.reservations(id), cliente_nombre text not null, moneda text not null default 'USD', total numeric not null default 0, estado text not null default 'emitida', fecha_emision date not null default current_date, fecha_vencimiento date, notas text, created_at timestamptz not null default now(), updated_at timestamptz not null default now());
+alter table public.invoices enable row level security;
+create policy i_admin on public.invoices for all to authenticated using (public.is_admin()) with check (public.is_admin());
 alter table public.reservations enable row level security;
 create policy r_admin on public.reservations for all to authenticated using (public.is_admin()) with check (public.is_admin());
 alter table public.quotations enable row level security; alter table public.quotation_items enable row level security;
@@ -75,7 +78,11 @@ await check('verify script runs and reports no lost or changed quotations', asyn
   assert.equal((await db.query('select count(*)::int as n from backup_v5.quotations b where not exists (select 1 from public.quotations q where q.id = b.id)')).rows[0].n, 0);
 });
 await check('preflight script runs (read-only)', async () => { await db.exec(sql('quotations_v5_preflight.sql')); });
-await check('tipo check rejects unknown types', async () => { await assert.rejects(db.query(`update public.quotations set tipo = 'crucero' where codigo = 'COT-A'`)); });
+await check('tipo check rejects unknown types and accepts ferry', async () => {
+  await assert.rejects(db.query(`update public.quotations set tipo = 'crucero' where codigo = 'COT-A'`));
+  await db.query(`update public.quotations set tipo = 'ferry' where codigo = 'COT-A'`);
+  await db.query(`update public.quotations set tipo = 'general' where codigo = 'COT-A'`);
+});
 await check('detalles larger than 256 KB is rejected', async () => { await assert.rejects(db.query(`update public.quotations set detalles = jsonb_build_object('x', repeat(md5(random()::text), 20000)) where codigo = 'COT-A'`)); });
 await check('admin can write structured details through RLS', async () => {
   const result = await as('authenticated', ADMIN, `update public.quotations set tipo = 'vuelo', detalles = '{"refCreacion":"abc12345"}', vence_en = now() + interval '1 day' where codigo = 'COT-A' returning id`);
@@ -195,6 +202,23 @@ await check('unused photos older than 7 days can be deleted; used, recent or by 
   assert.deepEqual(deleted, [path(1)]);
 });
 
+await check('invoices_v5 adds the missing columns, keeps rows, re-runs safely and rolls back', async () => {
+  const reservation = (await db.query("insert into public.reservations (codigo) values ('RES-INV') returning id")).rows[0].id;
+  await db.query("insert into public.invoices (reservation_id, cliente_nombre, total) values ($1, 'Cliente', 125.5)", [reservation]);
+  const invoices = sql('invoices_v5.sql');
+  await db.exec(invoices);
+  await db.exec(invoices);
+  const row = (await db.query('select items, cliente_email, cliente_telefono, total::text, estado from public.invoices')).rows[0];
+  assert.deepEqual([row.items, row.cliente_email, row.cliente_telefono, row.total, row.estado], [[], null, null, '125.5', 'emitida']);
+  const created = await as('authenticated', ADMIN, "insert into public.invoices (reservation_id, cliente_nombre, cliente_email, items, total, estado) values ($1, 'C', 'c@example.com', $2::jsonb, 10, 'borrador') returning id", [reservation, JSON.stringify([{ descripcion: 'x' }])]);
+  assert.equal(created.rows.length, 1);
+  await assert.rejects(as('authenticated', USER, "insert into public.invoices (reservation_id, cliente_nombre) values ($1, 'X')", [reservation]));
+  const rollback = invoices.split('\n').filter(line => line.startsWith('--   ')).map(line => line.slice(5)).join('\n');
+  await db.exec(rollback);
+  assert.equal((await db.query("select count(*)::int as n from information_schema.columns where table_name = 'invoices' and column_name = 'items'")).rows[0].n, 0);
+  assert.equal((await db.query('select count(*)::int as n from public.invoices')).rows[0].n, 2);
+  await db.exec(invoices);
+});
 await check('rollback script restores the original columns, then the migration re-applies', async () => {
   const rollback = migration.split('\n').filter(line => line.startsWith('--   ')).map(line => line.slice(5)).join('\n');
   await db.exec(rollback);

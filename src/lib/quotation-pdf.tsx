@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { Circle, Document, Font, Image, Link, Page, Path, StyleSheet, Svg, Text, View, renderToBuffer } from "@react-pdf/renderer";
 import { airportName, cityName, dayDifference, formatDuration, itineraryType, journeyAirlines, journeyDuration, journeyRoute, journeyTitle, layoverMinutes, segmentDuration, type FlightJourney, type FlightSegment } from "@/lib/flight-itinerary";
-import { derivedTripDates, formatInstant, isExpired, nights, pricingSummary, quotationKindLabels, zoneLabel, type BaggageAllowance, type FareRules, type HotelStay } from "@/lib/quotation-details";
+import { derivedTripDates, formatInstant, isExpired, nights, pricingSummary, quotationKindLabels, zoneLabel, type BaggageAllowance, type FareRules, type FerryDetails, type HotelStay, type Inclusion } from "@/lib/quotation-details";
 import type { QuotationRecord } from "@/lib/quotation-data";
 import { isDiscount, lineAmount } from "@/lib/money";
 import { formatQuotationAmount, quotationNotices } from "@/lib/quotation-types";
@@ -133,6 +133,8 @@ function makeStyles(compact: boolean) {
     term: { flexDirection: "row", marginBottom: compact ? 1 : 2 },
     termNumber: { width: 11, fontWeight: 700, color: color.deep, ...tx(7.1, {}, 1.26) },
     termText: { flex: 1, ...tx(7.1, {}, 1.26) },
+    inclusions: { marginTop: 4, paddingTop: 4, borderTop: `0.5 solid ${color.line}` },
+    inclusionsTitle: { fontWeight: 800, color: color.deep, marginBottom: 2, ...tx(8) },
     remarks: { backgroundColor: color.surface, borderRadius: 4, padding: 6, ...tx(7.8) },
     cta: { flexDirection: "row", alignItems: "center", gap: 7, borderTop: `1 solid ${color.line}`, paddingTop: compact ? 4 : 6 },
     ctaText: { fontWeight: 600, flex: 1, color: color.ink, textDecoration: "none", ...tx(8.2) },
@@ -143,7 +145,7 @@ function makeStyles(compact: boolean) {
 type Styles = ReturnType<typeof makeStyles>;
 
 // Lucide icon paths (24 x 24, stroke 2), the same icon family as the site.
-function Icon({ name, size = 9, stroke = color.soft }: { name: "check" | "x" | "plus" | "clock" | "plane" | "message"; size?: number; stroke?: string }) {
+function Icon({ name, size = 9, stroke = color.soft }: { name: "check" | "x" | "plus" | "clock" | "plane" | "message" | "ship"; size?: number; stroke?: string }) {
   const common = { stroke, strokeWidth: 2, fill: "none", strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
   return <Svg width={size} height={size} viewBox="0 0 24 24">
     {name === "check" && <Path d="M20 6 9 17l-5-5" {...common} />}
@@ -152,6 +154,7 @@ function Icon({ name, size = 9, stroke = color.soft }: { name: "check" | "x" | "
     {name === "clock" && <><Circle cx="12" cy="12" r="10" {...common} /><Path d="M12 6v6l4 2" {...common} /></>}
     {name === "plane" && <Path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" {...common} />}
     {name === "message" && <Path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" {...common} />}
+    {name === "ship" && <><Path d="M12 10.189V14" {...common} /><Path d="M12 2v3" {...common} /><Path d="M19 13V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6" {...common} /><Path d="M19.38 20A11.6 11.6 0 0 0 21 14l-8.188-3.639a2 2 0 0 0-1.624 0L3 14a11.6 11.6 0 0 0 2.81 7.76" {...common} /><Path d="M2 21c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1s1.2 1 2.5 1c2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1" {...common} /></>}
   </Svg>;
 }
 
@@ -250,6 +253,55 @@ function BaggageCard({ allowances, styles }: { allowances: BaggageAllowance[]; s
 
 export type PdfPhoto = { data: Buffer; format: "jpg" | "png" };
 
+// Included services next to what is not included or costs extra, so the customer never has to infer it.
+function Inclusions({ title, items, styles }: { title: string; items: Inclusion[]; styles: Styles }) {
+  const decided = items.filter(item => item.estado);
+  if (!decided.length) return null;
+  const included = decided.filter(item => item.estado === "incluido");
+  const other = decided.filter(item => item.estado !== "incluido");
+  const line = (item: Inclusion) => <View key={item.id} style={styles.bag}>
+    <View style={styles.bagIcon}><Icon name={item.estado === "incluido" ? "check" : item.estado === "con_cargo" ? "plus" : "x"} size={7.5} stroke={item.estado === "incluido" ? color.success : color.soft} /></View>
+    <Text style={styles.amenityText}><Text style={{ fontWeight: 600 }}>{item.nombre}</Text>{item.estado === "con_cargo" ? " (con cargo adicional)" : item.estado === "no_incluido" ? " (no incluido)" : ""}{item.detalle ? `: ${item.detalle}` : ""}</Text>
+  </View>;
+  return <View style={styles.inclusions} wrap={false}>
+    <Text style={styles.inclusionsTitle}>{title}</Text>
+    <View style={styles.columns}>
+      {included.length ? <View style={{ flex: 1 }}><Text style={styles.label}>Incluido</Text>{included.map(line)}</View> : null}
+      {other.length ? <View style={{ flex: 1 }}><Text style={styles.label}>No incluido o con cargo</Text>{other.map(line)}</View> : null}
+    </View>
+  </View>;
+}
+
+function Ferry({ ferry, styles }: { ferry: FerryDetails; styles: Styles }) {
+  const titles = { ida: "Ida", regreso: "Regreso", tramo: "Trayecto" } as const;
+  const vehicles = ferry.vehiculos.map(vehicle => `${vehicle.cantidad} × ${vehicle.tipo}`).join(", ");
+  const rows = [["Clase", ferry.clase], ["Asiento", ferry.asiento], ["Cabina", ferry.cabina], ["Vehículos", vehicles], ["Equipaje incluido", ferry.equipajeIncluido], ["Equipaje adicional", ferry.equipajeAdicional], ["Cambios", ferry.cambios], ["Reembolso", refundLabel[ferry.reembolso]]].filter(([, value]) => value);
+  return <View>
+    {ferry.legs.map(leg => {
+      const days = dayDifference(leg.salidaFecha, leg.llegadaFecha) ?? 0;
+      return <View key={leg.id} style={styles.journey} wrap={false}>
+        <View style={styles.journeyHead}>
+          <Text><Text style={styles.journeyTitle}>{titles[leg.tipo]}</Text><Text style={styles.journeyDate}>{`   ${longDate(leg.salidaFecha)}`}</Text></Text>
+          <Text style={styles.journeyFacts}>{[leg.duracionMin ? `Travesía de ${formatDuration(leg.duracionMin)}` : "", leg.llegadaFecha && leg.llegadaFecha !== leg.salidaFecha ? `Llega el ${longDate(leg.llegadaFecha)}` : ""].filter(Boolean).join(" · ")}</Text>
+        </View>
+        <View style={styles.journeyBody}><View style={styles.segment}>
+          <View style={styles.point}><Text style={styles.time}>{leg.salidaHora}</Text><Text style={styles.city}>{leg.origenPuerto}</Text></View>
+          <View style={styles.middle}>{leg.duracionMin ? <Text style={styles.duration}>{formatDuration(leg.duracionMin)}</Text> : null}<View style={styles.track}><View style={styles.trackLine} /><Icon name="ship" size={9} stroke={color.deep} /><View style={styles.trackLine} /></View></View>
+          <View style={styles.pointRight}><Text style={styles.time}>{leg.llegadaHora || " "}{days > 0 ? <Text style={styles.plus}>{` +${days}`}</Text> : null}</Text><Text style={styles.city}>{leg.destinoPuerto}</Text></View>
+          <View style={styles.flightMeta}><Text style={styles.flightNumber}>{leg.operador || "Naviera por confirmar"}</Text>{leg.embarcacion ? <Text style={styles.flightDetail}>{leg.embarcacion}</Text> : null}{ferry.clase ? <Text style={styles.flightDetail}>Clase {ferry.clase}</Text> : null}</View>
+        </View></View>
+      </View>;
+    })}
+    {rows.length ? <View style={[styles.columns, { marginBottom: 6 }]} wrap={false}><View style={styles.card}><Text style={styles.cardTitle}>Clase, equipaje y condiciones</Text><View style={styles.grid}>{rows.map(([key, value]) => <View key={key} style={styles.gridCell} wrap={false}><Text style={styles.gridKey}>{key}</Text><Text style={styles.gridValue}>{value}</Text></View>)}</View></View></View> : null}
+    <Inclusions title="¿Qué incluye el viaje en ferry?" items={ferry.inclusiones} styles={styles} />
+    {ferry.embarque || ferry.documentos || ferry.cancelacion ? <View style={styles.remarks} wrap={false}>
+      {ferry.embarque ? <Text style={styles.body}><Text style={{ fontWeight: 700 }}>Embarque: </Text>{ferry.embarque}</Text> : null}
+      {ferry.documentos ? <Text style={styles.body}><Text style={{ fontWeight: 700 }}>Documentos: </Text>{ferry.documentos}</Text> : null}
+      {ferry.cancelacion ? <Text style={styles.body}><Text style={{ fontWeight: 700 }}>Cancelación: </Text>{ferry.cancelacion}</Text> : null}
+    </View> : null}
+  </View>;
+}
+
 function Hotel({ hotel, photos, styles }: { hotel: HotelStay; photos: Map<string, PdfPhoto>; styles: Styles }) {
   const available = hotel.fotos.filter(photo => photos.has(photo.path));
   const [primary, ...others] = available;
@@ -274,9 +326,10 @@ function Hotel({ hotel, photos, styles }: { hotel: HotelStay; photos: Map<string
       </View>
       {hotel.habitaciones.map(room => <Text key={room.id} style={styles.body}><Text style={styles.bodyBold}>{room.cantidad} × {room.categoria || "Habitación"}</Text>{[room.camas, people(room.adultos, room.ninos, room.edadesNinos)].filter(Boolean).map(part => ` · ${part}`).join("")}</Text>)}
       {hotel.planComidas || hotel.impuestos || hotel.cargoResort || hotel.reembolso ? <Text style={[styles.body, { marginTop: 2 }]}>{[hotel.planComidas ? `Plan: ${hotel.planComidas}` : "", taxLabel[hotel.impuestos], hotel.cargoResort, refundLabel[hotel.reembolso]].filter(Boolean).join(" · ")}</Text> : null}
-      {amenities.length ? <View style={[styles.amenities, { marginTop: 3 }]}>{amenities.map(item => <View key={item} style={styles.amenity}><Icon name="check" size={7} stroke={color.success} /><Text style={styles.amenityText}>{item}</Text></View>)}</View> : null}
+      {!hotel.inclusiones.some(item => item.estado) && amenities.length ? <View style={[styles.amenities, { marginTop: 3 }]}>{amenities.map(item => <View key={item} style={styles.amenity}><Icon name="check" size={7} stroke={color.success} /><Text style={styles.amenityText}>{item}</Text></View>)}</View> : null}
       {hotel.cancelacion ? <Text style={[styles.small, { marginTop: 3 }]}><Text style={{ fontWeight: 700, color: color.ink }}>Cancelación: </Text>{hotel.cancelacion}</Text> : null}
       {hotel.condiciones ? <Text style={styles.small}>{hotel.condiciones}</Text> : null}
+      <Inclusions title="¿Qué incluye su estadía?" items={hotel.inclusiones} styles={styles} />
     </View>
   </View>;
 }
@@ -354,6 +407,7 @@ function QuotationDocument({ record, options, compact }: { record: QuotationReco
   const journeys = details.vuelos.journeys.filter(journey => journey.segmentos.length);
   const showFlights = (kind === "vuelo" || kind === "paquete") && journeys.length > 0;
   const showHotels = (kind === "hotel" || kind === "paquete") && details.hoteles.length > 0;
+  const showFerry = (kind === "ferry" || kind === "paquete") && details.ferry.legs.length > 0;
   const trip = derivedTripDates(details);
   const summary = pricingSummary(record.items, details);
   const travellers = passengerSummary(details);
@@ -412,6 +466,10 @@ function QuotationDocument({ record, options, compact }: { record: QuotationReco
           <Hotel hotel={details.hoteles[0]} photos={photos} styles={styles} />
         </View>
         {details.hoteles.slice(1).map(hotel => <Hotel key={hotel.id} hotel={hotel} photos={photos} styles={styles} />)}
+      </View> : null}
+      {showFerry ? <View style={styles.section}>
+        <Text style={styles.sectionTitle} minPresenceAhead={90}>Ferry</Text>
+        <Ferry ferry={details.ferry} styles={styles} />
       </View> : null}
       {details.servicios.length ? <View style={styles.section} wrap={false}>
         <Text style={styles.sectionTitle}>Servicios incluidos</Text>

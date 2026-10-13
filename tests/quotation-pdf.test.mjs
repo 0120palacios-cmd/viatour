@@ -8,7 +8,8 @@ import { samples, photoBuffers, sampleNow } from './fixtures/quotation-samples.m
 // quotation fits on one Letter page; long itineraries continue on a second page instead of shrinking.
 const expectedPages = {
   'vuelo-directo-ida-y-vuelta': 1,
-  'hotel-con-fotos': 1,
+  'hotel-con-fotos': 2,
+  'ferry-ida-y-vuelta': 2,
   'cotizacion-anterior': 1,
   'vuelo-dos-conexiones': 2,
   'vuelo-aerolineas-mixtas': 2,

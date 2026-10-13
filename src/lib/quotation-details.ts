@@ -6,9 +6,9 @@ import { isDiscount, lineCents } from "@/lib/money";
 // browser sends is passed through sanitizeDetails(): unknown keys are dropped, strings are trimmed and
 // capped, numbers are bounded and arrays are limited, so a crafted request cannot store arbitrary JSON.
 
-export const quotationKinds = ["vuelo", "hotel", "paquete", "general"] as const;
+export const quotationKinds = ["vuelo", "hotel", "ferry", "paquete", "general"] as const;
 export type QuotationKind = (typeof quotationKinds)[number];
-export const quotationKindLabels: Record<QuotationKind, string> = { vuelo: "Vuelo", hotel: "Hotel", paquete: "Paquete o combinado", general: "Otros servicios" };
+export const quotationKindLabels: Record<QuotationKind, string> = { vuelo: "Vuelo", hotel: "Hotel", ferry: "Ferry", paquete: "Paquete o combinado", general: "Otros servicios" };
 
 export const defaultZone = "America/Tegucigalpa";
 export const expiryPresets = [2, 6, 12, 24, 48] as const;
@@ -21,7 +21,14 @@ export type FareRules = { id: string; alcance: string; aerolinea: string; operad
 export type HotelRoom = { id: string; categoria: string; camas: string; cantidad: number; adultos: number; ninos: number; edadesNinos: string };
 export type HotelPhoto = { path: string; leyenda: string; ancho: number; alto: number };
 export type TaxState = "incluidos" | "no_incluidos" | "parcial" | "";
-export type HotelStay = { id: string; nombre: string; destino: string; direccion: string; checkIn: string; checkOut: string; habitaciones: HotelRoom[]; planComidas: string; amenidades: string; impuestos: TaxState; cargoResort: string; cancelacion: string; reembolso: Refundability; condiciones: string; fotos: HotelPhoto[] };
+// What a stay or a crossing includes. Each line has an explicit state chosen by the advisor; nothing is
+// assumed from the hotel's or operator's name, category or advertised facilities.
+export type InclusionState = "incluido" | "no_incluido" | "con_cargo" | "";
+export type Inclusion = { id: string; nombre: string; estado: InclusionState; detalle: string };
+export type HotelStay = { id: string; nombre: string; destino: string; direccion: string; checkIn: string; checkOut: string; habitaciones: HotelRoom[]; planComidas: string; amenidades: string; inclusiones: Inclusion[]; inclusionesConfirmadas: boolean; impuestos: TaxState; cargoResort: string; cancelacion: string; reembolso: Refundability; condiciones: string; fotos: HotelPhoto[] };
+export type FerryLeg = { id: string; tipo: "ida" | "regreso" | "tramo"; operador: string; embarcacion: string; origenPuerto: string; destinoPuerto: string; salidaFecha: string; salidaHora: string; llegadaFecha: string; llegadaHora: string; duracionMin: number | null };
+export type FerryVehicle = { id: string; tipo: string; cantidad: number };
+export type FerryDetails = { legs: FerryLeg[]; clase: string; asiento: string; cabina: string; vehiculos: FerryVehicle[]; equipajeIncluido: string; equipajeAdicional: string; inclusiones: Inclusion[]; inclusionesConfirmadas: boolean; cambios: string; cancelacion: string; reembolso: Refundability; embarque: string; documentos: string; confirmado: boolean };
 export type IncludedService = { id: string; tipo: string; descripcion: string };
 
 export type QuotationDetails = {
@@ -35,6 +42,7 @@ export type QuotationDetails = {
   equipaje: BaggageAllowance[];
   equipajeConfirmado: boolean;
   hoteles: HotelStay[];
+  ferry: FerryDetails;
   servicios: IncludedService[];
   pago: { deposito: string; depositoFecha: string; saldoFecha: string; instrucciones: string; precioPorPasajero: boolean };
   validez: { venceEn: string; zona: string; nota: string; limitePago: string; limiteEmision: string };
@@ -49,8 +57,11 @@ export type QuotationDetails = {
   enmiendaDe: string;
 };
 
+export const hotelInclusionSuggestions = ["Desayuno", "Almuerzo", "Cena", "Plan todo incluido", "Bebidas", "Wi-Fi", "Piscina", "Acceso a playa", "Estacionamiento", "Traslados", "Transporte aeropuerto-hotel", "Impuestos", "Propinas", "Actividades recreativas", "Gimnasio", "Spa", "Club infantil", "Servicio a la habitación"];
+export const ferryInclusionSuggestions = ["Equipaje", "Asiento asignado", "Cabina", "Transporte de vehículo", "Comidas", "Bebidas", "Servicios a bordo"];
+export const inclusionStateLabels = { incluido: "Incluido", no_incluido: "No incluido", con_cargo: "Con cargo adicional" } as const;
 export const mealPlans = ["Solo alojamiento", "Desayuno incluido", "Media pensión", "Pensión completa", "Todo incluido"];
-export const itemTypes = ["Tarifa aérea", "Impuestos y tasas", "Hotel", "Traslado", "Tour", "Seguro", "Asistencia", "Equipaje", "Cargo por servicio", "Descuento", "Otro"];
+export const itemTypes = ["Tarifa aérea", "Impuestos y tasas", "Hotel", "Ferry", "Traslado", "Tour", "Seguro", "Asistencia", "Equipaje", "Cargo por servicio", "Descuento", "Otro"];
 export const baggageLabels = { personal: "Artículo personal", mano: "Equipaje de mano", documentado: "Equipaje documentado" } as const;
 
 // Draft wording supplied by the owner on 2026-10-12 as an example; pending legal review before it is
@@ -75,6 +86,14 @@ export const termsTemplates: Record<QuotationKind, string[]> = {
     baseTerms.requisitos, baseTerms.pago, baseTerms.politicas,
   ],
   paquete: [baseTerms.noReserva, baseTerms.incluye, baseTerms.cambios, baseTerms.extras, baseTerms.requisitos, baseTerms.pago, baseTerms.politicas],
+  ferry: [
+    "Esta cotización no constituye una reserva confirmada. Las tarifas y la disponibilidad están sujetas a cambios hasta que la naviera confirme la reserva o emita los boletos.",
+    baseTerms.incluye,
+    "Los cambios de fecha, horario, ruta, clase o vehículo están sujetos a las políticas de la naviera y podrían generar penalidades o diferencias de tarifa.",
+    "El equipaje adicional, el transporte de vehículos, las cabinas, las comidas y otros servicios a bordo están incluidos únicamente cuando se indiquen expresamente.",
+    "Cada pasajero debe presentarse al embarque con la anticipación y los documentos que exija la naviera y las autoridades del puerto.",
+    baseTerms.pago, baseTerms.politicas,
+  ],
   general: [baseTerms.noReserva, baseTerms.incluye, baseTerms.cambios, baseTerms.requisitos, baseTerms.pago, baseTerms.politicas],
 };
 export const separateTicketsClause = "Esta cotización combina boletos emitidos por separado. Cada boleto tiene sus propias condiciones de cambio, cancelación y equipaje, y un cambio o retraso en un boleto no modifica el otro.";
@@ -84,7 +103,9 @@ export const newId = () => (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-
 export const emptyBaggage = (id = newId()): BaggageAllowance => ({ id, alcance: "Todos los vuelos", personal: emptyPiece(), mano: emptyPiece(), documentado: emptyPiece(), adicional: "", notas: "" });
 export const emptyFare = (id = newId()): FareRules => ({ id, alcance: "Todos los vuelos", aerolinea: "", operadoPor: "", cabina: "", tipoTarifa: "", claseReserva: "", cambios: "", cancelacion: "", reembolso: "", restricciones: "", asientos: "" });
 export const emptyRoom = (id = newId()): HotelRoom => ({ id, categoria: "", camas: "", cantidad: 1, adultos: 2, ninos: 0, edadesNinos: "" });
-export const emptyHotel = (id = newId()): HotelStay => ({ id, nombre: "", destino: "", direccion: "", checkIn: "", checkOut: "", habitaciones: [emptyRoom()], planComidas: "", amenidades: "", impuestos: "", cargoResort: "", cancelacion: "", reembolso: "", condiciones: "", fotos: [] });
+export const emptyHotel = (id = newId()): HotelStay => ({ id, nombre: "", destino: "", direccion: "", checkIn: "", checkOut: "", habitaciones: [emptyRoom()], planComidas: "", amenidades: "", inclusiones: [], inclusionesConfirmadas: false, impuestos: "", cargoResort: "", cancelacion: "", reembolso: "", condiciones: "", fotos: [] });
+export const emptyFerryLeg = (tipo: FerryLeg["tipo"] = "ida", id = newId()): FerryLeg => ({ id, tipo, operador: "", embarcacion: "", origenPuerto: "", destinoPuerto: "", salidaFecha: "", salidaHora: "", llegadaFecha: "", llegadaHora: "", duracionMin: null });
+export const emptyFerry = (withLeg = false): FerryDetails => ({ legs: withLeg ? [emptyFerryLeg()] : [], clase: "", asiento: "", cabina: "", vehiculos: [], equipajeIncluido: "", equipajeAdicional: "", inclusiones: [], inclusionesConfirmadas: false, cambios: "", cancelacion: "", reembolso: "", embarque: "", documentos: "", confirmado: false });
 
 export function defaultDetails(kind: QuotationKind): QuotationDetails {
   return {
@@ -95,6 +116,7 @@ export function defaultDetails(kind: QuotationKind): QuotationDetails {
     equipaje: kind === "vuelo" || kind === "paquete" ? [emptyBaggage()] : [],
     equipajeConfirmado: false,
     hoteles: kind === "hotel" || kind === "paquete" ? [emptyHotel()] : [],
+    ferry: emptyFerry(kind === "ferry"),
     servicios: [],
     pago: { deposito: "", depositoFecha: "", saldoFecha: "", instrucciones: "", precioPorPasajero: false },
     validez: { venceEn: "", zona: defaultZone, nota: "", limitePago: "", limiteEmision: "" },
@@ -154,6 +176,24 @@ function sanitizePiece(value: unknown): BaggagePiece {
   return { estado: choice<BaggageState>(source.estado, ["incluido", "no_incluido", "con_cargo"]), piezas: optionalInteger(source.piezas, 0, 9), peso: text(source.peso, 40), medidas: text(source.medidas, 60) };
 }
 
+function sanitizeInclusion(value: unknown): Inclusion {
+  const source = record(value);
+  return { id: id(source.id), nombre: text(source.nombre, 80), estado: choice<InclusionState>(source.estado, ["incluido", "no_incluido", "con_cargo"]), detalle: text(source.detalle, 200) };
+}
+
+function sanitizeFerry(value: unknown): FerryDetails {
+  const source = record(value);
+  return {
+    legs: list(source.legs, 8).map(item => { const leg = record(item); return { id: id(leg.id), tipo: choice<FerryLeg["tipo"]>(leg.tipo, ["ida", "regreso", "tramo"]) || "tramo", operador: text(leg.operador, 120), embarcacion: text(leg.embarcacion, 120), origenPuerto: text(leg.origenPuerto, 120), destinoPuerto: text(leg.destinoPuerto, 120), salidaFecha: date(leg.salidaFecha), salidaHora: time(leg.salidaHora), llegadaFecha: date(leg.llegadaFecha), llegadaHora: time(leg.llegadaHora), duracionMin: optionalInteger(leg.duracionMin, 1, 72 * 60) }; }),
+    clase: text(source.clase, 80), asiento: text(source.asiento, 120), cabina: text(source.cabina, 120),
+    vehiculos: list(source.vehiculos, 6).map(item => { const vehicle = record(item); return { id: id(vehicle.id), tipo: text(vehicle.tipo, 80), cantidad: integer(vehicle.cantidad, 1, 20, 1) }; }).filter(vehicle => vehicle.tipo),
+    equipajeIncluido: text(source.equipajeIncluido, 300), equipajeAdicional: text(source.equipajeAdicional, 300),
+    inclusiones: list(source.inclusiones, 30).map(sanitizeInclusion).filter(item => item.nombre), inclusionesConfirmadas: source.inclusionesConfirmadas === true,
+    cambios: text(source.cambios, 400, true), cancelacion: text(source.cancelacion, 600, true), reembolso: choice<Refundability>(source.reembolso, ["reembolsable", "no_reembolsable", "parcial"]),
+    embarque: text(source.embarque, 800, true), documentos: text(source.documentos, 600, true), confirmado: source.confirmado === true,
+  };
+}
+
 function sanitizeHotel(value: unknown): HotelStay {
   const source = record(value);
   return {
@@ -163,6 +203,8 @@ function sanitizeHotel(value: unknown): HotelStay {
     planComidas: text(source.planComidas, 80), amenidades: text(source.amenidades, 1500, true), impuestos: choice<TaxState>(source.impuestos, ["incluidos", "no_incluidos", "parcial"]),
     cargoResort: text(source.cargoResort, 300), cancelacion: text(source.cancelacion, 1000, true), reembolso: choice<Refundability>(source.reembolso, ["reembolsable", "no_reembolsable", "parcial"]),
     condiciones: text(source.condiciones, 1500, true),
+    inclusiones: list(source.inclusiones, 40).map(sanitizeInclusion).filter(item => item.nombre),
+    inclusionesConfirmadas: source.inclusionesConfirmadas === true,
     fotos: list(source.fotos, 12).map(item => { const photo = record(item); return { path: text(photo.path, 80), leyenda: text(photo.leyenda, 140), ancho: integer(photo.ancho, 0, 20000, 0), alto: integer(photo.alto, 0, 20000, 0) }; }).filter(photo => photoPathPattern.test(photo.path)),
   };
 }
@@ -183,6 +225,7 @@ export function sanitizeDetails(value: unknown): QuotationDetails {
     equipaje: list(source.equipaje, 6).map(item => { const bag = record(item); return { id: id(bag.id), alcance: text(bag.alcance, 80), personal: sanitizePiece(bag.personal), mano: sanitizePiece(bag.mano), documentado: sanitizePiece(bag.documentado), adicional: text(bag.adicional, 300), notas: text(bag.notas, 600, true) }; }),
     equipajeConfirmado: source.equipajeConfirmado === true,
     hoteles: list(source.hoteles, 6).map(sanitizeHotel),
+    ferry: sanitizeFerry(source.ferry),
     servicios: list(source.servicios, 30).map(item => { const service = record(item); return { id: id(service.id), tipo: text(service.tipo, 60), descripcion: text(service.descripcion, 400) }; }).filter(service => service.descripcion),
     pago: { deposito: money(payment.deposito), depositoFecha: date(payment.depositoFecha), saldoFecha: date(payment.saldoFecha), instrucciones: text(payment.instrucciones, 800, true), precioPorPasajero: payment.precioPorPasajero === true },
     validez: { venceEn: iso(validity.venceEn), zona: zone && zoneOffsetMinutes(zone, "2026-01-01") !== null ? zone : defaultZone, nota: text(validity.nota, 300), limitePago: iso(validity.limitePago), limiteEmision: iso(validity.limiteEmision) },
@@ -295,7 +338,25 @@ export function quotationReadiness(kind: QuotationKind, details: QuotationDetail
       if (!hotel.planComidas) push("aviso", "hotel", `${name}: indique el plan de comidas.`);
       if (!hotel.impuestos) push("aviso", "hotel", `${name}: indique si los impuestos están incluidos.`);
       if (!hotel.cancelacion) push("aviso", "hotel", `${name}: indique la política de cancelación.`);
+      checkInclusions(hotel.inclusiones, hotel.inclusionesConfirmadas, "hotel", `${name}: `, push);
     });
+  }
+  if (kind === "ferry" || (kind === "paquete" && details.ferry.legs.length)) {
+    const { ferry } = details;
+    if (!ferry.legs.length) push("error", "ferry", "Agregue al menos un trayecto en ferry.");
+    ferry.legs.forEach((leg, index) => {
+      const name = `Trayecto ${index + 1}`;
+      if (!leg.operador) push("error", "ferry", `${name}: indique la naviera.`);
+      if (!leg.origenPuerto || !leg.destinoPuerto) push("error", "ferry", `${name}: indique el puerto de salida y el de llegada.`);
+      if (!leg.salidaFecha || !leg.salidaHora) push("error", "ferry", `${name}: indique la fecha y hora de salida.`);
+      if (leg.salidaFecha && leg.llegadaFecha && leg.llegadaFecha < leg.salidaFecha) push("error", "ferry", `${name}: la llegada no puede ser anterior a la salida.`);
+      else if (leg.salidaFecha && leg.llegadaFecha === leg.salidaFecha && leg.salidaHora && leg.llegadaHora && leg.llegadaHora <= leg.salidaHora) push("error", "ferry", `${name}: la hora de llegada debe ser posterior a la salida.`);
+      const previous = ferry.legs[index - 1];
+      if (previous?.salidaFecha && leg.salidaFecha && leg.salidaFecha < previous.salidaFecha) push("error", "ferry", `${name}: sale antes del trayecto anterior.`);
+    });
+    if (ferry.legs.length && !ferry.confirmado) push("error", "ferry", "Confirme los horarios y condiciones del ferry con la naviera.");
+    if (!ferry.equipajeIncluido) push("aviso", "ferry", "Indique el equipaje incluido en el ferry.");
+    checkInclusions(ferry.inclusiones, ferry.inclusionesConfirmadas, "ferry", "Ferry: ", push);
   }
   if (!items.length) push("error", "precio", "Agregue al menos un concepto de precio.");
   const summary = pricingSummary(items, details);
@@ -308,13 +369,20 @@ export function quotationReadiness(kind: QuotationKind, details: QuotationDetail
   return issues;
 }
 
+function checkInclusions(list: Inclusion[], confirmed: boolean, section: string, prefix: string, push: (nivel: ReadinessIssue["nivel"], seccion: string, mensaje: string) => void) {
+  const undecided = list.filter(item => !item.estado);
+  if (undecided.length) push("error", section, `${prefix}indique si está incluido: ${undecided.map(item => item.nombre).join(", ")}.`);
+  if (list.length && !confirmed) push("error", section, `${prefix}confirme lo que incluye y lo que no.`);
+}
+
 // Keeps the general trip dates in step with the itinerary and the hotels when the advisor left them empty.
 export function derivedTripDates(details: QuotationDetails) {
   const segments = details.vuelos.journeys.flatMap(journey => journey.segmentos);
   const hotelDates = details.hoteles.flatMap(hotel => [hotel.checkIn, hotel.checkOut]).filter(Boolean).sort();
-  const start = details.fechaSalida || segments[0]?.salidaFecha || hotelDates[0] || "";
+  const ferryDates = details.ferry.legs.map(leg => leg.salidaFecha).filter(Boolean);
+  const start = details.fechaSalida || segments[0]?.salidaFecha || hotelDates[0] || ferryDates[0] || "";
   const lastJourney = details.vuelos.journeys.length > 1 ? details.vuelos.journeys.at(-1)?.segmentos[0]?.salidaFecha : "";
-  const end = details.fechaRegreso || lastJourney || hotelDates.at(-1) || "";
+  const end = details.fechaRegreso || lastJourney || hotelDates.at(-1) || (ferryDates.length > 1 ? ferryDates.at(-1) : "") || "";
   return { salida: start, regreso: end };
 }
 

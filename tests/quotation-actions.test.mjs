@@ -301,13 +301,13 @@ test('a discounted quotation keeps the same total through reservation and invoic
   assert.equal(db.tables.quotations[0].total, 1212.6);
   db.tables.quotations[0].estado = 'aceptada';
   const reservationTypes = load('src/lib/reservation-types.ts');
-  const reservationData = load('src/lib/reservation-data.ts', { 'server-only': {} });
+  const reservationData = load('src/lib/reservation-data.ts', { 'server-only': {}, '@/lib/invoice-query': load('src/lib/invoice-query.ts') });
   const reservations = load('src/app/admin/reservas/actions.ts', {
     'node:crypto': crypto, 'next/navigation': { redirect }, 'next/cache': { revalidatePath() {} },
     '@/lib/admin': { requireAdmin: async () => ({ client: db.client, user: { id: 'agent-1' } }) }, '@/lib/reservation-data': reservationData,
     '@/lib/reservation-types': reservationTypes, '@/lib/quotation-validation': validation, '@/lib/invoice-pdf': { renderInvoicePdf: async () => Buffer.from('') },
     '@/lib/site-config': { siteConfig: {} }, '@/lib/notifications': { captureNotificationFailure() {} }, '@/lib/lead-admin': { customerWhatsappHref: () => '' },
-    '@/lib/lead-validation': { leadSegments: [], normalizePhone: value => value }, '@/lib/money': money,
+    '@/lib/lead-validation': { leadSegments: [], normalizePhone: value => value }, '@/lib/money': money, '@/lib/invoice-query': load('src/lib/invoice-query.ts'),
   });
   const convert = new FormData(); convert.set('quotation_id', created.quotationId);
   await assert.rejects(reservations.convertQuotationToReservation({}, convert), /redirect:\/admin\/reservas\//);
@@ -327,10 +327,10 @@ test('a discounted quotation keeps the same total through reservation and invoic
 function reservationActions(db, user = 'agent-1') {
   return load('src/app/admin/reservas/actions.ts', {
     'node:crypto': crypto, 'next/navigation': { redirect }, 'next/cache': { revalidatePath() {} },
-    '@/lib/admin': { requireAdmin: async () => ({ client: db.client, user: { id: user } }) }, '@/lib/reservation-data': load('src/lib/reservation-data.ts', { 'server-only': {} }),
+    '@/lib/admin': { requireAdmin: async () => ({ client: db.client, user: { id: user } }) }, '@/lib/reservation-data': load('src/lib/reservation-data.ts', { 'server-only': {}, '@/lib/invoice-query': load('src/lib/invoice-query.ts') }),
     '@/lib/reservation-types': load('src/lib/reservation-types.ts'), '@/lib/quotation-validation': validation, '@/lib/invoice-pdf': { renderInvoicePdf: async () => Buffer.from('') },
     '@/lib/site-config': { siteConfig: {} }, '@/lib/notifications': { captureNotificationFailure() {} }, '@/lib/lead-admin': { customerWhatsappHref: () => '' },
-    '@/lib/lead-validation': { leadSegments: [], normalizePhone: value => value }, '@/lib/money': money,
+    '@/lib/lead-validation': { leadSegments: [], normalizePhone: value => value }, '@/lib/money': money, '@/lib/invoice-query': load('src/lib/invoice-query.ts'),
   });
 }
 const form = values => { const data = new FormData(); for (const [key, value] of Object.entries(values)) data.set(key, value); return data; };

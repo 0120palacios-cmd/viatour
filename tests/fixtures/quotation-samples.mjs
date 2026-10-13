@@ -6,7 +6,7 @@ import { details as detailsModule, parser } from '../pdf-support.mjs';
 import { load } from '../security-support.mjs';
 
 const data = load('src/lib/quotation-data.ts', { 'server-only': {}, '@/lib/quotation-details': detailsModule });
-const fixture = name => fs.readFileSync(`tests/fixtures/${name}`, 'utf8');
+const fixture = name => fs.readFileSync(`tests/fixtures/${name}`, 'utf8').replace(/\r\n/g, '\n');
 const now = new Date('2026-10-12T15:00:00Z');
 const expiry = detailsModule.expiryFromPreset(24, now);
 
@@ -118,6 +118,8 @@ American · Economy · Boeing 737-800 · AA 1451`), confirmado: true },
       habitaciones: [{ categoria: 'Habitación Deluxe vista al mar', camas: '1 cama king', cantidad: 1, adultos: 2, ninos: 0 }],
       planComidas: 'Todo incluido', amenidades: 'Wi-Fi\nPiscina\nGimnasio\nKids club\nAcceso a la playa\nRestaurantes a la carta',
       impuestos: 'incluidos', cargoResort: 'Impuesto de saneamiento ambiental pagadero en el hotel', cancelacion: 'Sin cargo hasta 7 días antes de la llegada; después se cobra una noche.', reembolso: 'parcial',
+      inclusiones: [{ nombre: 'Plan todo incluido', estado: 'incluido', detalle: 'Comidas y bebidas nacionales' }, { nombre: 'Wi-Fi', estado: 'incluido', detalle: '' }, { nombre: 'Acceso a playa', estado: 'incluido', detalle: '' }, { nombre: 'Club infantil', estado: 'incluido', detalle: '4 a 12 años' }, { nombre: 'Spa', estado: 'con_cargo', detalle: 'Tratamientos desde USD 60' }, { nombre: 'Transporte aeropuerto-hotel', estado: 'no_incluido', detalle: '' }, { nombre: 'Propinas', estado: 'no_incluido', detalle: '' }],
+      inclusionesConfirmadas: true,
       fotos: photos([photo('punta-cana-todo-incluido', 2, 'Vista general del hotel'), photo('punta-cana-todo-incluido', 3), photo('punta-cana-todo-incluido', 4), photo('punta-cana-todo-incluido', 5)]),
     }],
     servicios: [{ tipo: 'Traslado', descripcion: 'Aeropuerto – hotel – aeropuerto en servicio compartido' }],
@@ -171,6 +173,29 @@ American · Economy · Boeing 737-800 · AA 1451`), confirmado: true },
     { descripcion: 'Asistencia al viajero', tipo: 'Seguro', cantidad: 2, precio_unitario: 39 },
     { descripcion: 'Traslados', tipo: 'Traslado', cantidad: 1, precio_unitario: 70 },
     { descripcion: 'Descuento de temporada', tipo: 'Descuento', cantidad: 1, precio_unitario: 50 },
+  ]),
+
+  'ferry-ida-y-vuelta': () => record('ferry', base('ferry', { destino: 'Roatán, Islas de la Bahía' }), {
+    origen: 'La Ceiba',
+    pasajeros: { adultos: 2, ninos: 1, infantes: 0, edadesNinos: '7 años' },
+    ferry: {
+      legs: [
+        { tipo: 'ida', operador: 'Naviera de prueba', embarcacion: 'Embarcación de prueba', origenPuerto: 'Muelle de cabotaje, La Ceiba', destinoPuerto: 'Muelle de Dixon Cove, Roatán', salidaFecha: '2026-12-18', salidaHora: '09:30', llegadaFecha: '2026-12-18', llegadaHora: '11:10', duracionMin: 100 },
+        { tipo: 'regreso', operador: 'Naviera de prueba', embarcacion: 'Embarcación de prueba', origenPuerto: 'Muelle de Dixon Cove, Roatán', destinoPuerto: 'Muelle de cabotaje, La Ceiba', salidaFecha: '2026-12-22', salidaHora: '14:00', llegadaFecha: '2026-12-22', llegadaHora: '15:40', duracionMin: 100 },
+      ],
+      clase: 'Primera', asiento: 'Asignado al abordar', vehiculos: [{ tipo: 'Automóvil', cantidad: 1 }],
+      equipajeIncluido: '1 maleta de hasta 23 kg y 1 artículo personal por pasajero', equipajeAdicional: 'USD 5 por maleta adicional',
+      inclusiones: [{ nombre: 'Equipaje', estado: 'incluido', detalle: '1 maleta de 23 kg' }, { nombre: 'Asiento asignado', estado: 'incluido', detalle: '' }, { nombre: 'Transporte de vehículo', estado: 'incluido', detalle: 'Automóvil hasta 5 m' }, { nombre: 'Comidas', estado: 'no_incluido', detalle: '' }, { nombre: 'Bebidas', estado: 'con_cargo', detalle: 'Cafetería a bordo' }],
+      inclusionesConfirmadas: true,
+      cambios: 'Con cargo, hasta 24 horas antes', cancelacion: 'Sin reembolso a menos de 24 horas de la salida.', reembolso: 'parcial',
+      embarque: 'Presentarse en el muelle 60 minutos antes; los vehículos, 90 minutos antes.', documentos: 'Documento de identidad de cada pasajero y documentos del vehículo.', confirmado: true,
+    },
+    pago: { deposito: '100', depositoFecha: '2026-11-15' },
+  }, [
+    { descripcion: 'Pasaje en ferry — Adulto (ida y vuelta)', tipo: 'Ferry', cantidad: 2, precio_unitario: 82 },
+    { descripcion: 'Pasaje en ferry — Niño (ida y vuelta)', tipo: 'Ferry', cantidad: 1, precio_unitario: 61.5 },
+    { descripcion: 'Transporte de vehículo — Automóvil', tipo: 'Ferry', cantidad: 1, precio_unitario: 140 },
+    { descripcion: 'Tasas portuarias', tipo: 'Impuestos y tasas', cantidad: 3, precio_unitario: 4.25 },
   ]),
 
   // A quotation saved before docs/sql/quotations_v5.sql: no tipo, no detalles, validity as a date.

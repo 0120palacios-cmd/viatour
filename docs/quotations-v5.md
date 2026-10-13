@@ -66,3 +66,9 @@ Proyecto verificado: `akbqbbwolsnzybojzbiy` (el encabezado CSP del sitio en vivo
 - **Respaldo**: el flujo "Supabase backup" de GitHub no se ejecuta desde al menos el 2026-10-08 porque la cuenta de GitHub está bloqueada por facturación. Resuélvalo y confirme un respaldo antes de migrar.
 - No se pudieron leer políticas RLS, disparadores ni restricciones (la API no los expone); el preflight debe ejecutarlo el propietario en el SQL Editor.
 - Compatibilidad: con este código desplegado y sin la migración, las cotizaciones de "Otros servicios" siguen funcionando y las de vuelo, hotel y paquete muestran un aviso para ejecutar el SQL. Después de la migración, el código anterior (V3) también sigue funcionando según la revisión del código.
+
+## Versión de lanzamiento (2026-10-13)
+- **Ferry**: nuevo tipo de cotización con trayectos (ida, regreso y adicionales), naviera, embarcación, puertos, horarios, duración, clase, asiento, cabina, vehículos, equipaje, inclusiones, embarque, documentos y condiciones. PDF propio y plantilla de condiciones (borrador). Solo son obligatorios naviera, puertos, fecha y hora.
+- **Inclusiones de hotel**: "¿Qué incluye su estadía?" con estado explícito por servicio (incluido, no incluido, con cargo) y confirmación. El PDF separa lo incluido de lo no incluido o con cargo. El texto libre anterior se conserva para cotizaciones viejas.
+- **Facturación**: las páginas de reserva y de Mi reserva ya no fallan cuando faltan columnas en `invoices`; crear facturas requiere `docs/sql/invoices_v5.sql`.
+- **Cantidades enteras** en conceptos de precio (como en la base de datos de producción).

@@ -16,6 +16,7 @@ function kindFromService(service: unknown): QuotationKind | null {
   if (value.includes("vuelo")) return "vuelo";
   if (value.includes("hotel")) return "hotel";
   if (value.includes("paquete")) return "paquete";
+  if (value.includes("ferry")) return "ferry";
   return null;
 }
 

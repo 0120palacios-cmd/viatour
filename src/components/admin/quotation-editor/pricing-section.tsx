@@ -31,6 +31,12 @@ export function PricingSection({ kind, items, setItems, currency, setCurrency, d
       ["Impuestos y tasas", () => add("Impuestos y tasas aeroportuarias", "Impuestos y tasas", Math.max(1, adultos + ninos))],
     ] as [string, () => void][] : []),
     ...(kind === "hotel" || kind === "paquete" ? details.hoteles.map(hotel => [`Hotel ${hotel.nombre || ""}`.trim(), () => add(`${hotel.nombre || "Hotel"}`, "Hotel")] as [string, () => void]) : []),
+    ...(kind === "ferry" ? [
+      ["Pasaje ferry por adulto", () => add("Pasaje en ferry — Adulto", "Ferry", adultos || 1)],
+      ...(ninos ? [["Pasaje ferry por niño", () => add("Pasaje en ferry — Niño", "Ferry", ninos)] as [string, () => void]] : []),
+      ["Tasas portuarias", () => add("Tasas portuarias", "Impuestos y tasas", Math.max(1, adultos + ninos + infantes))],
+      ...details.ferry.vehiculos.map(vehicle => [`Vehículo: ${vehicle.tipo}`, () => add(`Transporte de vehículo — ${vehicle.tipo}`, "Ferry", vehicle.cantidad)] as [string, () => void]),
+    ] as [string, () => void][] : []),
     ["Traslado", () => add("Traslado aeropuerto – hotel – aeropuerto", "Traslado")],
     ["Seguro de viaje", () => add("Seguro de viaje", "Seguro", Math.max(1, travellers))],
     ["Cargo por servicio", () => add("Cargo por servicio", "Cargo por servicio")],

@@ -7,12 +7,13 @@ import { Button } from "@/components/ui/button";
 import { SendQuotationForm } from "@/components/admin/quotation-actions";
 import { duplicateQuotation, saveQuotation, type CustomerSuggestion } from "@/app/admin/cotizaciones/actions";
 import { cityName, type FlightJourney } from "@/lib/flight-itinerary";
-import { emptyBaggage, emptyFare, emptyHotel, quotationKindLabels, quotationReadiness, termsTemplates, type HotelStay, type QuotationDetails, type QuotationKind } from "@/lib/quotation-details";
+import { emptyBaggage, emptyFerry, emptyFare, emptyHotel, quotationKindLabels, quotationReadiness, termsTemplates, type HotelStay, type QuotationDetails, type QuotationKind } from "@/lib/quotation-details";
 import type { Customer } from "@/lib/quotation-types";
 import { itemsAsNumbers, toPayload, type DraftItem, type EditorDraft } from "./draft";
 import { FlightSection, IssueList } from "./flight-section";
 import { FareBaggageSection } from "./fare-baggage-section";
 import { HotelSection } from "./hotel-section";
+import { FerrySection } from "./ferry-section";
 import { PricingSection, ServicesSection } from "./pricing-section";
 import { NotesSection, TermsSection, ValiditySection } from "./validity-terms-section";
 import { Field, inputClass, Notice, Section, SmallButton, TextField } from "./fields";
@@ -22,12 +23,12 @@ type SaveState = "saved" | "dirty" | "saving" | "error" | "conflict";
 export type EditorMeta = { codigo?: string; estado?: string; estadoLabel?: string; expired?: boolean; schemaReady: boolean; sent?: boolean; converted?: boolean };
 type Props = { initial: EditorDraft; customers: Customer[]; recentHotels: HotelStay[]; meta: EditorMeta; sidebar?: React.ReactNode };
 
-const kindDescriptions: Record<QuotationKind, string> = { vuelo: "Pegue el itinerario y complete tarifa, equipaje y precio.", hotel: "Hotel, habitaciones, fotos y condiciones.", paquete: "Vuelos, hotel y servicios en una sola propuesta.", general: "Cualquier otro servicio con conceptos de precio." };
+const kindDescriptions: Record<QuotationKind, string> = { vuelo: "Pegue el itinerario y complete tarifa, equipaje y precio.", hotel: "Hotel, habitaciones, fotos y lo que incluye la estadía.", ferry: "Trayectos en ferry, clase, equipaje y condiciones de la naviera.", paquete: "Vuelos, hotel y servicios en una sola propuesta.", general: "Cualquier otro servicio con conceptos de precio." };
 const autosaveDelay = 2500;
 const previewDelay = 2000;
 
 function sectionsFor(kind: QuotationKind) {
-  return [["cliente", "Cliente y viaje"], ...(kind === "vuelo" || kind === "paquete" ? [["vuelos", "Vuelos"], ["tarifa", "Clase y equipaje"]] : []), ...(kind === "hotel" || kind === "paquete" ? [["hotel", "Hotel"]] : []), ...(kind !== "vuelo" ? [["servicios", "Servicios"]] : []), ["precio", "Precio"], ["validez", "Validez"], ["condiciones", "Condiciones"], ["notas", "Notas"]] as [string, string][];
+  return [["cliente", "Cliente y viaje"], ...(kind === "vuelo" || kind === "paquete" ? [["vuelos", "Vuelos"], ["tarifa", "Clase y equipaje"]] : []), ...(kind === "hotel" || kind === "paquete" ? [["hotel", "Hotel"]] : []), ...(kind === "ferry" ? [["ferry", "Ferry"]] : []), ...(kind !== "vuelo" && kind !== "ferry" ? [["servicios", "Servicios"]] : []), ["precio", "Precio"], ["validez", "Validez"], ["condiciones", "Condiciones"], ["notas", "Notas"]] as [string, string][];
 }
 
 export function QuotationEditor({ initial, customers, recentHotels, meta, sidebar }: Props) {
@@ -138,6 +139,7 @@ export function QuotationEditor({ initial, customers, recentHotels, meta, sideba
       tarifas: needsFlights && !details.tarifas.length ? [emptyFare()] : details.tarifas,
       equipaje: needsFlights && !details.equipaje.length ? [emptyBaggage()] : details.equipaje,
       hoteles: needsHotels && !details.hoteles.length ? [emptyHotel()] : details.hoteles,
+      ferry: tipo === "ferry" && !details.ferry.legs.length ? emptyFerry(true) : details.ferry,
       condiciones: usesTemplate ? [...termsTemplates[tipo]] : details.condiciones,
     } };
   });
@@ -171,11 +173,12 @@ export function QuotationEditor({ initial, customers, recentHotels, meta, sideba
         <TextField label="Teléfono o WhatsApp" value={draft.cliente.telefono} onChange={value => change(current => ({ ...current, cliente: { ...current.cliente, telefono: value.slice(0, 60) } }))} autoComplete="off" />
         <TextField label="Destino" value={draft.destino} onChange={value => change(current => ({ ...current, destino: value.slice(0, 200) }))} placeholder="Monterrey, México" />
         <TextField label="Ciudad de salida" value={draft.detalles.origen} onChange={value => update(details => ({ ...details, origen: value.slice(0, 120) }))} placeholder="San Pedro Sula" />
-        {draft.tipo !== "vuelo" ? <><TextField label="Fecha de inicio del viaje" type="date" value={draft.detalles.fechaSalida} onChange={value => update(details => ({ ...details, fechaSalida: value }))} hint="Opcional; se toma de vuelos u hoteles si la deja vacía" /><TextField label="Fecha de regreso" type="date" value={draft.detalles.fechaRegreso} onChange={value => update(details => ({ ...details, fechaRegreso: value }))} /></> : null}
+        {draft.tipo !== "vuelo" && draft.tipo !== "ferry" ? <><TextField label="Fecha de inicio del viaje" type="date" value={draft.detalles.fechaSalida} onChange={value => update(details => ({ ...details, fechaSalida: value }))} hint="Opcional; se toma de vuelos u hoteles si la deja vacía" /><TextField label="Fecha de regreso" type="date" value={draft.detalles.fechaRegreso} onChange={value => update(details => ({ ...details, fechaRegreso: value }))} /></> : null}
       </div>
     </Section>
     {draft.tipo === "vuelo" || draft.tipo === "paquete" ? <><FlightSection details={draft.detalles} update={update} onApplyItinerary={applyItinerary} /><FareBaggageSection details={draft.detalles} update={update} /></> : null}
     {draft.tipo === "hotel" || draft.tipo === "paquete" ? <HotelSection details={draft.detalles} update={update} recentHotels={recentHotels} /> : null}
+    {draft.tipo === "ferry" ? <FerrySection details={draft.detalles} update={update} /> : null}
     {draft.tipo !== "vuelo" ? <ServicesSection details={draft.detalles} update={update} /> : null}
     <PricingSection kind={draft.tipo} items={draft.items} setItems={(items: DraftItem[]) => change(current => ({ ...current, items }))} currency={draft.moneda} setCurrency={moneda => change(current => ({ ...current, moneda }))} details={draft.detalles} update={update} />
     <ValiditySection details={draft.detalles} update={update} sent={Boolean(meta.sent)} />

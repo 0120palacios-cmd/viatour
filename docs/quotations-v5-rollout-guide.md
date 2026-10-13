@@ -11,6 +11,7 @@ You will use four SQL files, always in this order:
 | 2 | `docs/sql/quotations_v5_backup.sql` | Only creates a private copy |
 | 3 | `docs/sql/quotations_v5.sql` | **Yes — the migration** |
 | 4 | `docs/sql/quotations_v5_verify.sql` | No (read-only checks) |
+| 5 | `docs/sql/invoices_v5.sql` | **Yes — adds 3 invoice columns** |
 
 Open each file in your code editor (VS Code or similar), copy its text, and paste it into Supabase as described below.
 
@@ -58,6 +59,8 @@ Open `docs/sql/quotations_v5_preflight.sql`, paste it into a new query, and run 
 | 10. Columns used by new controls | 3 rows: `reservations.quotation_id`, `objects.created_at`, `objects.name` | Fewer than 3 |
 | 11. Accepted quotations | A number (they will become read-only, by design) | — |
 | 12. Existing triggers | Usually an `updated_at` trigger or nothing | Anything you do not recognise — send it to me first |
+| 13. Invoices | Columns without `items`, `cliente_email`, `cliente_telefono` (that is the bug being fixed); constraints and policies listed | A status constraint that does not allow `borrador`, or a policy for `anon` |
+| 14. Check constraints | The rules on `estado`, `moneda`, `cantidad` | Anything that would reject `ferry` in a column other than the new `tipo` — send it to me |
 
 If **any** STOP condition appears, do not continue. Copy the result and send it to me.
 
@@ -102,6 +105,13 @@ If block 6 shows anything other than 0, stop and send me the result. Your data i
 
 ---
 
+## Step 4b — Invoice columns (after Step 4 passes)
+
+Open `docs/sql/invoices_v5.sql`, paste the whole file and click **Run**. Expected: a table with 3 rows
+(`items`, `cliente_email`, `cliente_telefono`). It only adds columns; existing invoices are untouched.
+Until this runs, the admin can open reservations and invoices again (the new code no longer fails on the
+missing columns) but cannot create invoices.
+
 ## Step 5 — Publish the new code
 
 The database change alone does not change the website. The new admin panel goes live only when the code is
@@ -133,7 +143,11 @@ Use your own name and **your own e-mail address** as the customer. Never use a r
 15. **Not an admin:** in a private window, open `/admin/cotizaciones` and a PDF link. Expected: the login page, never data.
 16. **Photo cleanup (optional):** at the bottom of the list, **Buscar fotos sin uso**. Right after launch it should find 0 photos: only photos older than 7 days that nothing uses are ever deleted.
 
-When all 16 pass, tell me and I will prepare the final commit.
+17. **Ferry:** Cotizaciones → **Ferry**. Fill one trip (naviera, ports, date and time), press **Agregar regreso**, add "Equipaje" and "Comidas" in *¿Qué incluye el viaje en ferry?*, choose a state for each and confirm, confirm with the naviera, add **Pasaje ferry por adulto**, choose 24 horas and approve the conditions. Expected: "Lista para enviar" and a PDF with both trips.
+18. **Hotel inclusions:** in a hotel quotation add *Desayuno* (Incluido) and *Spa* (Con cargo adicional, with a price). Expected: the PDF shows them under "Incluido" and "No incluido o con cargo".
+19. **Invoice:** open the reservation from test 10 and create an invoice. Expected: it is created (after Step 4b) and its total matches.
+
+When all tests pass, tell me.
 
 ---
 

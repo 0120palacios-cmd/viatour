@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FilePlus2, Hotel, Package, Plane, Receipt } from "lucide-react";
+import { FilePlus2, Hotel, Package, Plane, Receipt, Ship } from "lucide-react";
 import { pageMetadata } from "@/lib/seo";
 import { requireAdmin } from "@/lib/admin";
 import { PhotoCleanupForm, QuotationStatusForm } from "@/components/admin/quotation-actions";
@@ -10,8 +10,8 @@ import { formatQuotationAmount, quotationStatusLabel, quotationStatuses, type Qu
 export const metadata = pageMetadata("/admin/cotizaciones", "viatour | Cotizaciones", "Gestión privada de cotizaciones de viatour.");
 
 function statusClass(status: QuotationStatus) { return ({ borrador: "bg-surface text-ink-soft", enviada: "bg-brand-tint text-brand-deep", aceptada: "bg-surface text-success", rechazada: "bg-surface text-error", expirada: "bg-surface text-ink-soft" } as Record<QuotationStatus, string>)[status]; }
-const kindIcons: Record<QuotationKind, typeof Plane> = { vuelo: Plane, hotel: Hotel, paquete: Package, general: Receipt };
-const createLinks: [QuotationKind, string][] = [["vuelo", "Vuelo"], ["hotel", "Hotel"], ["paquete", "Paquete"], ["general", "Otros servicios"]];
+const kindIcons: Record<QuotationKind, typeof Plane> = { vuelo: Plane, hotel: Hotel, ferry: Ship, paquete: Package, general: Receipt };
+const createLinks: [QuotationKind, string][] = [["vuelo", "Vuelo"], ["hotel", "Hotel"], ["ferry", "Ferry"], ["paquete", "Paquete"], ["general", "Otros servicios"]];
 
 type Row = Record<string, unknown>;
 
