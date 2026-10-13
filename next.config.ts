@@ -14,7 +14,8 @@ const csp = [
   `img-src 'self' data: blob: ${[storageOrigin, "https://www.facebook.com", "https://www.google-analytics.com", "https://*.cdninstagram.com", "https://*.fbcdn.net", "https://*.tiktok.com", "https://*.tiktokcdn.com"].filter(Boolean).join(" ")}`,
   "font-src 'self' https://fonts.gstatic.com",
   `connect-src 'self' ${[storageOrigin, "https://www.google-analytics.com", "https://region1.google-analytics.com", "https://www.googletagmanager.com", "https://www.facebook.com", "https://connect.facebook.net", "https://challenges.cloudflare.com", "https://www.instagram.com", "https://www.tiktok.com", "https://*.sentry.io"].filter(Boolean).join(" ")}`,
-  "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://challenges.cloudflare.com https://www.instagram.com https://www.tiktok.com",
+  // blob: is the admin quotation editor's live PDF preview.
+  "frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://challenges.cloudflare.com https://www.instagram.com https://www.tiktok.com",
   `media-src 'self' ${[storageOrigin, "https://*.cdninstagram.com", "https://*.tiktokcdn.com"].filter(Boolean).join(" ")}`,
   "manifest-src 'self'",
   // upgrade-insecure-requests is omitted: browsers ignore it in a report-only policy and log an error
@@ -25,6 +26,11 @@ const csp = [
 ].join("; ");
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // The quotation PDF reads its fonts and logos from disk at runtime (src/lib/quotation-pdf.tsx).
+  outputFileTracingIncludes: {
+    "/api/admin/cotizaciones/**": ["./src/assets/fonts/**/*", "./public/logo-white.png", "./public/logo-black.png"],
+    "/admin/cotizaciones/**": ["./src/assets/fonts/**/*", "./public/logo-white.png", "./public/logo-black.png"],
+  },
   async headers() {
     if (process.env.NODE_ENV !== "production") return [];
     return [{ source: "/:path*", headers: [

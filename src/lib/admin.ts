@@ -11,6 +11,17 @@ export async function requireAdmin() {
   return { client, user };
 }
 
+// Same checks as requireAdmin, without redirecting: for actions called from an editor with unsaved
+// work, where a redirect to the login page would discard what the admin typed.
+export async function adminSession() {
+  const client = await createClient();
+  const { data: { user }, error } = await client.auth.getUser();
+  if (error || !user) return null;
+  const admin = await client.rpc("is_admin");
+  if (admin.error || admin.data !== true) return null;
+  return { client, user };
+}
+
 export async function adminRows(table: "reviews" | "packages" | "destinations" | "leads" | "blog_posts" | "faqs") {
   const { client } = await requireAdmin();
   const { data, error } = await client.from(table).select("*").order(table === "packages" || table === "destinations" || table === "faqs" ? "orden" : "created_at", { ascending: table === "packages" || table === "destinations" || table === "faqs" }).limit(500);

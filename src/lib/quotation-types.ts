@@ -29,6 +29,11 @@ export type Quotation = {
   agente_id: string;
   created_at: string;
   updated_at?: string;
+  // Added by docs/sql/quotations_v5.sql; absent on databases where it has not been applied yet.
+  tipo?: string | null;
+  detalles?: unknown;
+  vence_en?: string | null;
+  version?: number | null;
 };
 
 export type QuotationItem = {
