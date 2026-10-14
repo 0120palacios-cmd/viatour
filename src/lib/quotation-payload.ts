@@ -1,4 +1,4 @@
-import { canonicalItemType, quotationKinds, sanitizeDetails, type QuotationDetails, type QuotationKind } from "@/lib/quotation-details";
+import { canonicalItemType, emptyPackage, quotationKinds, sanitizeDetails, type QuotationDetails, type QuotationKind } from "@/lib/quotation-details";
 import { currencies, type Currency, type QuotationItem } from "@/lib/quotation-types";
 import { emailPattern, validUuid } from "@/lib/quotation-validation";
 
@@ -66,6 +66,10 @@ export function parseQuotationPayload(raw: unknown): Result {
     items.push({ descripcion, tipo: tipoItem, cantidad: Number(cantidad), precio_unitario: Number(precio), orden: index });
   }
   const expected = text(data.expectedUpdatedAt, 40);
+  const detalles = sanitizeDetails(data.detalles);
+  // Package components only belong to combined packages; any other kind stores none.
+  if (tipo !== "combinado") detalles.paquete = emptyPackage();
+  else if (detalles.paquete.lineas.length !== items.length) detalles.paquete.lineas = [];
   return {
     payload: {
       id: id || null,
@@ -77,7 +81,7 @@ export function parseQuotationPayload(raw: unknown): Result {
       destino: text(data.destino, 200),
       moneda,
       notas: notas || null,
-      detalles: sanitizeDetails(data.detalles),
+      detalles,
       items,
     },
   };

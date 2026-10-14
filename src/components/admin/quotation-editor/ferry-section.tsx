@@ -7,7 +7,7 @@ import { AreaField, Field, IconButton, inputClass, Notice, Section, SelectField,
 import { InclusionsEditor } from "./inclusions-editor";
 import { cn } from "cn";
 
-type Props = { details: QuotationDetails; update: (change: (details: QuotationDetails) => QuotationDetails) => void };
+type Props = { details: QuotationDetails; update: (change: (details: QuotationDetails) => QuotationDetails) => void; sectionId?: string };
 
 const legTitles: Record<FerryLeg["tipo"], string> = { ida: "Ida", regreso: "Regreso", tramo: "Trayecto" };
 
@@ -35,13 +35,13 @@ function LegEditor({ leg, index, onChange, onRemove }: { leg: FerryLeg; index: n
   </div>;
 }
 
-export function FerrySection({ details, update }: Props) {
+export function FerrySection({ details, update, sectionId = "ferry" }: Props) {
   const ferry = details.ferry;
   const set = (change: Partial<FerryDetails>, keepConfirmation = false) => update(current => ({ ...current, ferry: { ...current.ferry, ...change, confirmado: keepConfirmation ? current.ferry.confirmado : false } }));
   const legs = ferry.legs;
   // A return leg starts as the mirror of the last leg: ports swapped, same operator; dates stay empty.
   const addReturn = () => { const last = legs.at(-1); set({ legs: [...legs, { ...emptyFerryLeg(legs.length ? "regreso" : "ida"), operador: last?.operador ?? "", origenPuerto: last?.destinoPuerto ?? "", destinoPuerto: last?.origenPuerto ?? "" }] }); };
-  return <Section id="ferry" title="Ferry" description="Trayectos, clase, equipaje y condiciones confirmadas con la naviera. Para un viaje solo de pasajeros basta con naviera, puertos, fecha y hora."
+  return <Section id={sectionId} title="Ferry" description="Trayectos, clase, equipaje y condiciones confirmadas con la naviera. Para un viaje solo de pasajeros basta con naviera, puertos, fecha y hora."
     actions={<><SmallButton onClick={() => set({ legs: [...legs, emptyFerryLeg(legs.length ? "tramo" : "ida")] })}><Plus size={16} strokeWidth={2} aria-hidden="true" />Agregar trayecto</SmallButton>{legs.length ? <SmallButton onClick={addReturn}><ArrowLeftRight size={16} strokeWidth={2} aria-hidden="true" />Agregar regreso</SmallButton> : null}</>}>
     <div className="space-y-4">
       {legs.map((leg, index) => <LegEditor key={leg.id} leg={leg} index={index} onChange={next => set({ legs: legs.map(item => item.id === leg.id ? next : item) })} onRemove={() => set({ legs: legs.filter(item => item.id !== leg.id) })} />)}

@@ -1,6 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { effectiveExpiry, quotationKinds, sanitizeDetails, type HotelStay, type QuotationDetails, type QuotationKind } from "@/lib/quotation-details";
+import { effectiveExpiry, expandedDetails, quotationKinds, sanitizeDetails, type HotelStay, type QuotationDetails, type QuotationKind } from "@/lib/quotation-details";
 import type { Quotation, QuotationItem } from "@/lib/quotation-types";
 
 const legacyFields = "id,codigo,customer_id,cliente_nombre,cliente_email,cliente_telefono,destino,moneda,validez,notas,total,estado,agente_id,created_at,updated_at";
@@ -60,12 +60,12 @@ export { legacyFields, quotationFields };
 // Hotels from recent quotations, offered as suggestions so an advisor can reuse address, services and
 // photos. Only data the team entered before; nothing is fetched from outside.
 export async function recentQuotationHotels(client: SupabaseClient, limit = 40): Promise<HotelStay[]> {
-  const result = await client.from("quotations").select("tipo,detalles").in("tipo", ["hotel", "paquete"]).order("updated_at", { ascending: false }).limit(limit);
+  const result = await client.from("quotations").select("tipo,detalles").in("tipo", ["hotel", "paquete", "combinado"]).order("updated_at", { ascending: false }).limit(limit);
   if (result.error || !result.data) return [];
   const seen = new Set<string>();
   const hotels: HotelStay[] = [];
   for (const row of result.data) {
-    for (const hotel of sanitizeDetails(row.detalles).hoteles) {
+    for (const hotel of expandedDetails(sanitizeDetails(row.detalles)).hoteles) {
       const key = hotel.nombre.trim().toLowerCase();
       if (!key || seen.has(key)) continue;
       seen.add(key);

@@ -4,14 +4,14 @@ import { pageMetadata } from "@/lib/seo";
 import { requireAdmin } from "@/lib/admin";
 import { PhotoCleanupForm, QuotationStatusForm } from "@/components/admin/quotation-actions";
 import { isMissingColumn, quotationKind } from "@/lib/quotation-data";
-import { effectiveExpiry, formatInstant, isExpired, quotationKindLabels, quotationKinds, type QuotationKind } from "@/lib/quotation-details";
+import { effectiveExpiry, formatInstant, isExpired, quotationKindAdminLabels, quotationKinds, type QuotationKind } from "@/lib/quotation-details";
 import { formatQuotationAmount, quotationStatusLabel, quotationStatuses, type QuotationStatus } from "@/lib/quotation-types";
 
 export const metadata = pageMetadata("/admin/cotizaciones", "viatour | Cotizaciones", "Gestión privada de cotizaciones de viatour.");
 
 function statusClass(status: QuotationStatus) { return ({ borrador: "bg-surface text-ink-soft", enviada: "bg-brand-tint text-brand-deep", aceptada: "bg-surface text-success", rechazada: "bg-surface text-error", expirada: "bg-surface text-ink-soft" } as Record<QuotationStatus, string>)[status]; }
-const kindIcons: Record<QuotationKind, typeof Plane> = { vuelo: Plane, hotel: Hotel, ferry: Ship, paquete: Package, general: Receipt };
-const createLinks: [QuotationKind, string][] = [["vuelo", "Vuelo"], ["hotel", "Hotel"], ["ferry", "Ferry"], ["paquete", "Paquete"], ["general", "Otros servicios"]];
+const kindIcons: Record<QuotationKind, typeof Plane> = { vuelo: Plane, hotel: Hotel, ferry: Ship, paquete: Package, combinado: Package, general: Receipt };
+const createLinks: [QuotationKind, string][] = [["vuelo", "Vuelo"], ["hotel", "Hotel"], ["ferry", "Ferry"], ["combinado", "Paquete combinado"], ["general", "Otros servicios"]];
 
 type Row = Record<string, unknown>;
 
@@ -46,7 +46,7 @@ export default async function QuotationsPage({ searchParams }: { searchParams: P
     <div className="space-y-3">
       <form className="flex flex-col gap-3 sm:flex-row" role="search">{selectedKind ? <input type="hidden" name="tipo" value={selectedKind} /> : null}{selectedStatus ? <input type="hidden" name="estado" value={selectedStatus} /> : null}<label className="sr-only" htmlFor="quotation-search">Buscar cotizaciones</label><input id="quotation-search" className="h-12 w-full rounded-btn border border-line bg-canvas px-3 text-ink focus-visible:border-brand" name="q" placeholder="Buscar por código, cliente o destino" defaultValue={search} /><button type="submit" className="min-h-12 rounded-btn border border-line px-6 text-ink hover:bg-surface">Buscar</button></form>
       <nav aria-label="Filtrar por estado" className="flex flex-wrap gap-2"><Link href={params({ estado: "" })} aria-current={!selectedStatus ? "page" : undefined} className={chip}>Todos los estados</Link>{quotationStatuses.map(status => <Link key={status} href={params({ estado: status })} aria-current={selectedStatus === status ? "page" : undefined} className={chip}>{quotationStatusLabel(status)}</Link>)}</nav>
-      <nav aria-label="Filtrar por tipo" className="flex flex-wrap gap-2"><Link href={params({ tipo: "" })} aria-current={!selectedKind ? "page" : undefined} className={chip}>Todos los tipos</Link>{quotationKinds.map(kind => <Link key={kind} href={params({ tipo: kind })} aria-current={selectedKind === kind ? "page" : undefined} className={chip}>{quotationKindLabels[kind]}</Link>)}</nav>
+      <nav aria-label="Filtrar por tipo" className="flex flex-wrap gap-2"><Link href={params({ tipo: "" })} aria-current={!selectedKind ? "page" : undefined} className={chip}>Todos los tipos</Link>{quotationKinds.map(kind => <Link key={kind} href={params({ tipo: kind })} aria-current={selectedKind === kind ? "page" : undefined} className={chip}>{quotationKindAdminLabels[kind]}</Link>)}</nav>
     </div>
     {!quotations.length ? <p className="rounded-card border p-6">No hay cotizaciones en esta vista.</p> : <div className="space-y-4">{quotations.map(quotation => {
       const status = String(quotation.estado) as QuotationStatus;
@@ -59,7 +59,7 @@ export default async function QuotationsPage({ searchParams }: { searchParams: P
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2"><Icon size={18} strokeWidth={1.75} className="text-brand" aria-hidden="true" /><h2 className="t-h3">{String(quotation.codigo)}</h2><span className={`rounded-btn px-3 py-1 t-small ${statusClass(status)}`}>{quotationStatusLabel(status)}</span>{expired ? <span className="rounded-btn border border-error/40 px-3 py-1 t-small text-error">Vencida</span> : null}{reservation ? <span className="rounded-btn bg-surface px-3 py-1 t-small text-success">Reserva {reservation}</span> : null}</div>
-            <p className="mt-2">{String(quotation.cliente_nombre)} · {String(quotation.destino)} <span className="text-ink-soft">· {quotationKindLabels[kind]}</span></p>
+            <p className="mt-2">{String(quotation.cliente_nombre)} · {String(quotation.destino)} <span className="text-ink-soft">· {quotationKindAdminLabels[kind]}</span></p>
             <p className="t-small text-ink-soft">Creada {new Intl.DateTimeFormat("es-HN", { dateStyle: "medium", timeZone: "America/Tegucigalpa" }).format(new Date(String(quotation.created_at)))} · {expired ? "Venció" : "Válida hasta"} {formatInstant(expiry)}</p>
           </div>
           <p className="t-h3 whitespace-nowrap">{formatQuotationAmount(Number(quotation.total), quotation.moneda as "USD" | "HNL")}</p>

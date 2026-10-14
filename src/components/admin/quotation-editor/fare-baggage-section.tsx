@@ -1,12 +1,40 @@
 "use client";
 
-import { Plus, Trash2, Wand2 } from "lucide-react";
+import { useState } from "react";
+import { Library, Plus, Trash2, Wand2 } from "lucide-react";
 import { emptyBaggage, emptyFare, baggageLabels, newId, type BaggageAllowance, type BaggagePiece, type BaggageState, type FareRules, type QuotationDetails, type Refundability } from "@/lib/quotation-details";
 import { journeyAirlines, journeyTitle } from "@/lib/flight-itinerary";
 import { baggageLine } from "@/lib/quotation-text";
-import { Field, inputClass, Section, Segmented, SelectField, SmallButton, TextField } from "./fields";
+import { applyPreset, type AirlineEntry, type FarePreset } from "@/lib/catalog";
+import { Combobox, type ComboOption } from "@/components/admin/combobox";
+import { Field, inputClass, Notice, Section, Segmented, SelectField, SmallButton, TextField } from "./fields";
+import { findAirline, useCatalogs } from "./catalog-context";
 
-type Props = { details: QuotationDetails; update: (change: (details: QuotationDetails) => QuotationDetails) => void };
+type Props = { details: QuotationDetails; update: (change: (details: QuotationDetails) => QuotationDetails) => void; sectionId?: string };
+
+const shortDate = (value: string) => value ? new Intl.DateTimeFormat("es-HN", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(`${value}T12:00:00Z`)) : "";
+
+// Airline and fare preset from the catalog. Picking an airline only fills its name; a preset is applied on
+// request and copies cabin, fare family, conditions and baggage into this quotation, where the advisor
+// confirms them (baggage stays unconfirmed). The preset itself never changes from here.
+function FareCatalog({ fare, onAirline, onPreset }: { fare: FareRules; onAirline: (airline: AirlineEntry) => void; onPreset: (preset: FarePreset, airline: AirlineEntry) => void }) {
+  const catalogs = useCatalogs();
+  if (!catalogs.ready) return null;
+  const airline = findAirline(catalogs.airlines, fare.aerolinea);
+  const recent = new Set(catalogs.recentAirlines.map(name => name.toLowerCase()));
+  const options: ComboOption[] = [...catalogs.airlines].sort((a, b) => Number(recent.has(b.nombre.toLowerCase())) - Number(recent.has(a.nombre.toLowerCase())))
+    .map(entry => ({ id: entry.id, label: entry.nombre, detail: [entry.iata, entry.pais, entry.presets.length ? `${entry.presets.length} ${entry.presets.length === 1 ? "plantilla" : "plantillas"}` : ""].filter(Boolean).join(" · "), group: recent.has(entry.nombre.toLowerCase()) ? "Usadas recientemente" : "Catálogo" }));
+  const presets = [...(airline?.presets ?? [])].sort((a, b) => Number(catalogs.recentPresets.includes(b.id)) - Number(catalogs.recentPresets.includes(a.id)));
+  const used = presets.find(preset => preset.id === fare.plantillaId);
+  return <div className="space-y-2 rounded-btn bg-surface p-3">
+    <div className="grid gap-3 sm:grid-cols-2">
+      <Combobox label="Aerolínea del catálogo" options={options} onSelect={option => { const entry = catalogs.airlines.find(item => item.id === option.id); if (entry) onAirline(entry); }} placeholder="Nombre o código, por ejemplo AA" emptyText={catalogs.airlines.length ? "Ninguna aerolínea coincide." : "El catálogo aún no tiene aerolíneas."} />
+      {airline && presets.length ? <Field label="Plantilla de tarifa y equipaje" hint="Se copia a esta tarifa; revise y confirme cada dato.">{id => <select id={id} className={inputClass} value="" onChange={event => { const preset = presets.find(item => item.id === event.target.value); if (preset) onPreset(preset, airline); }}><option value="">Elegir plantilla de {airline.nombre}</option>{presets.map(preset => <option key={preset.id} value={preset.id}>{[preset.nombre, preset.cabina, preset.aplicaA].filter(Boolean).join(" · ")}{catalogs.recentPresets.includes(preset.id) ? " (reciente)" : ""}</option>)}</select>}</Field>
+        : airline ? <p className="self-end t-small text-ink-soft">{airline.nombre} no tiene plantillas guardadas. <a className="text-brand underline underline-offset-4" href={`/admin/catalogos/aerolineas/${airline.id}`} target="_blank" rel="noreferrer">Agregar una plantilla</a></p> : null}
+    </div>
+    {fare.plantilla ? <p className="flex items-start gap-1.5 t-small text-ink-soft"><Library size={15} strokeWidth={2} className="mt-0.5 shrink-0" aria-hidden="true" /><span>Basada en la plantilla «{fare.plantilla}»{used?.verificadoEn ? `, verificada el ${shortDate(used.verificadoEn)}` : ""}{used?.aplicaA ? ` para ${used.aplicaA}` : ""}. El equipaje y las condiciones pueden variar según familia de tarifa, ruta, fecha de emisión y tipo de pasajero: confírmelos para este viaje.</span></p> : null}
+  </div>;
+}
 
 const changeOptions = ["Permitidos sin cargo", "Permitidos con diferencia de tarifa", "Con penalidad", "Con penalidad más diferencia de tarifa", "No permitidos"];
 const cancelOptions = ["Con penalidad", "Crédito para un viaje futuro", "No permite cancelación", "Sin cargo"];
@@ -17,13 +45,14 @@ function Suggest({ id, options }: { id: string; options: string[] }) {
   return <datalist id={id}>{options.map(option => <option key={option} value={option} />)}</datalist>;
 }
 
-function FareEditor({ fare, multiple, onChange, onRemove }: { fare: FareRules; multiple: boolean; onChange: (fare: FareRules) => void; onRemove: () => void }) {
+function FareEditor({ fare, multiple, onChange, onRemove, onPreset }: { fare: FareRules; multiple: boolean; onChange: (fare: FareRules) => void; onRemove: () => void; onPreset: (preset: FarePreset, airline: AirlineEntry) => void }) {
   const set = <K extends keyof FareRules>(field: K, value: FareRules[K]) => onChange({ ...fare, [field]: value });
   return <div className="space-y-3 rounded-card border border-line bg-canvas p-3 sm:p-4">
     <div className="flex flex-wrap items-end justify-between gap-3">
       {multiple ? <TextField label="Aplica a" value={fare.alcance} onChange={value => set("alcance", value)} maxLength={80} placeholder="Ida (Frontier)" className="w-64" /> : <p className="font-semibold text-ink">Tarifa</p>}
       {multiple ? <SmallButton tone="danger" onClick={onRemove}><Trash2 size={16} strokeWidth={2} aria-hidden="true" />Quitar</SmallButton> : null}
     </div>
+    <FareCatalog fare={fare} onAirline={airline => onChange({ ...fare, aerolinea: airline.nombre })} onPreset={onPreset} />
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       <TextField label="Aerolínea" value={fare.aerolinea} onChange={value => set("aerolinea", value)} maxLength={80} />
       <TextField label="Operado por" value={fare.operadoPor} onChange={value => set("operadoPor", value)} maxLength={120} hint="Opcional" />
@@ -66,12 +95,22 @@ function BaggageEditor({ bag, multiple, onChange, onRemove }: { bag: BaggageAllo
   </div>;
 }
 
-export function FareBaggageSection({ details, update }: Props) {
+export function FareBaggageSection({ details, update, sectionId = "tarifa" }: Props) {
   const fares = details.tarifas;
   const bags = details.equipaje;
   const journeys = details.vuelos.journeys.filter(journey => journey.segmentos.length);
   const setFares = (next: FareRules[]) => update(current => ({ ...current, tarifas: next }));
   const setBags = (next: BaggageAllowance[]) => update(current => ({ ...current, equipaje: next, equipajeConfirmado: false }));
+  const [notice, setNotice] = useState("");
+  // The preset's baggage goes to the allowance in the same position as the fare (or the only one).
+  const applyFarePreset = (fareId: string, preset: FarePreset, airline: AirlineEntry) => update(current => {
+    const index = current.tarifas.findIndex(item => item.id === fareId);
+    if (index < 0) return current;
+    const { fare, baggage } = applyPreset(current.tarifas[index], preset, airline);
+    const bagIndex = current.equipaje.length > index ? index : 0;
+    const equipaje = current.equipaje.length ? current.equipaje.map((bag, position) => position === bagIndex ? { ...bag, ...baggage } : bag) : [{ ...emptyBaggage(), ...baggage }];
+    return { ...current, tarifas: current.tarifas.map((item, position) => position === index ? fare : item), equipaje, equipajeConfirmado: false };
+  });
   // Copies only what the pasted itinerary states (airline, operator, cabin); fare rules are never inferred.
   const fromItinerary = () => {
     const segments = journeys.flatMap(journey => journey.segmentos);
@@ -83,16 +122,18 @@ export function FareBaggageSection({ details, update }: Props) {
     }
     setFares([{ ...(fares[0] ?? emptyFare()), aerolinea: airlines.join(" / "), cabina: cabinsUsed.join(" / ") }]);
   };
-  return <Section id="tarifa" title="Clase y equipaje" description="Indique solo condiciones confirmadas con la aerolínea o el sistema de reservas. La cabina no determina el equipaje incluido.">
+  return <Section id={sectionId} title="Clase y equipaje" description="Indique solo condiciones confirmadas con la aerolínea o el sistema de reservas. La cabina no determina el equipaje incluido.">
     <Suggest id="fare-cabins" options={["Económica", "Económica básica", "Económica Premium", "Ejecutiva (Business)", "Primera clase"]} />
     <Suggest id="fare-changes" options={changeOptions} />
     <Suggest id="fare-cancel" options={cancelOptions} />
+    {notice ? <div className="mb-4"><Notice>{notice}</Notice></div> : null}
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
         {journeys.length ? <SmallButton onClick={fromItinerary}><Wand2 size={16} strokeWidth={2} aria-hidden="true" />Tomar aerolínea y cabina del itinerario</SmallButton> : null}
         <SmallButton onClick={() => setFares([...fares.map(fare => ({ ...fare, alcance: fare.alcance === "Todos los vuelos" ? "" : fare.alcance })), { ...emptyFare(), alcance: "" }])}><Plus size={16} strokeWidth={2} aria-hidden="true" />Tarifa distinta por tramo</SmallButton>
       </div>
-      {fares.map(fare => <FareEditor key={fare.id} fare={fare} multiple={fares.length > 1} onChange={next => setFares(fares.map(item => item.id === fare.id ? next : item))} onRemove={() => setFares(fares.filter(item => item.id !== fare.id))} />)}
+      {fares.map(fare => <FareEditor key={fare.id} fare={fare} multiple={fares.length > 1} onChange={next => setFares(fares.map(item => item.id === fare.id ? next : item))} onRemove={() => setFares(fares.filter(item => item.id !== fare.id))}
+        onPreset={(preset, airline) => { applyFarePreset(fare.id, preset, airline); setNotice(`Se aplicó la plantilla ${airline.nombre} · ${preset.nombre}. Revise cabina, condiciones y equipaje, y confirme el equipaje con las condiciones de esta tarifa.`); }} />)}
       {!fares.length ? <SmallButton onClick={() => setFares([emptyFare()])}><Plus size={16} strokeWidth={2} aria-hidden="true" />Agregar tarifa</SmallButton> : null}
       <div className="flex flex-wrap items-center justify-between gap-2 pt-2"><h3 className="font-semibold text-ink">Franquicia de equipaje</h3><SmallButton onClick={() => setBags([...bags, { ...emptyBaggage(newId()), alcance: "" }])}><Plus size={16} strokeWidth={2} aria-hidden="true" />Franquicia distinta por tramo o pasajero</SmallButton></div>
       {bags.map(bag => <BaggageEditor key={bag.id} bag={bag} multiple={bags.length > 1} onChange={next => setBags(bags.map(item => item.id === bag.id ? next : item))} onRemove={() => setBags(bags.filter(item => item.id !== bag.id))} />)}

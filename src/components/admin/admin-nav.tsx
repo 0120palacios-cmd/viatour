@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Star, Luggage, MapPin, ListChecks, BookOpen, CircleHelp, Users, FileText, ClipboardList, ReceiptText, MessageSquare } from "lucide-react";
+import { LayoutDashboard, Star, Luggage, MapPin, ListChecks, BookOpen, CircleHelp, Users, FileText, ClipboardList, ReceiptText, MessageSquare, Library } from "lucide-react";
 
-const sections = [["Resumen", "/admin", LayoutDashboard], ["Clientes", "/admin/clientes", Users], ["Cotizaciones", "/admin/cotizaciones", FileText], ["Reservas", "/admin/reservas", ClipboardList], ["Facturación", "/admin/facturacion", ReceiptText], ["Solicitudes", "/admin/tickets", MessageSquare], ["Opiniones", "/admin/opiniones", Star], ["Paquetes", "/admin/paquetes", Luggage], ["Destinos", "/admin/destinos", MapPin], ["Leads", "/admin/leads", ListChecks], ["Blog", "/admin/blog", BookOpen], ["FAQ", "/admin/faq", CircleHelp]] as const;
+const sections = [["Resumen", "/admin", LayoutDashboard], ["Clientes", "/admin/clientes", Users], ["Cotizaciones", "/admin/cotizaciones", FileText], ["Catálogos", "/admin/catalogos", Library], ["Reservas", "/admin/reservas", ClipboardList], ["Facturación", "/admin/facturacion", ReceiptText], ["Solicitudes", "/admin/tickets", MessageSquare], ["Opiniones", "/admin/opiniones", Star], ["Paquetes", "/admin/paquetes", Luggage], ["Destinos", "/admin/destinos", MapPin], ["Leads", "/admin/leads", ListChecks], ["Blog", "/admin/blog", BookOpen], ["FAQ", "/admin/faq", CircleHelp]] as const;
 
-// Phones: one swipeable row (twelve wrapped links would push every page down by a screen).
+// Phones: one swipeable row (thirteen wrapped links would push every page down by a screen).
 // From 640px the links wrap as before. The current section is marked for sight and screen readers.
 export function AdminNav() {
   const pathname = usePathname();

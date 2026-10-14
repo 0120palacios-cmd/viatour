@@ -1,13 +1,18 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, ImagePlus, Plus, Star, Trash2 } from "lucide-react";
+import { useEffect, useId, useRef, useState, useTransition } from "react";
+import { ArrowLeft, ArrowRight, BookmarkPlus, ImagePlus, Library, Plus, Star, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { emptyHotel, emptyRoom, hotelInclusionSuggestions, mealPlans, nights, type HotelPhoto, type HotelRoom, type HotelStay, type QuotationDetails, type Refundability, type TaxState } from "@/lib/quotation-details";
+import { applyCatalogHotel, hotelPlace } from "@/lib/catalog";
+import { saveHotelFromQuotation } from "@/app/admin/catalogos/actions";
+import { Combobox } from "@/components/admin/combobox";
 import { AreaField, Field, IconButton, inputClass, Notice, Section, SelectField, SmallButton, TextField } from "./fields";
 import { InclusionsEditor } from "./inclusions-editor";
+import { useCatalogs } from "./catalog-context";
 
-type Props = { details: QuotationDetails; update: (change: (details: QuotationDetails) => QuotationDetails) => void; recentHotels: HotelStay[] };
+// sectionId / single: a combined package renders one hotel per component, each in its own section.
+type Props = { details: QuotationDetails; update: (change: (details: QuotationDetails) => QuotationDetails) => void; recentHotels: HotelStay[]; sectionId?: string; single?: boolean; title?: string };
 
 const bucket = "quotation-media";
 const maxSourceBytes = 25 * 1024 * 1024;
@@ -40,8 +45,9 @@ function randomName() {
   return Array.from(crypto.getRandomValues(new Uint8Array(16)), byte => byte.toString(16).padStart(2, "0")).join("");
 }
 
-function Photos({ photos, onChange }: { photos: HotelPhoto[]; onChange: (photos: HotelPhoto[]) => void }) {
+export function HotelPhotos({ photos, onChange }: { photos: HotelPhoto[]; onChange: (photos: HotelPhoto[]) => void }) {
   const input = useRef<HTMLInputElement>(null);
+  const inputId = useId();
   const [urls, setUrls] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: "error" | "success"; text: string } | null>(null);
@@ -84,7 +90,7 @@ function Photos({ photos, onChange }: { photos: HotelPhoto[]; onChange: (photos:
   const move = (index: number, target: number) => { const list = [...photos]; const [item] = list.splice(index, 1); list.splice(target, 0, item); onChange(list); };
   return <div className="space-y-3">
     <div className="flex flex-wrap items-center gap-3">
-      <input ref={input} type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" multiple className="sr-only" id="hotel-photo-input" onChange={event => upload(Array.from(event.target.files ?? []))} />
+      <input ref={input} type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" multiple className="sr-only" id={inputId} onChange={event => upload(Array.from(event.target.files ?? []))} />
       <SmallButton disabled={busy || photos.length >= 12} onClick={() => input.current?.click()}><ImagePlus size={16} strokeWidth={2} aria-hidden="true" />{busy ? "Subiendo fotos" : "Agregar fotos"}</SmallButton>
       <p className="t-small text-ink-soft">Use solo fotos propias o autorizadas por el hotel. La primera es la principal del PDF.</p>
     </div>
@@ -119,26 +125,66 @@ function RoomEditor({ room, index, onChange, onRemove, removable }: { room: Hote
   </div>;
 }
 
+// Catalog link of one hotel: search and fill, the rooms the hotel offers, and saving a hotel typed by hand
+// to the catalog. Filling copies the data into this quotation; the catalog record never changes here.
+function CatalogTools({ hotel, onChange }: { hotel: HotelStay; onChange: (hotel: HotelStay) => void }) {
+  const catalogs = useCatalogs();
+  const [message, setMessage] = useState<{ tone: "error" | "success" | "info"; text: string } | null>(null);
+  const [saving, startSaving] = useTransition();
+  if (!catalogs.ready) return null;
+  const linked = catalogs.hotels.find(entry => entry.id === hotel.catalogoId);
+  const options = catalogs.hotels.map(entry => ({ id: entry.id, label: entry.nombre, detail: [hotelPlace(entry), entry.cadena, entry.estrellas ? `${entry.estrellas} estrellas` : ""].filter(Boolean).join(" · ") }));
+  const pick = (id: string) => {
+    const entry = catalogs.hotels.find(item => item.id === id);
+    if (!entry) return;
+    onChange(applyCatalogHotel(hotel, entry));
+    setMessage({ tone: "info", text: `Se copiaron los datos de ${entry.nombre}. Revise fechas, habitaciones y precio, y confirme lo que incluye esta estadía.` });
+  };
+  const save = () => startSaving(async () => {
+    const result = await saveHotelFromQuotation(JSON.stringify(hotel));
+    if (result.error) { setMessage({ tone: "error", text: result.error }); return; }
+    if (result.id) onChange({ ...hotel, catalogoId: result.id });
+    setMessage({ tone: "success", text: result.success ?? "Hotel guardado en el catálogo." });
+  });
+  const addRoom = (categoria: string, camas: string) => {
+    const [first, ...rest] = hotel.habitaciones;
+    onChange({ ...hotel, habitaciones: first && !first.categoria ? [{ ...first, categoria, camas: camas || first.camas }, ...rest] : [...hotel.habitaciones, { ...emptyRoom(), categoria, camas }] });
+  };
+  return <div className="space-y-2 sm:col-span-2">
+    <div className="flex flex-wrap items-end gap-2">
+      <Combobox className="min-w-60 flex-1" label="Buscar en el catálogo de hoteles" options={options} onSelect={option => pick(option.id)} placeholder="Nombre, ciudad o cadena" emptyText={catalogs.hotels.length ? "Ningún hotel coincide." : "El catálogo aún no tiene hoteles."} />
+      {!hotel.catalogoId && hotel.nombre.trim() ? <SmallButton disabled={saving} onClick={save}><BookmarkPlus size={16} strokeWidth={2} aria-hidden="true" />{saving ? "Guardando" : "Guardar en el catálogo"}</SmallButton> : null}
+    </div>
+    {linked ? <p className="flex items-center gap-1.5 t-small text-ink-soft"><Library size={15} strokeWidth={2} aria-hidden="true" />Datos tomados del catálogo ({linked.nombre}). Lo que cambie aquí aplica solo a esta cotización.</p> : null}
+    {linked?.habitaciones.length ? <div className="flex flex-wrap items-center gap-1.5"><span className="t-small text-ink-soft">Habitaciones del hotel:</span>{linked.habitaciones.map(room => <SmallButton key={room.id} className="min-h-8 px-2 text-[13px]" title={[room.camas, room.capacidad].filter(Boolean).join(" · ") || undefined} onClick={() => addRoom(room.categoria, room.camas)}><Plus size={14} strokeWidth={2} aria-hidden="true" />{room.categoria}</SmallButton>)}</div> : null}
+    {message ? <Notice tone={message.tone}>{message.text}</Notice> : null}
+  </div>;
+}
+
 function HotelEditor({ hotel, index, onChange, onRemove, removable, recentHotels }: { hotel: HotelStay; index: number; onChange: (hotel: HotelStay) => void; onRemove: () => void; removable: boolean; recentHotels: HotelStay[] }) {
   const set = <K extends keyof HotelStay>(field: K, value: HotelStay[K]) => onChange({ ...hotel, [field]: value });
   const stay = nights(hotel.checkIn, hotel.checkOut);
   const recent = recentHotels.find(item => item.nombre.trim().toLowerCase() === hotel.nombre.trim().toLowerCase() && item.id !== hotel.id);
+  const catalogs = useCatalogs();
+  const plans = Array.from(new Set([...(catalogs.hotels.find(entry => entry.id === hotel.catalogoId)?.planes ?? []), ...mealPlans]));
+  const listIds = useId();
   return <div className="space-y-4 rounded-card border border-line p-3 sm:p-4">
     <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="font-semibold text-ink">Hotel {index + 1}{hotel.nombre ? `: ${hotel.nombre}` : ""}</h3>{removable ? <SmallButton tone="danger" onClick={onRemove}><Trash2 size={16} strokeWidth={2} aria-hidden="true" />Quitar hotel</SmallButton> : null}</div>
     <div className="grid gap-3 sm:grid-cols-2">
-      <Field label="Nombre del hotel">{id => <><input id={id} list="recent-hotels" className={inputClass} value={hotel.nombre} maxLength={160} onChange={event => set("nombre", event.target.value)} /><datalist id="recent-hotels">{recentHotels.map(item => <option key={item.id} value={item.nombre} />)}</datalist></>}</Field>
+      <CatalogTools hotel={hotel} onChange={onChange} />
+      <Field label="Nombre del hotel *">{id => <><input id={id} list={`${listIds}-recent`} className={inputClass} value={hotel.nombre} maxLength={160} onChange={event => set("nombre", event.target.value)} /><datalist id={`${listIds}-recent`}>{recentHotels.map(item => <option key={item.id} value={item.nombre} />)}</datalist></>}</Field>
       <TextField label="Destino" value={hotel.destino} onChange={value => set("destino", value)} maxLength={160} placeholder="Cancún, México" />
-      {recent ? <div className="sm:col-span-2"><Notice>Este hotel aparece en una cotización anterior. <button type="button" className="font-semibold text-brand underline underline-offset-4" onClick={() => onChange({ ...hotel, destino: hotel.destino || recent.destino, direccion: recent.direccion, amenidades: recent.amenidades, inclusiones: recent.inclusiones.map(item => ({ ...item })), inclusionesConfirmadas: false, planComidas: hotel.planComidas || recent.planComidas, impuestos: recent.impuestos, cargoResort: recent.cargoResort, fotos: recent.fotos })}>Usar su dirección, servicios y fotos</button>. Fechas, habitaciones y condiciones no se copian.</Notice></div> : null}
+      {recent && !hotel.catalogoId ? <div className="sm:col-span-2"><Notice>Este hotel aparece en una cotización anterior. <button type="button" className="font-semibold text-brand underline underline-offset-4" onClick={() => onChange({ ...hotel, destino: hotel.destino || recent.destino, direccion: recent.direccion, amenidades: recent.amenidades, inclusiones: recent.inclusiones.map(item => ({ ...item })), inclusionesConfirmadas: false, planComidas: hotel.planComidas || recent.planComidas, impuestos: recent.impuestos, cargoResort: recent.cargoResort, fotos: recent.fotos })}>Usar su dirección, servicios y fotos</button>. Fechas, habitaciones y condiciones no se copian.</Notice></div> : null}
       <TextField label="Dirección o zona" value={hotel.direccion} onChange={value => set("direccion", value)} maxLength={300} className="sm:col-span-2" />
-      <TextField label="Entrada (check-in)" type="date" value={hotel.checkIn} onChange={value => set("checkIn", value)} />
-      <TextField label="Salida (check-out)" type="date" value={hotel.checkOut} onChange={value => set("checkOut", value)} hint={stay ? `${stay} ${stay === 1 ? "noche" : "noches"}` : hotel.checkIn && hotel.checkOut ? "La salida debe ser posterior a la entrada." : undefined} />
+      <TextField label="Entrada (check-in) *" type="date" value={hotel.checkIn} onChange={value => set("checkIn", value)} />
+      <TextField label="Salida (check-out) *" type="date" value={hotel.checkOut} onChange={value => set("checkOut", value)} hint={stay ? `${stay} ${stay === 1 ? "noche" : "noches"}` : hotel.checkIn && hotel.checkOut ? "La salida debe ser posterior a la entrada." : undefined} />
     </div>
     <div className="space-y-2">
       {hotel.habitaciones.map((room, roomIndex) => <RoomEditor key={room.id} room={room} index={roomIndex} removable={hotel.habitaciones.length > 1} onChange={next => set("habitaciones", hotel.habitaciones.map(item => item.id === room.id ? next : item))} onRemove={() => set("habitaciones", hotel.habitaciones.filter(item => item.id !== room.id))} />)}
       <SmallButton onClick={() => set("habitaciones", [...hotel.habitaciones, emptyRoom()])}><Plus size={16} strokeWidth={2} aria-hidden="true" />Agregar habitación</SmallButton>
     </div>
     <div className="grid gap-3 sm:grid-cols-2">
-      <Field label="Plan de comidas">{id => <><input id={id} list="meal-plans" className={inputClass} value={hotel.planComidas} maxLength={80} onChange={event => set("planComidas", event.target.value)} /><datalist id="meal-plans">{mealPlans.map(plan => <option key={plan} value={plan} />)}</datalist></>}</Field>
+      <Field label="Plan de comidas">{id => <><input id={id} list={`${listIds}-plans`} className={inputClass} value={hotel.planComidas} maxLength={80} onChange={event => set("planComidas", event.target.value)} /><datalist id={`${listIds}-plans`}>{plans.map(plan => <option key={plan} value={plan} />)}</datalist></>}</Field>
       <SelectField<TaxState> label="Impuestos del hotel" value={hotel.impuestos} onChange={value => set("impuestos", value)} options={[["incluidos", "Incluidos"], ["no_incluidos", "No incluidos"], ["parcial", "Incluidos parcialmente"]]} placeholder="Sin indicar" />
       <TextField label="Cargos que se pagan en el hotel" value={hotel.cargoResort} onChange={value => set("cargoResort", value)} maxLength={300} placeholder="Cargo de resort de USD 25 por noche" hint="Opcional" />
       <SelectField<Refundability> label="Reembolso" value={hotel.reembolso} onChange={value => set("reembolso", value)} options={[["reembolsable", "Reembolsable"], ["parcial", "Reembolso parcial"], ["no_reembolsable", "No reembolsable"]]} placeholder="Sin indicar" />
@@ -147,16 +193,16 @@ function HotelEditor({ hotel, index, onChange, onRemove, removable, recentHotels
       <AreaField label="Política de cancelación" value={hotel.cancelacion} onChange={value => set("cancelacion", value.slice(0, 1000))} rows={2} className="sm:col-span-2" />
       <AreaField label="Condiciones especiales" value={hotel.condiciones} onChange={value => set("condiciones", value.slice(0, 1500))} rows={2} className="sm:col-span-2" hint="Opcional: depósito de garantía, edad mínima, horarios de llegada" />
     </div>
-    <Photos photos={hotel.fotos} onChange={fotos => set("fotos", fotos)} />
+    <HotelPhotos photos={hotel.fotos} onChange={fotos => set("fotos", fotos)} />
   </div>;
 }
 
-export function HotelSection({ details, update, recentHotels }: Props) {
+export function HotelSection({ details, update, recentHotels, sectionId = "hotel", single = false, title }: Props) {
   const hotels = details.hoteles;
   const setHotels = (next: HotelStay[]) => update(current => ({ ...current, hoteles: next }));
-  return <Section id="hotel" title={hotels.length > 1 ? "Alojamiento" : "Hotel"} description="Datos del hotel, habitaciones, plan, condiciones y fotos." actions={<SmallButton onClick={() => setHotels([...hotels, emptyHotel()])}><Plus size={16} strokeWidth={2} aria-hidden="true" />Agregar hotel</SmallButton>}>
+  return <Section id={sectionId} title={title ?? (hotels.length > 1 ? "Alojamiento" : "Hotel")} description="Datos del hotel, habitaciones, plan, condiciones y fotos." actions={single ? undefined : <SmallButton onClick={() => setHotels([...hotels, emptyHotel()])}><Plus size={16} strokeWidth={2} aria-hidden="true" />Agregar hotel</SmallButton>}>
     <div className="space-y-4">
-      {hotels.map((hotel, index) => <HotelEditor key={hotel.id} hotel={hotel} index={index} removable={hotels.length > 1} recentHotels={recentHotels} onChange={next => setHotels(hotels.map(item => item.id === hotel.id ? next : item))} onRemove={() => setHotels(hotels.filter(item => item.id !== hotel.id))} />)}
+      {hotels.map((hotel, index) => <HotelEditor key={hotel.id} hotel={hotel} index={index} removable={!single && hotels.length > 1} recentHotels={recentHotels} onChange={next => setHotels(hotels.map(item => item.id === hotel.id ? next : item))} onRemove={() => setHotels(hotels.filter(item => item.id !== hotel.id))} />)}
       {!hotels.length ? <Notice>Agregue el hotel que desea cotizar.</Notice> : null}
     </div>
   </Section>;

@@ -34,7 +34,7 @@ const photo = (pkg, number, leyenda = '') => {
 
 export function photoBuffers(record) {
   const map = new Map();
-  for (const hotel of record.details.hoteles) for (const item of hotel.fotos) {
+  for (const hotel of detailsModule.expandedDetails(record.details).hoteles) for (const item of hotel.fotos) {
     const source = samplePhotoSources.get(item.path);
     if (source) map.set(item.path, { data: fs.readFileSync(source), format: 'jpg' });
   }
@@ -196,6 +196,122 @@ American · Economy · Boeing 737-800 · AA 1451`), confirmado: true },
     { descripcion: 'Pasaje en ferry — Niño (ida y vuelta)', tipo: 'Ferry', cantidad: 1, precio_unitario: 61.5 },
     { descripcion: 'Transporte de vehículo — Automóvil', tipo: 'Ferry', cantidad: 1, precio_unitario: 140 },
     { descripcion: 'Tasas portuarias', tipo: 'Impuestos y tasas', cantidad: 3, precio_unitario: 4.25 },
+  ]),
+
+  // V6 combined packages (test data). Flights, hotel names and prices are invented for layout review only.
+  'combinado-vuelo-hotel-traslado': () => record('combinado', base('combinado', { destino: 'Cancún, México' }), {
+    origen: 'San Pedro Sula',
+    pasajeros: { adultos: 2, ninos: 1, infantes: 0, edadesNinos: '8 años' },
+    paquete: {
+      nombre: 'Vacaciones en Cancún', mostrarPrecios: false, lineas: ['', '', ''],
+      componentes: [
+        { id: 'vuelo1', tipo: 'vuelo', vuelo: {
+          vuelos: { journeys: flights(`Departing flight Sat, Dec 19
+10:15 AM
+Ramón Villeda Morales International Airport (SAP)
+Travel time: 1 hr 35 min
+12:50 PM
+Cancún International Airport (CUN)
+Aerolínea de prueba · Economy · Embraer 190 · XT 801
+Returning flight Sat, Dec 26
+2:00 PM
+Cancún International Airport (CUN)
+Travel time: 1 hr 40 min
+2:40 PM
+Ramón Villeda Morales International Airport (SAP)
+Aerolínea de prueba · Economy · Embraer 190 · XT 802`), confirmado: true },
+          tarifas: [{ aerolinea: 'Aerolínea de prueba', cabina: 'Económica', tipoTarifa: 'Clásica', cambios: 'Con penalidad más diferencia de tarifa', reembolso: 'no_reembolsable' }],
+          equipaje: [{ alcance: 'Todos los vuelos', personal: piece('incluido', 1), mano: piece('incluido', 1, '10 kg'), documentado: piece('incluido', 1, '23 kg') }], equipajeConfirmado: true } },
+        { id: 'hotel1', tipo: 'hotel', notas: 'Habitación con vista al mar sujeta a disponibilidad al llegar.', hotel: {
+          nombre: 'Hotel de prueba Riviera', destino: 'Cancún, Quintana Roo, México', direccion: 'Blvd. Kukulcán km 12.5, Zona Hotelera', checkIn: '2026-12-19', checkOut: '2026-12-26',
+          habitaciones: [{ categoria: 'Habitación Deluxe vista al mar', camas: '2 camas queen', cantidad: 1, adultos: 2, ninos: 1, edadesNinos: '8 años' }],
+          planComidas: 'Todo incluido', impuestos: 'incluidos', cancelacion: 'Sin cargo hasta 7 días antes de la llegada.', reembolso: 'parcial',
+          inclusiones: [{ nombre: 'Todo incluido', estado: 'incluido', detalle: 'Comidas y bebidas nacionales' }, { nombre: 'Wi-Fi', estado: 'incluido', detalle: '' }, { nombre: 'Club infantil', estado: 'incluido', detalle: '4 a 12 años' }, { nombre: 'Spa', estado: 'con_cargo', detalle: '' }, { nombre: 'Propinas', estado: 'no_incluido', detalle: '' }],
+          inclusionesConfirmadas: true, fotos: photos([photo('punta-cana-todo-incluido', 2, 'Vista general del hotel'), photo('punta-cana-todo-incluido', 3)]) } },
+        { id: 'traslado1', tipo: 'traslado', servicio: { descripcion: 'Traslado aeropuerto – hotel – aeropuerto', modalidad: 'compartido', fecha: '2026-12-19', hora: '13:30', lugar: 'Salida de llegadas internacionales, Terminal 3', duracion: '30 minutos aproximadamente',
+          inclusiones: [{ nombre: 'Equipaje', estado: 'incluido', detalle: '1 maleta por persona' }, { nombre: 'Propinas', estado: 'no_incluido', detalle: '' }], inclusionesConfirmadas: true } },
+        { id: 'tour1', tipo: 'tour', titulo: 'Excursión a Chichén Itzá', servicio: { descripcion: 'Excursión de día completo a Chichén Itzá con cenote y almuerzo', operador: 'Operador de prueba', modalidad: 'compartido', fecha: '2026-12-22', hora: '07:00', lugar: 'Recepción del hotel', duracion: 'Día completo',
+          inclusiones: [{ nombre: 'Transporte', estado: 'incluido', detalle: '' }, { nombre: 'Guía', estado: 'incluido', detalle: 'En español' }, { nombre: 'Entradas', estado: 'incluido', detalle: '' }, { nombre: 'Almuerzo', estado: 'incluido', detalle: 'Bufé' }, { nombre: 'Bebidas', estado: 'con_cargo', detalle: '' }], inclusionesConfirmadas: true,
+          cancelacion: 'Sin cargo hasta 48 horas antes.' } },
+      ],
+    },
+    pago: { deposito: '800', depositoFecha: '2026-10-20', saldoFecha: '2026-11-20' },
+    condiciones: detailsModule.termsTemplates.combinado,
+  }, [
+    { descripcion: 'Paquete Vacaciones en Cancún — 2 adultos y 1 niño', tipo: 'Paquete', cantidad: 1, precio_unitario: 3890 },
+    { descripcion: 'Impuestos y tasas aéreas', tipo: 'Impuestos y tasas', cantidad: 3, precio_unitario: 96.5 },
+    { descripcion: 'Descuento de temporada', tipo: 'Descuento', cantidad: 1, precio_unitario: 150 },
+  ]),
+
+  'combinado-hotel-ferry': () => record('combinado', base('combinado', { destino: 'Roatán, Islas de la Bahía' }), {
+    origen: 'La Ceiba',
+    pasajeros: { adultos: 2, ninos: 0, infantes: 0 },
+    paquete: {
+      nombre: 'Fin de semana en Roatán', mostrarPrecios: true, lineas: ['ferry1', 'hotel1', 'hotel1', ''],
+      componentes: [
+        { id: 'ferry1', tipo: 'ferry', ferry: {
+          legs: [
+            { tipo: 'ida', operador: 'Naviera de prueba', embarcacion: 'Embarcación de prueba', origenPuerto: 'Muelle de cabotaje, La Ceiba', destinoPuerto: 'Muelle de Dixon Cove, Roatán', salidaFecha: '2026-12-18', salidaHora: '09:30', llegadaFecha: '2026-12-18', llegadaHora: '11:10', duracionMin: 100 },
+            { tipo: 'regreso', operador: 'Naviera de prueba', embarcacion: 'Embarcación de prueba', origenPuerto: 'Muelle de Dixon Cove, Roatán', destinoPuerto: 'Muelle de cabotaje, La Ceiba', salidaFecha: '2026-12-20', salidaHora: '14:00', llegadaFecha: '2026-12-20', llegadaHora: '15:40', duracionMin: 100 },
+          ],
+          clase: 'Primera', equipajeIncluido: '1 maleta de hasta 23 kg por pasajero', inclusiones: [{ nombre: 'Equipaje', estado: 'incluido', detalle: '' }, { nombre: 'Comidas', estado: 'no_incluido', detalle: '' }], inclusionesConfirmadas: true,
+          embarque: 'Presentarse en el muelle 60 minutos antes.', confirmado: true } },
+        { id: 'hotel1', tipo: 'hotel', hotel: {
+          nombre: 'Hotel de prueba West End', destino: 'Roatán, Islas de la Bahía', checkIn: '2026-12-18', checkOut: '2026-12-20',
+          habitaciones: [{ categoria: 'Habitación estándar', camas: '1 cama king', cantidad: 1, adultos: 2 }], planComidas: 'Desayuno incluido', impuestos: 'no_incluidos', cancelacion: 'No reembolsable.', reembolso: 'no_reembolsable',
+          inclusiones: [{ nombre: 'Desayuno', estado: 'incluido', detalle: '' }, { nombre: 'Impuestos', estado: 'no_incluido', detalle: 'Se pagan en el hotel' }], inclusionesConfirmadas: true,
+          fotos: photos([photo('medellin-y-santa-marta', 3)]) } },
+      ],
+    },
+    condiciones: detailsModule.termsTemplates.combinado,
+  }, [
+    { descripcion: 'Ferry La Ceiba – Roatán – La Ceiba', tipo: 'Ferry', cantidad: 2, precio_unitario: 82 },
+    { descripcion: 'Hotel de prueba West End — 2 noches', tipo: 'Hotel', cantidad: 1, precio_unitario: 310 },
+    { descripcion: 'Promoción de temporada baja', tipo: 'Descuento', cantidad: 1, precio_unitario: 30 },
+    { descripcion: 'Cargo por servicio', tipo: 'Cargo por servicio', cantidad: 1, precio_unitario: 20 },
+  ]),
+
+  'combinado-varios-vuelos-y-hoteles': () => record('combinado', base('combinado', { destino: 'Miami y Orlando, Estados Unidos' }), {
+    origen: 'San Pedro Sula',
+    pasajeros: { adultos: 2, ninos: 2, infantes: 0, edadesNinos: '6 y 10 años' },
+    paquete: {
+      nombre: 'Florida en familia', mostrarPrecios: true, lineas: ['vuelo1', 'hotel1', 'traslado1', 'hotel2', 'vuelo2', 'seguro1'],
+      componentes: [
+        { id: 'vuelo1', tipo: 'vuelo', titulo: 'Vuelo de ida a Miami', vuelo: { vuelos: { journeys: flights(fixture('american-google.txt'), '2026-10-14').slice(0, 1).map(journey => ({ ...journey, segmentos: journey.segmentos.slice(0, 1) })), confirmado: true },
+          tarifas: [{ aerolinea: 'American Airlines', cabina: 'Económica', tipoTarifa: 'Main Cabin', reembolso: 'no_reembolsable' }],
+          equipaje: [{ alcance: 'Todos los vuelos', personal: piece('incluido', 1), mano: piece('incluido', 1), documentado: piece('con_cargo') }], equipajeConfirmado: true } },
+        { id: 'hotel1', tipo: 'hotel', hotel: { nombre: 'Hotel de prueba Brickell', destino: 'Miami, Florida', checkIn: '2026-11-10', checkOut: '2026-11-14', habitaciones: [{ categoria: 'Habitación familiar', camas: '2 camas queen', cantidad: 1, adultos: 2, ninos: 2, edadesNinos: '6 y 10 años' }],
+          planComidas: 'Solo alojamiento', impuestos: 'incluidos', cargoResort: 'Cargo de resort pagadero en el hotel', cancelacion: 'Sin cargo hasta 72 horas antes.', reembolso: 'reembolsable', fotos: photos([photo('rio-de-janeiro-clasico', 2)]) } },
+        { id: 'traslado1', tipo: 'traslado', servicio: { descripcion: 'Traslado terrestre Miami – Orlando', modalidad: 'privado', fecha: '2026-11-14', hora: '10:00', lugar: 'Lobby del hotel en Miami', duracion: '3 horas y 30 minutos aproximadamente' } },
+        { id: 'hotel2', tipo: 'hotel', hotel: { nombre: 'Hotel de prueba Lake Buena Vista', destino: 'Orlando, Florida', checkIn: '2026-11-14', checkOut: '2026-11-18', habitaciones: [{ categoria: 'Suite familiar', camas: '2 camas queen y sofá cama', cantidad: 1, adultos: 2, ninos: 2, edadesNinos: '6 y 10 años' }],
+          planComidas: 'Desayuno incluido', impuestos: 'incluidos', cancelacion: 'Sin cargo hasta 7 días antes.', reembolso: 'reembolsable' } },
+        { id: 'vuelo2', tipo: 'vuelo', titulo: 'Vuelo de regreso desde Orlando', vuelo: { vuelos: { journeys: flights(`Departing flight Wed, Nov 18
+11:05 AM
+Orlando International Airport (MCO)
+Travel time: 1 hr 15 min
+12:20 PM
+Miami International Airport (MIA)
+American · Economy · Airbus A321 · AA 1910
+1 hr 30 min layover Miami (MIA)
+1:50 PM
+Miami International Airport (MIA)
+Travel time: 2 hr 35 min
+3:25 PM
+Ramón Villeda Morales International Airport (SAP)
+American · Economy · Boeing 737 · AA 361`, '2026-10-14'), confirmado: true },
+          tarifas: [{ aerolinea: 'American Airlines', cabina: 'Económica', tipoTarifa: 'Main Cabin', reembolso: 'no_reembolsable' }],
+          equipaje: [{ alcance: 'Todos los vuelos', personal: piece('incluido', 1), mano: piece('incluido', 1), documentado: piece('con_cargo') }], equipajeConfirmado: true } },
+        { id: 'seguro1', tipo: 'seguro', servicio: { descripcion: 'Seguro de viaje con asistencia médica', operador: 'Aseguradora de prueba', fecha: '2026-11-10', fechaFin: '2026-11-18' } },
+      ],
+    },
+    condiciones: detailsModule.termsTemplates.combinado,
+  }, [
+    { descripcion: 'Vuelo SAP – MIA', tipo: 'Tarifa aérea', cantidad: 4, precio_unitario: 285 },
+    { descripcion: 'Hotel Miami — 4 noches', tipo: 'Hotel', cantidad: 1, precio_unitario: 980 },
+    { descripcion: 'Traslado privado Miami – Orlando', tipo: 'Traslado', cantidad: 1, precio_unitario: 260 },
+    { descripcion: 'Hotel Orlando — 4 noches', tipo: 'Hotel', cantidad: 1, precio_unitario: 1120 },
+    { descripcion: 'Vuelo MCO – MIA – SAP', tipo: 'Tarifa aérea', cantidad: 4, precio_unitario: 310 },
+    { descripcion: 'Seguro de viaje', tipo: 'Seguro', cantidad: 4, precio_unitario: 32 },
   ]),
 
   // A quotation saved before docs/sql/quotations_v5.sql: no tipo, no detalles, validity as a date.

@@ -6,9 +6,14 @@ import { isDiscount, lineCents } from "@/lib/money";
 // browser sends is passed through sanitizeDetails(): unknown keys are dropped, strings are trimmed and
 // capped, numbers are bounded and arrays are limited, so a crafted request cannot store arbitrary JSON.
 
-export const quotationKinds = ["vuelo", "hotel", "ferry", "paquete", "general"] as const;
+// "combinado" (V6) builds a package from ordered service components. "paquete" is the V5 package; it is no
+// longer offered for new quotations, but existing ones keep opening, editing and printing as before.
+export const quotationKinds = ["vuelo", "hotel", "ferry", "paquete", "combinado", "general"] as const;
 export type QuotationKind = (typeof quotationKinds)[number];
-export const quotationKindLabels: Record<QuotationKind, string> = { vuelo: "Vuelo", hotel: "Hotel", ferry: "Ferry", paquete: "Paquete o combinado", general: "Otros servicios" };
+export const quotationKindLabels: Record<QuotationKind, string> = { vuelo: "Vuelo", hotel: "Hotel", ferry: "Ferry", paquete: "Paquete o combinado", combinado: "Paquete combinado", general: "Otros servicios" };
+// Kinds offered when creating a quotation, and the names shown in the admin lists (the PDF keeps quotationKindLabels).
+export const creatableKinds: QuotationKind[] = ["vuelo", "hotel", "ferry", "combinado", "general"];
+export const quotationKindAdminLabels: Record<QuotationKind, string> = { ...quotationKindLabels, paquete: "Paquete (formato anterior)" };
 
 export const defaultZone = "America/Tegucigalpa";
 export const expiryPresets = [2, 6, 12, 24, 48] as const;
@@ -17,7 +22,9 @@ export type BaggageState = "incluido" | "no_incluido" | "con_cargo" | "";
 export type BaggagePiece = { estado: BaggageState; piezas: number | null; peso: string; medidas: string };
 export type BaggageAllowance = { id: string; alcance: string; personal: BaggagePiece; mano: BaggagePiece; documentado: BaggagePiece; adicional: string; notas: string };
 export type Refundability = "reembolsable" | "no_reembolsable" | "parcial" | "";
-export type FareRules = { id: string; alcance: string; aerolinea: string; operadoPor: string; cabina: string; tipoTarifa: string; claseReserva: string; cambios: string; cancelacion: string; reembolso: Refundability; restricciones: string; asientos: string };
+// plantilla / plantillaId: the saved fare preset the advisor started from (airline catalog). The values
+// themselves are a copy: editing the preset later never changes this quotation.
+export type FareRules = { id: string; alcance: string; aerolinea: string; operadoPor: string; cabina: string; tipoTarifa: string; claseReserva: string; cambios: string; cancelacion: string; reembolso: Refundability; restricciones: string; asientos: string; plantilla: string; plantillaId: string };
 export type HotelRoom = { id: string; categoria: string; camas: string; cantidad: number; adultos: number; ninos: number; edadesNinos: string };
 export type HotelPhoto = { path: string; leyenda: string; ancho: number; alto: number };
 export type TaxState = "incluidos" | "no_incluidos" | "parcial" | "";
@@ -25,11 +32,31 @@ export type TaxState = "incluidos" | "no_incluidos" | "parcial" | "";
 // assumed from the hotel's or operator's name, category or advertised facilities.
 export type InclusionState = "incluido" | "no_incluido" | "con_cargo" | "";
 export type Inclusion = { id: string; nombre: string; estado: InclusionState; detalle: string };
-export type HotelStay = { id: string; nombre: string; destino: string; direccion: string; checkIn: string; checkOut: string; habitaciones: HotelRoom[]; planComidas: string; amenidades: string; inclusiones: Inclusion[]; inclusionesConfirmadas: boolean; impuestos: TaxState; cargoResort: string; cancelacion: string; reembolso: Refundability; condiciones: string; fotos: HotelPhoto[] };
+// catalogoId: the hotel catalog record it was filled from, if any. The stay is a snapshot: later catalog
+// edits never change a quotation.
+export type HotelStay = { id: string; nombre: string; destino: string; direccion: string; checkIn: string; checkOut: string; habitaciones: HotelRoom[]; planComidas: string; amenidades: string; inclusiones: Inclusion[]; inclusionesConfirmadas: boolean; impuestos: TaxState; cargoResort: string; cancelacion: string; reembolso: Refundability; condiciones: string; fotos: HotelPhoto[]; catalogoId: string };
 export type FerryLeg = { id: string; tipo: "ida" | "regreso" | "tramo"; operador: string; embarcacion: string; origenPuerto: string; destinoPuerto: string; salidaFecha: string; salidaHora: string; llegadaFecha: string; llegadaHora: string; duracionMin: number | null };
 export type FerryVehicle = { id: string; tipo: string; cantidad: number };
 export type FerryDetails = { legs: FerryLeg[]; clase: string; asiento: string; cabina: string; vehiculos: FerryVehicle[]; equipajeIncluido: string; equipajeAdicional: string; inclusiones: Inclusion[]; inclusionesConfirmadas: boolean; cambios: string; cancelacion: string; reembolso: Refundability; embarque: string; documentos: string; confirmado: boolean };
 export type IncludedService = { id: string; tipo: string; descripcion: string };
+
+// ----- combined package (V6) -----
+// A package is an ordered list of service components. Flights, hotels and ferries reuse the V5 structures
+// (and therefore the V5 editors, checks and PDF blocks); transfers, tours and other services share one
+// simple structure. Several components of the same type are allowed (two hotels, several flights).
+export const packageServiceKinds = ["vuelo", "hotel", "ferry", "traslado", "tour", "actividad", "seguro", "asistencia", "otro"] as const;
+export type PackageServiceKind = (typeof packageServiceKinds)[number];
+export const packageServiceLabels: Record<PackageServiceKind, string> = { vuelo: "Vuelo", hotel: "Hotel", ferry: "Ferry", traslado: "Traslado", tour: "Tour o excursión", actividad: "Actividad", seguro: "Seguro de viaje", asistencia: "Asistencia al viajero", otro: "Otro servicio" };
+// Price-line type suggested for each component (one of itemTypes).
+export const packageServiceItemTypes: Record<PackageServiceKind, string> = { vuelo: "Tarifa aérea", hotel: "Hotel", ferry: "Ferry", traslado: "Traslado", tour: "Tour", actividad: "Tour", seguro: "Seguro", asistencia: "Asistencia", otro: "Otro" };
+export type FlightService = { vuelos: { journeys: FlightJourney[]; textoOriginal: string; confirmado: boolean; boletosSeparados: boolean }; tarifas: FareRules[]; equipaje: BaggageAllowance[]; equipajeConfirmado: boolean };
+export type ServiceMode = "" | "compartido" | "privado";
+export type GeneralService = { descripcion: string; operador: string; fecha: string; hora: string; fechaFin: string; lugar: string; duracion: string; modalidad: ServiceMode; inclusiones: Inclusion[]; inclusionesConfirmadas: boolean; cancelacion: string };
+export type PackageComponent = { id: string; tipo: PackageServiceKind; titulo: string; notas: string; vuelo: FlightService | null; hotel: HotelStay | null; ferry: FerryDetails | null; servicio: GeneralService | null };
+// mostrarPrecios: whether the customer's PDF shows each price line (itemized) or only the package total.
+// lineas[i] is the component id the i-th price line belongs to ("" = the whole package).
+export type PackageDetails = { nombre: string; componentes: PackageComponent[]; mostrarPrecios: boolean; lineas: string[] };
+export const maxPackageComponents = 16;
 
 export type QuotationDetails = {
   version: 1;
@@ -55,6 +82,8 @@ export type QuotationDetails = {
   aprobacionCondiciones: { huella: string; por: string; en: string } | null;
   // Code of the accepted quotation this one amends, when it was created as an amendment.
   enmiendaDe: string;
+  // Only used by "combinado" quotations; empty for every other kind.
+  paquete: PackageDetails;
 };
 
 export const hotelInclusionSuggestions = ["Desayuno", "Almuerzo", "Cena", "Plan todo incluido", "Bebidas", "Wi-Fi", "Piscina", "Acceso a playa", "Estacionamiento", "Traslados", "Transporte aeropuerto-hotel", "Impuestos", "Propinas", "Actividades recreativas", "Gimnasio", "Spa", "Club infantil", "Servicio a la habitación"];
@@ -97,6 +126,7 @@ export const termsTemplates: Record<QuotationKind, string[]> = {
     baseTerms.requisitos, baseTerms.pago, baseTerms.politicas,
   ],
   paquete: [baseTerms.noReserva, baseTerms.incluye, baseTerms.cambios, baseTerms.extras, baseTerms.requisitos, baseTerms.pago, baseTerms.politicas],
+  combinado: [baseTerms.noReserva, baseTerms.incluye, baseTerms.cambios, baseTerms.extras, baseTerms.requisitos, baseTerms.pago, baseTerms.politicas],
   ferry: [
     "Esta cotización no constituye una reserva confirmada. Las tarifas y la disponibilidad están sujetas a cambios hasta que la naviera confirme la reserva o emita los boletos.",
     baseTerms.incluye,
@@ -112,11 +142,69 @@ export const separateTicketsClause = "Esta cotización combina boletos emitidos 
 const emptyPiece = (): BaggagePiece => ({ estado: "", piezas: null, peso: "", medidas: "" });
 export const newId = () => (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`).replace(/-/g, "").slice(0, 12);
 export const emptyBaggage = (id = newId()): BaggageAllowance => ({ id, alcance: "Todos los vuelos", personal: emptyPiece(), mano: emptyPiece(), documentado: emptyPiece(), adicional: "", notas: "" });
-export const emptyFare = (id = newId()): FareRules => ({ id, alcance: "Todos los vuelos", aerolinea: "", operadoPor: "", cabina: "", tipoTarifa: "", claseReserva: "", cambios: "", cancelacion: "", reembolso: "", restricciones: "", asientos: "" });
+export const emptyFare = (id = newId()): FareRules => ({ id, alcance: "Todos los vuelos", aerolinea: "", operadoPor: "", cabina: "", tipoTarifa: "", claseReserva: "", cambios: "", cancelacion: "", reembolso: "", restricciones: "", asientos: "", plantilla: "", plantillaId: "" });
 export const emptyRoom = (id = newId()): HotelRoom => ({ id, categoria: "", camas: "", cantidad: 1, adultos: 2, ninos: 0, edadesNinos: "" });
-export const emptyHotel = (id = newId()): HotelStay => ({ id, nombre: "", destino: "", direccion: "", checkIn: "", checkOut: "", habitaciones: [emptyRoom()], planComidas: "", amenidades: "", inclusiones: [], inclusionesConfirmadas: false, impuestos: "", cargoResort: "", cancelacion: "", reembolso: "", condiciones: "", fotos: [] });
+export const emptyHotel = (id = newId()): HotelStay => ({ id, nombre: "", destino: "", direccion: "", checkIn: "", checkOut: "", habitaciones: [emptyRoom()], planComidas: "", amenidades: "", inclusiones: [], inclusionesConfirmadas: false, impuestos: "", cargoResort: "", cancelacion: "", reembolso: "", condiciones: "", fotos: [], catalogoId: "" });
 export const emptyFerryLeg = (tipo: FerryLeg["tipo"] = "ida", id = newId()): FerryLeg => ({ id, tipo, operador: "", embarcacion: "", origenPuerto: "", destinoPuerto: "", salidaFecha: "", salidaHora: "", llegadaFecha: "", llegadaHora: "", duracionMin: null });
 export const emptyFerry = (withLeg = false): FerryDetails => ({ legs: withLeg ? [emptyFerryLeg()] : [], clase: "", asiento: "", cabina: "", vehiculos: [], equipajeIncluido: "", equipajeAdicional: "", inclusiones: [], inclusionesConfirmadas: false, cambios: "", cancelacion: "", reembolso: "", embarque: "", documentos: "", confirmado: false });
+export const emptyPackage = (): PackageDetails => ({ nombre: "", componentes: [], mostrarPrecios: false, lineas: [] });
+export const emptyService = (): GeneralService => ({ descripcion: "", operador: "", fecha: "", hora: "", fechaFin: "", lugar: "", duracion: "", modalidad: "", inclusiones: [], inclusionesConfirmadas: false, cancelacion: "" });
+export const emptyFlightService = (): FlightService => ({ vuelos: { journeys: [], textoOriginal: "", confirmado: false, boletosSeparados: false }, tarifas: [emptyFare()], equipaje: [emptyBaggage()], equipajeConfirmado: false });
+
+export function emptyComponent(tipo: PackageServiceKind, id = newId()): PackageComponent {
+  return {
+    id, tipo, titulo: "", notas: "",
+    vuelo: tipo === "vuelo" ? emptyFlightService() : null,
+    hotel: tipo === "hotel" ? emptyHotel() : null,
+    ferry: tipo === "ferry" ? emptyFerry(true) : null,
+    servicio: tipo !== "vuelo" && tipo !== "hotel" && tipo !== "ferry" ? emptyService() : null,
+  };
+}
+
+// A copy with fresh ids, for "Duplicar servicio". Confirmations are cleared: the copy must be reviewed.
+export function duplicateComponent(component: PackageComponent): PackageComponent {
+  const fresh = <T extends { id: string }>(item: T) => ({ ...item, id: newId() });
+  return {
+    ...component, id: newId(),
+    vuelo: component.vuelo ? { ...component.vuelo, vuelos: { ...component.vuelo.vuelos, confirmado: false, journeys: component.vuelo.vuelos.journeys.map(journey => ({ ...fresh(journey), segmentos: journey.segmentos.map(segment => ({ ...fresh(segment), revisar: [...segment.revisar] })) })) }, tarifas: component.vuelo.tarifas.map(fresh), equipaje: component.vuelo.equipaje.map(fresh), equipajeConfirmado: false } : null,
+    hotel: component.hotel ? { ...fresh(component.hotel), habitaciones: component.hotel.habitaciones.map(fresh), inclusiones: component.hotel.inclusiones.map(fresh), inclusionesConfirmadas: false, fotos: component.hotel.fotos.map(photo => ({ ...photo })) } : null,
+    ferry: component.ferry ? { ...component.ferry, legs: component.ferry.legs.map(fresh), vehiculos: component.ferry.vehiculos.map(fresh), inclusiones: component.ferry.inclusiones.map(fresh), inclusionesConfirmadas: false, confirmado: false } : null,
+    servicio: component.servicio ? { ...component.servicio, inclusiones: component.servicio.inclusiones.map(fresh), inclusionesConfirmadas: false } : null,
+  };
+}
+
+export function componentLabel(component: PackageComponent, index: number) {
+  return `Servicio ${index + 1} (${packageServiceLabels[component.tipo]})`;
+}
+
+// Customer-facing heading of a component: the advisor's title, else a description built from its data.
+export function componentTitle(component: PackageComponent) {
+  if (component.titulo) return component.titulo;
+  if (component.hotel?.nombre) return component.hotel.nombre;
+  if (component.servicio?.descripcion) return component.servicio.descripcion;
+  if (component.vuelo) {
+    const journeys = component.vuelo.vuelos.journeys.filter(journey => journey.segmentos.length);
+    const first = journeys[0]?.segmentos[0];
+    const last = journeys[0]?.segmentos.at(-1);
+    if (first && last) return `${first.origen} – ${last.destino}${journeys.length === 2 ? " – " + (journeys[1].segmentos.at(-1)?.destino ?? "") : ""}`;
+  }
+  if (component.ferry?.legs[0]) return [component.ferry.legs[0].origenPuerto, component.ferry.legs[0].destinoPuerto].filter(Boolean).join(" – ");
+  return packageServiceLabels[component.tipo];
+}
+
+// Every flight, hotel and ferry crossing of a quotation in one view: for a combined package the
+// components' data in their order, otherwise the quotation's own sections. Used for trip dates, photos
+// and hotel suggestions; it is never saved.
+export function expandedDetails(details: QuotationDetails): QuotationDetails {
+  const components = details.paquete.componentes;
+  if (!components.length) return details;
+  return {
+    ...details,
+    vuelos: { ...details.vuelos, journeys: [...details.vuelos.journeys, ...components.flatMap(component => component.vuelo?.vuelos.journeys ?? [])] },
+    hoteles: [...details.hoteles, ...components.flatMap(component => component.hotel ? [component.hotel] : [])],
+    ferry: { ...details.ferry, legs: [...details.ferry.legs, ...components.flatMap(component => component.ferry?.legs ?? [])] },
+  };
+}
 
 export function defaultDetails(kind: QuotationKind): QuotationDetails {
   return {
@@ -136,6 +224,7 @@ export function defaultDetails(kind: QuotationKind): QuotationDetails {
     refCreacion: "",
     aprobacionCondiciones: null,
     enmiendaDe: "",
+    paquete: emptyPackage(),
   };
 }
 
@@ -217,13 +306,70 @@ function sanitizeHotel(value: unknown): HotelStay {
     inclusiones: list(source.inclusiones, 40).map(sanitizeInclusion).filter(item => item.nombre),
     inclusionesConfirmadas: source.inclusionesConfirmadas === true,
     fotos: list(source.fotos, 12).map(item => { const photo = record(item); return { path: text(photo.path, 80), leyenda: text(photo.leyenda, 140), ancho: integer(photo.ancho, 0, 20000, 0), alto: integer(photo.alto, 0, 20000, 0) }; }).filter(photo => photoPathPattern.test(photo.path)),
+    catalogoId: uuidText(source.catalogoId),
+  };
+}
+
+const uuidText = (value: unknown) => { const result = text(value, 36).toLowerCase(); return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(result) ? result : ""; };
+
+function sanitizeFare(value: unknown): FareRules {
+  const fare = record(value);
+  return { id: id(fare.id), alcance: text(fare.alcance, 80), aerolinea: text(fare.aerolinea, 80), operadoPor: text(fare.operadoPor, 120), cabina: text(fare.cabina, 60), tipoTarifa: text(fare.tipoTarifa, 80), claseReserva: upper(fare.claseReserva, 2), cambios: text(fare.cambios, 400, true), cancelacion: text(fare.cancelacion, 400, true), reembolso: choice<Refundability>(fare.reembolso, ["reembolsable", "no_reembolsable", "parcial"]), restricciones: text(fare.restricciones, 600, true), asientos: text(fare.asientos, 300), plantilla: text(fare.plantilla, 120), plantillaId: uuidText(fare.plantillaId) };
+}
+
+export function sanitizeBaggage(value: unknown): BaggageAllowance {
+  const bag = record(value);
+  return { id: id(bag.id), alcance: text(bag.alcance, 80), personal: sanitizePiece(bag.personal), mano: sanitizePiece(bag.mano), documentado: sanitizePiece(bag.documentado), adicional: text(bag.adicional, 300), notas: text(bag.notas, 600, true) };
+}
+
+function sanitizeFlights(value: unknown): QuotationDetails["vuelos"] {
+  const flights = record(value);
+  return { journeys: list(flights.journeys, 8).map(sanitizeJourney), textoOriginal: text(flights.textoOriginal, 20000, true), confirmado: flights.confirmado === true, boletosSeparados: flights.boletosSeparados === true };
+}
+
+export function sanitizeInclusions(value: unknown, max = 40) {
+  return list(value, max).map(sanitizeInclusion).filter(item => item.nombre);
+}
+
+function sanitizeService(value: unknown): GeneralService {
+  const source = record(value);
+  return {
+    descripcion: text(source.descripcion, 400), operador: text(source.operador, 120), fecha: date(source.fecha), hora: time(source.hora), fechaFin: date(source.fechaFin),
+    lugar: text(source.lugar, 200), duracion: text(source.duracion, 80), modalidad: choice<ServiceMode>(source.modalidad, ["compartido", "privado"]),
+    inclusiones: sanitizeInclusions(source.inclusiones, 30), inclusionesConfirmadas: source.inclusionesConfirmadas === true, cancelacion: text(source.cancelacion, 800, true),
+  };
+}
+
+// Each component keeps only the data of its own type.
+function sanitizeComponent(value: unknown): PackageComponent | null {
+  const source = record(value);
+  const tipo = choice<PackageServiceKind>(source.tipo, packageServiceKinds);
+  if (!tipo) return null;
+  const flight = record(source.vuelo);
+  return {
+    id: id(source.id), tipo, titulo: text(source.titulo, 160), notas: text(source.notas, 1000, true),
+    vuelo: tipo === "vuelo" ? { vuelos: sanitizeFlights(flight.vuelos), tarifas: list(flight.tarifas, 6).map(sanitizeFare), equipaje: list(flight.equipaje, 6).map(sanitizeBaggage), equipajeConfirmado: flight.equipajeConfirmado === true } : null,
+    hotel: tipo === "hotel" ? sanitizeHotel(source.hotel) : null,
+    ferry: tipo === "ferry" ? sanitizeFerry(source.ferry) : null,
+    servicio: tipo !== "vuelo" && tipo !== "hotel" && tipo !== "ferry" ? sanitizeService(source.servicio) : null,
+  };
+}
+
+function sanitizePackage(value: unknown): PackageDetails {
+  const source = record(value);
+  const componentes = list(source.componentes, maxPackageComponents).map(sanitizeComponent).filter((item): item is PackageComponent => item !== null);
+  // Component ids must be unique for price lines to point at one of them.
+  const seen = new Set<string>();
+  for (const component of componentes) { while (seen.has(component.id)) component.id = newId(); seen.add(component.id); }
+  return {
+    nombre: text(source.nombre, 160), componentes, mostrarPrecios: source.mostrarPrecios === true,
+    lineas: list(source.lineas, 50).map(item => { const value = text(item, 40); return seen.has(value) ? value : ""; }),
   };
 }
 
 export function sanitizeDetails(value: unknown): QuotationDetails {
   const source = record(value);
   const passengers = record(source.pasajeros);
-  const flights = record(source.vuelos);
   const payment = record(source.pago);
   const validity = record(source.validez);
   const zone = text(validity.zona, 60);
@@ -231,9 +377,9 @@ export function sanitizeDetails(value: unknown): QuotationDetails {
     version: 1,
     origen: text(source.origen, 120), fechaSalida: date(source.fechaSalida), fechaRegreso: date(source.fechaRegreso),
     pasajeros: { adultos: integer(passengers.adultos, 0, 99, 0), ninos: integer(passengers.ninos, 0, 99, 0), infantes: integer(passengers.infantes, 0, 99, 0), edadesNinos: text(passengers.edadesNinos, 60) },
-    vuelos: { journeys: list(flights.journeys, 8).map(sanitizeJourney), textoOriginal: text(flights.textoOriginal, 20000, true), confirmado: flights.confirmado === true, boletosSeparados: flights.boletosSeparados === true },
-    tarifas: list(source.tarifas, 6).map(item => { const fare = record(item); return { id: id(fare.id), alcance: text(fare.alcance, 80), aerolinea: text(fare.aerolinea, 80), operadoPor: text(fare.operadoPor, 120), cabina: text(fare.cabina, 60), tipoTarifa: text(fare.tipoTarifa, 80), claseReserva: upper(fare.claseReserva, 2), cambios: text(fare.cambios, 400, true), cancelacion: text(fare.cancelacion, 400, true), reembolso: choice<Refundability>(fare.reembolso, ["reembolsable", "no_reembolsable", "parcial"]), restricciones: text(fare.restricciones, 600, true), asientos: text(fare.asientos, 300) }; }),
-    equipaje: list(source.equipaje, 6).map(item => { const bag = record(item); return { id: id(bag.id), alcance: text(bag.alcance, 80), personal: sanitizePiece(bag.personal), mano: sanitizePiece(bag.mano), documentado: sanitizePiece(bag.documentado), adicional: text(bag.adicional, 300), notas: text(bag.notas, 600, true) }; }),
+    vuelos: sanitizeFlights(source.vuelos),
+    tarifas: list(source.tarifas, 6).map(sanitizeFare),
+    equipaje: list(source.equipaje, 6).map(sanitizeBaggage),
     equipajeConfirmado: source.equipajeConfirmado === true,
     hoteles: list(source.hoteles, 6).map(sanitizeHotel),
     ferry: sanitizeFerry(source.ferry),
@@ -251,6 +397,7 @@ export function sanitizeDetails(value: unknown): QuotationDetails {
       return /^[0-9a-f]{14}$/.test(huella) ? { huella, por: text(approval.por, 40), en: iso(approval.en) } : null;
     })(),
     enmiendaDe: text(source.enmiendaDe, 40),
+    paquete: sanitizePackage(source.paquete),
   };
 }
 
@@ -321,54 +468,93 @@ export function pricingSummary(items: PricingLine[], details: Pick<QuotationDeta
   };
 }
 
+// Amount of the price lines that belong to one package component (lineas[i] = component id of line i).
+// Lines only count when the link list matches the lines; otherwise nothing is attributed (never guessed).
+export function componentAmount(items: PricingLine[], lineas: string[], componentId: string) {
+  if (lineas.length !== items.length) return null;
+  const lines = items.filter((_, index) => lineas[index] === componentId);
+  if (!lines.length) return null;
+  return lines.reduce((sum, item) => sum + lineCents(item), 0) / 100;
+}
+
 // ----- readiness -----
 
 export type ReadinessIssue = { nivel: "error" | "aviso"; mensaje: string; seccion: string };
 
 // What must be true before a quotation is sent to the customer. Errors block sending; warnings do not.
+type Push = (nivel: ReadinessIssue["nivel"], seccion: string, mensaje: string) => void;
+
+function flightChecks(flights: FlightService, push: Push, prefix = "") {
+  const itinerary: ItineraryIssue[] = validateItinerary(flights.vuelos.journeys);
+  for (const issue of itinerary) if (issue.nivel !== "info") push(issue.nivel === "error" ? "error" : "aviso", "vuelos", `${prefix}${issue.mensaje}`);
+  if (!flights.vuelos.confirmado) push("error", "vuelos", `${prefix}Confirme el itinerario después de revisarlo.`);
+  if (!flights.equipaje.length) push("error", "equipaje", `${prefix}Indique la franquicia de equipaje.`);
+  else if (!flights.equipajeConfirmado) push("error", "equipaje", `${prefix}Confirme la franquicia de equipaje con las condiciones de la tarifa.`);
+  for (const bag of flights.equipaje) for (const key of ["personal", "mano", "documentado"] as const) if (!bag[key].estado) push("error", "equipaje", `${prefix}${bag.alcance || "Equipaje"}: indique si el ${baggageLabels[key].toLowerCase()} está incluido.`);
+  if (!flights.tarifas.some(fare => fare.cabina)) push("aviso", "tarifa", `${prefix}Indique la cabina de la tarifa.`);
+}
+
+function hotelChecks(hotels: HotelStay[], push: Push, prefix = "") {
+  if (!hotels.length) push("error", "hotel", `${prefix}Agregue al menos un hotel.`);
+  hotels.forEach((hotel, index) => {
+    const name = `${prefix}${hotel.nombre || `Hotel ${index + 1}`}`;
+    if (!hotel.nombre) push("error", "hotel", `${prefix}Hotel ${index + 1}: indique el nombre.`);
+    if (!hotel.checkIn || !hotel.checkOut) push("error", "hotel", `${name}: indique las fechas de entrada y salida.`);
+    else if (hotel.checkOut <= hotel.checkIn) push("error", "hotel", `${name}: la salida debe ser posterior a la entrada.`);
+    if (!hotel.habitaciones.length) push("error", "hotel", `${name}: agregue al menos una habitación.`);
+    if (!hotel.planComidas) push("aviso", "hotel", `${name}: indique el plan de comidas.`);
+    if (!hotel.impuestos) push("aviso", "hotel", `${name}: indique si los impuestos están incluidos.`);
+    if (!hotel.cancelacion) push("aviso", "hotel", `${name}: indique la política de cancelación.`);
+    checkInclusions(hotel.inclusiones, hotel.inclusionesConfirmadas, "hotel", `${name}: `, push);
+  });
+}
+
+function ferryChecks(ferry: FerryDetails, push: Push, prefix = "") {
+  if (!ferry.legs.length) push("error", "ferry", `${prefix}Agregue al menos un trayecto en ferry.`);
+  ferry.legs.forEach((leg, index) => {
+    const name = `${prefix}Trayecto ${index + 1}`;
+    if (!leg.operador) push("error", "ferry", `${name}: indique la naviera.`);
+    if (!leg.origenPuerto || !leg.destinoPuerto) push("error", "ferry", `${name}: indique el puerto de salida y el de llegada.`);
+    if (!leg.salidaFecha || !leg.salidaHora) push("error", "ferry", `${name}: indique la fecha y hora de salida.`);
+    if (leg.salidaFecha && leg.llegadaFecha && leg.llegadaFecha < leg.salidaFecha) push("error", "ferry", `${name}: la llegada no puede ser anterior a la salida.`);
+    else if (leg.salidaFecha && leg.llegadaFecha === leg.salidaFecha && leg.salidaHora && leg.llegadaHora && leg.llegadaHora <= leg.salidaHora) push("error", "ferry", `${name}: la hora de llegada debe ser posterior a la salida.`);
+    const previous = ferry.legs[index - 1];
+    if (previous?.salidaFecha && leg.salidaFecha && leg.salidaFecha < previous.salidaFecha) push("error", "ferry", `${name}: sale antes del trayecto anterior.`);
+  });
+  if (ferry.legs.length && !ferry.confirmado) push("error", "ferry", `${prefix}Confirme los horarios y condiciones del ferry con la naviera.`);
+  if (!ferry.equipajeIncluido) push("aviso", "ferry", `${prefix}Indique el equipaje incluido en el ferry.`);
+  checkInclusions(ferry.inclusiones, ferry.inclusionesConfirmadas, "ferry", prefix || "Ferry: ", push);
+}
+
+function serviceChecks(service: GeneralService, push: Push, prefix: string) {
+  if (!service.descripcion) push("error", "paquete", `${prefix}describa el servicio.`);
+  if (!service.fecha) push("aviso", "paquete", `${prefix}indique la fecha del servicio.`);
+  if (service.fecha && service.fechaFin && service.fechaFin < service.fecha) push("error", "paquete", `${prefix}la fecha de fin no puede ser anterior a la de inicio.`);
+  checkInclusions(service.inclusiones, service.inclusionesConfirmadas, "paquete", prefix, push);
+}
+
+function packageChecks(details: QuotationDetails, items: PricingLine[], push: Push) {
+  const { componentes, mostrarPrecios, lineas } = details.paquete;
+  if (!componentes.length) push("error", "paquete", "Agregue al menos un servicio al paquete.");
+  componentes.forEach((component, index) => {
+    const prefix = `${componentLabel(component, index)}: `;
+    if (component.vuelo) flightChecks(component.vuelo, push, prefix);
+    if (component.hotel) hotelChecks([component.hotel], push, prefix);
+    if (component.ferry) ferryChecks(component.ferry, push, prefix);
+    if (component.servicio) serviceChecks(component.servicio, push, prefix);
+  });
+  if (mostrarPrecios && items.length && lineas.length === items.length) {
+    for (const [index, component] of componentes.entries()) if (!lineas.includes(component.id)) push("aviso", "precio", `${componentLabel(component, index)}: no tiene un concepto de precio propio; en el PDF aparecerá sin precio.`);
+  }
+}
+
 export function quotationReadiness(kind: QuotationKind, details: QuotationDetails, items: PricingLine[], now = new Date()): ReadinessIssue[] {
   const issues: ReadinessIssue[] = [];
-  const push = (nivel: ReadinessIssue["nivel"], seccion: string, mensaje: string) => issues.push({ nivel, seccion, mensaje });
-  if (kind === "vuelo" || (kind === "paquete" && details.vuelos.journeys.length)) {
-    const itinerary: ItineraryIssue[] = validateItinerary(details.vuelos.journeys);
-    for (const issue of itinerary) if (issue.nivel !== "info") push(issue.nivel === "error" ? "error" : "aviso", "vuelos", issue.mensaje);
-    if (!details.vuelos.confirmado) push("error", "vuelos", "Confirme el itinerario después de revisarlo.");
-    if (!details.equipaje.length) push("error", "equipaje", "Indique la franquicia de equipaje.");
-    else if (!details.equipajeConfirmado) push("error", "equipaje", "Confirme la franquicia de equipaje con las condiciones de la tarifa.");
-    for (const bag of details.equipaje) for (const key of ["personal", "mano", "documentado"] as const) if (!bag[key].estado) push("error", "equipaje", `${bag.alcance || "Equipaje"}: indique si el ${baggageLabels[key].toLowerCase()} está incluido.`);
-    if (!details.tarifas.some(fare => fare.cabina)) push("aviso", "tarifa", "Indique la cabina de la tarifa.");
-  }
-  if (kind === "hotel" || (kind === "paquete" && details.hoteles.length)) {
-    if (!details.hoteles.length) push("error", "hotel", "Agregue al menos un hotel.");
-    details.hoteles.forEach((hotel, index) => {
-      const name = hotel.nombre || `Hotel ${index + 1}`;
-      if (!hotel.nombre) push("error", "hotel", `Hotel ${index + 1}: indique el nombre.`);
-      if (!hotel.checkIn || !hotel.checkOut) push("error", "hotel", `${name}: indique las fechas de entrada y salida.`);
-      else if (hotel.checkOut <= hotel.checkIn) push("error", "hotel", `${name}: la salida debe ser posterior a la entrada.`);
-      if (!hotel.habitaciones.length) push("error", "hotel", `${name}: agregue al menos una habitación.`);
-      if (!hotel.planComidas) push("aviso", "hotel", `${name}: indique el plan de comidas.`);
-      if (!hotel.impuestos) push("aviso", "hotel", `${name}: indique si los impuestos están incluidos.`);
-      if (!hotel.cancelacion) push("aviso", "hotel", `${name}: indique la política de cancelación.`);
-      checkInclusions(hotel.inclusiones, hotel.inclusionesConfirmadas, "hotel", `${name}: `, push);
-    });
-  }
-  if (kind === "ferry" || (kind === "paquete" && details.ferry.legs.length)) {
-    const { ferry } = details;
-    if (!ferry.legs.length) push("error", "ferry", "Agregue al menos un trayecto en ferry.");
-    ferry.legs.forEach((leg, index) => {
-      const name = `Trayecto ${index + 1}`;
-      if (!leg.operador) push("error", "ferry", `${name}: indique la naviera.`);
-      if (!leg.origenPuerto || !leg.destinoPuerto) push("error", "ferry", `${name}: indique el puerto de salida y el de llegada.`);
-      if (!leg.salidaFecha || !leg.salidaHora) push("error", "ferry", `${name}: indique la fecha y hora de salida.`);
-      if (leg.salidaFecha && leg.llegadaFecha && leg.llegadaFecha < leg.salidaFecha) push("error", "ferry", `${name}: la llegada no puede ser anterior a la salida.`);
-      else if (leg.salidaFecha && leg.llegadaFecha === leg.salidaFecha && leg.salidaHora && leg.llegadaHora && leg.llegadaHora <= leg.salidaHora) push("error", "ferry", `${name}: la hora de llegada debe ser posterior a la salida.`);
-      const previous = ferry.legs[index - 1];
-      if (previous?.salidaFecha && leg.salidaFecha && leg.salidaFecha < previous.salidaFecha) push("error", "ferry", `${name}: sale antes del trayecto anterior.`);
-    });
-    if (ferry.legs.length && !ferry.confirmado) push("error", "ferry", "Confirme los horarios y condiciones del ferry con la naviera.");
-    if (!ferry.equipajeIncluido) push("aviso", "ferry", "Indique el equipaje incluido en el ferry.");
-    checkInclusions(ferry.inclusiones, ferry.inclusionesConfirmadas, "ferry", "Ferry: ", push);
-  }
+  const push: Push = (nivel, seccion, mensaje) => issues.push({ nivel, seccion, mensaje });
+  if (kind === "vuelo" || (kind === "paquete" && details.vuelos.journeys.length)) flightChecks(details, push);
+  if (kind === "hotel" || (kind === "paquete" && details.hoteles.length)) hotelChecks(details.hoteles, push);
+  if (kind === "ferry" || (kind === "paquete" && details.ferry.legs.length)) ferryChecks(details.ferry, push);
+  if (kind === "combinado") packageChecks(details, items, push);
   if (!items.length) push("error", "precio", "Agregue al menos un concepto de precio.");
   const summary = pricingSummary(items, details);
   if (summary.total < 0) push("error", "precio", "Los descuentos superan el total.");
@@ -380,14 +566,15 @@ export function quotationReadiness(kind: QuotationKind, details: QuotationDetail
   return issues;
 }
 
-function checkInclusions(list: Inclusion[], confirmed: boolean, section: string, prefix: string, push: (nivel: ReadinessIssue["nivel"], seccion: string, mensaje: string) => void) {
+function checkInclusions(list: Inclusion[], confirmed: boolean, section: string, prefix: string, push: Push) {
   const undecided = list.filter(item => !item.estado);
   if (undecided.length) push("error", section, `${prefix}indique si está incluido: ${undecided.map(item => item.nombre).join(", ")}.`);
   if (list.length && !confirmed) push("error", section, `${prefix}confirme lo que incluye y lo que no.`);
 }
 
 // Keeps the general trip dates in step with the itinerary and the hotels when the advisor left them empty.
-export function derivedTripDates(details: QuotationDetails) {
+export function derivedTripDates(source: QuotationDetails) {
+  const details = expandedDetails(source);
   const segments = details.vuelos.journeys.flatMap(journey => journey.segmentos);
   const hotelDates = details.hoteles.flatMap(hotel => [hotel.checkIn, hotel.checkOut]).filter(Boolean).sort();
   const ferryDates = details.ferry.legs.map(leg => leg.salidaFecha).filter(Boolean);

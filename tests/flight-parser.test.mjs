@@ -119,7 +119,8 @@ American · Economy · AA 1580`;
   assert.deepEqual(result.journeys.map(route), ['SAP-MIA', 'MIA-JFK', 'JFK-SAP']);
   assert.deepEqual(result.journeys.map(journey => journey.tipo), ['tramo', 'tramo', 'tramo']);
   assert.equal(result.journeys[0].segmentos[0].operadoPor, 'Aeromexico');
-  assert.equal(result.journeys[0].segmentos[0].aerolinea, 'Delta');
+  // The short name written next to a known designator becomes the airline's full name (V6).
+  assert.equal(result.journeys[0].segmentos[0].aerolinea, 'Delta Air Lines');
   assert.equal(result.journeys[2].segmentos[0].salidaFecha, '2026-11-10');
   assert.equal(itinerary.itineraryType(result.journeys), 'Multidestino');
   assert.equal(errors(result).length, 0);

@@ -3,11 +3,12 @@ import { notFound } from "next/navigation";
 import { pageMetadata } from "@/lib/seo";
 import { requireAdmin } from "@/lib/admin";
 import { getAdminQuotation, listQuotationVersions, recentQuotationHotels } from "@/lib/quotation-data";
+import { editorCatalogs } from "@/lib/catalog-data";
 import { QuotationEditor } from "@/components/admin/quotation-editor/editor";
-import type { EditorDraft } from "@/components/admin/quotation-editor/draft";
+import { draftItemsFrom, type EditorDraft } from "@/components/admin/quotation-editor/draft";
 import { AssignQuotationForm, QuotationStatusForm } from "@/components/admin/quotation-actions";
 import { ConvertQuotationForm } from "@/components/admin/reservation-actions";
-import { isExpired, newId } from "@/lib/quotation-details";
+import { isExpired } from "@/lib/quotation-details";
 import { validUuid } from "@/lib/quotation-validation";
 import { quotationStatusLabel, type Customer } from "@/lib/quotation-types";
 
@@ -22,12 +23,13 @@ export default async function EditQuotationPage({ params, searchParams }: { para
   const { id } = await params;
   const { duplicada, enmienda } = await searchParams;
   if (!validUuid(id)) notFound();
-  const [record, customers, versions, recentHotels, reservation] = await Promise.all([
+  const [record, customers, versions, recentHotels, reservation, catalogs] = await Promise.all([
     getAdminQuotation(client, id),
     client.from("customers").select("id,nombre,email,telefono,notas").order("nombre", { ascending: true }).limit(1000),
     listQuotationVersions(client, id),
     recentQuotationHotels(client),
     client.from("reservations").select("id,codigo").eq("quotation_id", id).limit(1).maybeSingle(),
+    editorCatalogs(client),
   ]);
   if (!record) notFound();
   if (customers.error) throw new Error("No se pudieron cargar los clientes.");
@@ -36,7 +38,7 @@ export default async function EditQuotationPage({ params, searchParams }: { para
     id, updatedAt: quotation.updated_at ?? null, leadId: null, customerId: quotation.customer_id ?? "",
     cliente: { nombre: quotation.cliente_nombre, email: quotation.cliente_email ?? "", telefono: quotation.cliente_telefono ?? "" },
     tipo: record.kind, destino: quotation.destino === "Por definir" ? "" : quotation.destino, moneda: quotation.moneda, notas: quotation.notas ?? "", detalles: record.details,
-    items: record.items.map(item => ({ key: item.id ?? newId(), descripcion: item.descripcion, tipo: item.tipo, cantidad: String(item.cantidad), precio_unitario: Number(item.precio_unitario).toFixed(2) })),
+    items: draftItemsFrom(record.items, record.details.paquete.lineas),
   };
   const expired = isExpired(record.expiry) && ["borrador", "enviada"].includes(quotation.estado);
   const sidebar = <>
@@ -65,7 +67,7 @@ export default async function EditQuotationPage({ params, searchParams }: { para
     {enmienda ? <p className="rounded-card border border-line bg-brand-tint p-4 text-ink">Enmienda creada en borrador. La cotización aceptada original no cambió. Actualice lo necesario, apruebe las condiciones y envíe esta nueva cotización al cliente.</p> : null}
     {duplicada ? <p className="rounded-card border border-line bg-brand-tint p-4 text-ink">Esta es una copia nueva en borrador. Actualice fechas, validez y precios, y vuelva a confirmar el itinerario y el equipaje.</p> : null}
     {expired ? <p role="alert" className="rounded-card border border-error/40 bg-canvas p-4 text-error">La validez de esta cotización venció el {dateTime.format(new Date(record.expiry))}. Actualícela antes de volver a enviarla; las versiones ya enviadas no cambian.</p> : null}
-    <QuotationEditor initial={draft} customers={(customers.data ?? []) as Customer[]} recentHotels={recentHotels} sidebar={sidebar}
+    <QuotationEditor initial={draft} customers={(customers.data ?? []) as Customer[]} recentHotels={recentHotels} sidebar={sidebar} catalogs={catalogs}
       meta={{ codigo: quotation.codigo, estado: quotation.estado, estadoLabel: quotationStatusLabel(quotation.estado), expired, schemaReady: record.schemaReady, sent: versions.length > 0 || quotation.estado !== "borrador", converted: Boolean(reservation.data) }} />
   </div>;
 }

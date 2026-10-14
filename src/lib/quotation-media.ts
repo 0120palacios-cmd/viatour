@@ -1,6 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { photoPathPattern, type QuotationDetails } from "@/lib/quotation-details";
+import { expandedDetails, photoPathPattern, type QuotationDetails } from "@/lib/quotation-details";
 import type { PdfPhoto } from "@/lib/quotation-pdf";
 
 // Hotel photos live in the private quotation-media bucket (docs/sql/quotations_v5.sql). They are read
@@ -17,7 +17,8 @@ function imageFormat(bytes: Buffer): PdfPhoto["format"] | null {
 }
 
 export async function loadQuotationPhotos(client: SupabaseClient, details: QuotationDetails) {
-  const paths = Array.from(new Set(details.hoteles.flatMap(hotel => hotel.fotos.map(photo => photo.path)))).filter(path => photoPathPattern.test(path)).slice(0, maxPhotos);
+  // A combined package's hotels are inside its components.
+  const paths = Array.from(new Set(expandedDetails(details).hoteles.flatMap(hotel => hotel.fotos.map(photo => photo.path)))).filter(path => photoPathPattern.test(path)).slice(0, maxPhotos);
   const storage = client.storage.from(quotationMediaBucket);
   const loaded = await Promise.all(paths.map(async (path): Promise<[string, PdfPhoto] | null> => {
     try {

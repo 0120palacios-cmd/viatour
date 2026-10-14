@@ -8,7 +8,7 @@ import { samples } from './fixtures/quotation-samples.mjs';
 // In-memory stand-in for the Supabase query builder, covering the calls the quotation actions make.
 // Nothing here talks to a real database or sends e-mail.
 function fakeDb(seed = {}, options = {}) {
-  const tables = { customers: [], quotations: [], quotation_items: [], quotation_versions: [], leads: [], reservations: [], ...structuredClone(seed) };
+  const tables = { customers: [], quotations: [], quotation_items: [], quotation_versions: [], leads: [], reservations: [], hotel_catalog: [], ...structuredClone(seed) };
   const log = [];
   let counter = 0;
   const uuid = () => `00000000-0000-4000-8000-${String(++counter).padStart(12, '0')}`;
@@ -19,7 +19,10 @@ function fakeDb(seed = {}, options = {}) {
       return kind === 'eq' ? actual === value : value.includes(actual);
     }));
     const missing = values => options.legacy && table === 'quotations' && values && ['tipo', 'detalles', 'vence_en', 'version', 'version_aceptada'].some(key => key in values);
+    // Before docs/sql/quotations_v6.sql the tipo check rejects 'combinado' (Postgres check_violation).
+    const packageTypeMissing = values => options.noPackageType && table === 'quotations' && values?.tipo === 'combinado';
     const run = () => {
+      if ((state.op === 'insert' || state.op === 'update') && packageTypeMissing(state.values)) return { data: null, error: { code: '23514', message: 'new row for relation "quotations" violates check constraint "quotations_tipo_check"' } };
       if (state.op === 'insert') {
         if (missing(state.values)) return { data: null, error: { code: 'PGRST204' } };
         if (options.failItems && table === 'quotation_items') return { data: null, error: { code: 'X' } };
@@ -78,7 +81,7 @@ function fakeDb(seed = {}, options = {}) {
   const storage = { from: () => ({
     async list(_prefix, { limit, offset }) { return { data: files.slice(offset, offset + limit).map(file => ({ name: file.path.slice(6), created_at: file.created_at })), error: null }; },
     async remove(paths) {
-      const text = JSON.stringify(tables.quotations) + JSON.stringify(tables.quotation_versions);
+      const text = JSON.stringify(tables.quotations) + JSON.stringify(tables.quotation_versions) + JSON.stringify(tables.hotel_catalog);
       const allowed = paths.filter(path => !text.includes(path) && Date.parse(files.find(file => file.path === path)?.created_at) < Date.now() - 7 * 86400000);
       for (const path of allowed) files.splice(files.findIndex(file => file.path === path), 1);
       return { data: allowed.map(name => ({ name })), error: null };
@@ -96,7 +99,7 @@ function actions(db, { admin = true, user = 'agent-1', fetch = async () => ({ ok
   return load('src/app/admin/cotizaciones/actions.ts', {
     'node:crypto': crypto, 'next/navigation': { redirect }, 'next/cache': { revalidatePath() {} },
     '@/lib/admin': { requireAdmin: async () => { if (!admin) throw new Error('denied'); return { client: db.client, user: { id: user } }; }, adminSession: async () => admin ? { client: db.client, user: { id: user } } : null },
-    '@/lib/quotation-data': data, '@/lib/quotation-pdf': { renderQuotationPdf: async (record, options) => { rendered.push({ record, options }); return Buffer.from('%PDF-test'); }, quotationPdfFilename: () => 'cotizacion.pdf' },
+    '@/lib/catalog': load('src/lib/catalog.ts', { '@/lib/quotation-details': detailsModule }, { crypto }), '@/lib/quotation-data': data, '@/lib/quotation-pdf': { renderQuotationPdf: async (record, options) => { rendered.push({ record, options }); return Buffer.from('%PDF-test'); }, quotationPdfFilename: () => 'cotizacion.pdf' },
     '@/lib/quotation-media': { loadQuotationPhotos: async () => new Map(), quotationMediaBucket: 'quotation-media' }, '@/lib/quotation-details': detailsModule, '@/lib/quotation-payload': payloadModule,
     '@/lib/quotation-validation': validation, '@/lib/quotation-types': types, '@/lib/money': money, '@/lib/notifications': { captureNotificationFailure() {} },
     '@/lib/site-config': { siteConfig: { supportEmail: 'soporte@miviatour.com' } }, '@/lib/lead-admin': { customerWhatsappHref: () => '' }, '@/lib/lead-validation': { normalizePhone: value => value },
@@ -477,14 +480,15 @@ test('photo cleanup only removes old photos that no quotation or sent version us
   const inVersion = 'hotel/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.jpg';
   const orphan = 'hotel/cccccccccccccccccccccccccccccccc.jpg';
   const fresh = 'hotel/dddddddddddddddddddddddddddddddd.jpg';
-  const db = fakeDb({ quotations: [{ id: 'q1', detalles: { hoteles: [{ fotos: [{ path: used }] }] } }], quotation_versions: [{ id: 'v1', snapshot: { quotation: { detalles: { hoteles: [{ fotos: [{ path: inVersion }] }] } } } }] }, { files: [used, inVersion, orphan, fresh].map(path => ({ path, created_at: path === fresh ? recent : old })) });
+  const inCatalog = 'hotel/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee.jpg';
+  const db = fakeDb({ quotations: [{ id: 'q1', detalles: { hoteles: [{ fotos: [{ path: used }] }] } }], quotation_versions: [{ id: 'v1', snapshot: { quotation: { detalles: { hoteles: [{ fotos: [{ path: inVersion }] }] } } } }], hotel_catalog: [{ id: 'h1', fotos: [{ path: inCatalog }] }] }, { files: [used, inVersion, orphan, fresh, inCatalog].map(path => ({ path, created_at: path === fresh ? recent : old })) });
   const api = actions(db);
   const review = await api.cleanupUnusedHotelPhotos({}, form({ accion: 'revisar' }));
-  assert.deepEqual([review.checked, review.unused], [4, 1]);
-  assert.equal(db.files.length, 4);
+  assert.deepEqual([review.checked, review.unused], [5, 1]);
+  assert.equal(db.files.length, 5);
   const removed = await api.cleanupUnusedHotelPhotos({}, form({ accion: 'eliminar' }));
   assert.match(removed.success, /Se eliminaron 1 foto sin uso/);
-  assert.deepEqual(db.files.map(file => file.path).sort(), [used, inVersion, fresh].sort());
+  assert.deepEqual(db.files.map(file => file.path).sort(), [used, inVersion, fresh, inCatalog].sort());
 });
 
 test('money is exact at half-cent boundaries and matches PostgreSQL round()', () => {
@@ -493,4 +497,103 @@ test('money is exact at half-cent boundaries and matches PostgreSQL round()', ()
   assert.equal(money.lineAmount({ tipo: 'Hotel', cantidad: 1.5, precio_unitario: 0.33 }), 0.5);
   assert.equal(money.lineAmount({ tipo: 'Descuento', cantidad: 1.15, precio_unitario: 2.3 }), -2.65);
   assert.equal(money.totalAmount([{ tipo: 'Hotel', cantidad: 3, precio_unitario: 19.99 }, { tipo: 'Descuento', cantidad: 1, precio_unitario: 0.01 }]), 59.96);
+});
+
+// ---- V6 combined packages ----
+
+const json = value => JSON.parse(JSON.stringify(value));
+
+function packagePayload(overrides = {}) {
+  const record = samples['combinado-vuelo-hotel-traslado']();
+  return {
+    id: null, expectedUpdatedAt: null, leadId: null, customerId: null,
+    cliente: { nombre: 'Juan Pérez', email: 'juan@example.com', telefono: '' }, tipo: 'combinado', destino: 'Cancún, México', moneda: 'USD', notas: '',
+    detalles: { ...record.details, validez: { ...record.details.validez, venceEn: new Date(Date.now() + 86400000).toISOString() }, refCreacion: 'token-paquete-123456', aprobacionCondiciones: { huella: detailsModule.termsFingerprint(record.details.condiciones), por: '', en: '' } },
+    items: record.items.map(item => ({ descripcion: item.descripcion, tipo: item.tipo, cantidad: String(item.cantidad), precio_unitario: String(item.precio_unitario) })),
+    ...overrides,
+  };
+}
+
+test('a combined package saves its ordered services, line links and the exact total', async () => {
+  const db = fakeDb();
+  const result = await actions(db).saveQuotation(JSON.stringify(packagePayload()));
+  assert.equal(result.success, 'Cotización guardada.');
+  const [row] = db.tables.quotations;
+  assert.equal(row.tipo, 'combinado');
+  assert.deepEqual(json(row.detalles.paquete.componentes.map(component => component.tipo)), ['vuelo', 'hotel', 'traslado', 'tour']);
+  assert.deepEqual(json(row.detalles.paquete.lineas), ['', '', '']);
+  assert.equal(row.total, 4029.5);
+  assert.equal(row.detalles.fechaSalida, '2026-12-19', 'trip dates come from the services');
+  assert.equal(row.detalles.fechaRegreso, '2026-12-26');
+  assert.equal(db.tables.quotation_items.length, 3);
+});
+
+test('before the V6 SQL, a combined package explains what to run instead of reporting a lock', async () => {
+  const db = fakeDb({}, { noPackageType: true });
+  const result = await actions(db).saveQuotation(JSON.stringify(packagePayload()));
+  assert.equal(result.locked, undefined);
+  assert.match(result.error, /quotations_v6\.sql/);
+  assert.equal(db.tables.quotations.length, 0);
+  assert.equal((await actions(db).saveQuotation(JSON.stringify(payload()))).success, 'Cotización guardada.', 'other kinds keep working');
+});
+
+test('sending a package freezes every service in the version; later edits do not change it', async () => {
+  const db = fakeDb();
+  const rendered = [];
+  const api = actions(db, { rendered });
+  const created = await api.saveQuotation(JSON.stringify(packagePayload()));
+  assert.equal((await api.sendQuotation({}, form({ id: created.quotationId }))).success, 'Versión 1 enviada al correo del cliente.');
+  const frozen = structuredClone(db.tables.quotation_versions[0].snapshot);
+  assert.equal(frozen.quotation.detalles.paquete.componentes.length, 4);
+  assert.equal(rendered[0].record.kind, 'combinado');
+  assert.equal(rendered[0].record.details.paquete.componentes[1].hotel.nombre, 'Hotel de prueba Riviera');
+  const edited = packagePayload({ id: created.quotationId, expectedUpdatedAt: db.tables.quotations[0].updated_at });
+  edited.detalles.paquete.componentes = edited.detalles.paquete.componentes.slice(0, 2);
+  await api.saveQuotation(JSON.stringify(edited));
+  assert.equal(db.tables.quotations[0].detalles.paquete.componentes.length, 2);
+  assert.deepEqual(json(db.tables.quotation_versions[0].snapshot), json(frozen));
+});
+
+test('an incomplete package cannot be sent and an expired one neither', async () => {
+  const db = fakeDb();
+  let calls = 0;
+  const api = actions(db, { fetch: async () => { calls++; return { ok: true }; } });
+  const incomplete = packagePayload();
+  incomplete.detalles.paquete.componentes[1].hotel.inclusionesConfirmadas = false;
+  const first = await api.saveQuotation(JSON.stringify(incomplete));
+  assert.match((await api.sendQuotation({}, form({ id: first.quotationId }))).error, /Servicio 2 \(Hotel\)/);
+  const expired = packagePayload({ detalles: { ...packagePayload().detalles, refCreacion: 'token-paquete-vencido', validez: { ...packagePayload().detalles.validez, venceEn: '2026-01-01T00:00:00.000Z' } } });
+  const second = await api.saveQuotation(JSON.stringify(expired));
+  assert.match((await api.sendQuotation({}, form({ id: second.quotationId }))).error, /validez ya venció/);
+  assert.equal(calls, 0);
+});
+
+test('duplicating or amending a package asks to confirm its flights again and keeps prices and links', async () => {
+  const db = fakeDb();
+  const api = actions(db);
+  const created = await api.saveQuotation(JSON.stringify(packagePayload()));
+  await assert.rejects(api.duplicateQuotation(created.quotationId), /redirect/);
+  const copy = db.tables.quotations[1];
+  const flight = copy.detalles.paquete.componentes[0];
+  assert.equal(flight.vuelo.vuelos.confirmado, false);
+  assert.equal(flight.vuelo.equipajeConfirmado, false);
+  assert.equal(db.tables.quotations[0].detalles.paquete.componentes[0].vuelo.vuelos.confirmado, true, 'the original is untouched');
+  assert.deepEqual(json(copy.detalles.paquete.lineas), ['', '', '']);
+  assert.equal(db.tables.quotation_items.filter(item => item.quotation_id === copy.id).length, 3);
+  assert.equal(copy.tipo, 'combinado');
+});
+
+test('an accepted package converts into a reservation from exactly the accepted version', async () => {
+  const db = fakeDb({ reservation_items: [], payments: [], invoices: [] });
+  const api = actions(db);
+  const created = await api.saveQuotation(JSON.stringify(packagePayload()));
+  await api.sendQuotation({}, form({ id: created.quotationId }));
+  assert.match((await api.updateQuotationStatus({}, form({ id: created.quotationId, estado: 'aceptada' }))).success, /versión 1/);
+  const locked = await api.saveQuotation(JSON.stringify(packagePayload({ id: created.quotationId })));
+  assert.equal(locked.locked, true);
+  await assert.rejects(reservationActions(db).convertQuotationToReservation({}, form({ quotation_id: created.quotationId })), /redirect:\/admin\/reservas\//);
+  assert.equal(db.tables.reservations.length, 1);
+  assert.equal(db.tables.reservations[0].total, 4029.5);
+  assert.deepEqual(json(db.tables.reservation_items.map(item => item.descripcion)), json(db.tables.quotation_versions[0].snapshot.items.map(item => item.descripcion)));
+  assert.equal(money.totalAmount(db.tables.reservation_items), 4029.5);
 });

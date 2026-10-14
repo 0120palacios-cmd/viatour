@@ -2,8 +2,8 @@ import "server-only";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { Circle, Document, Font, Image, Link, Page, Path, StyleSheet, Svg, Text, View, renderToBuffer } from "@react-pdf/renderer";
-import { airportName, cityName, dayDifference, formatDuration, itineraryType, journeyAirlines, journeyDuration, journeyRoute, journeyTitle, layoverMinutes, segmentDuration, type FlightJourney, type FlightSegment } from "@/lib/flight-itinerary";
-import { derivedTripDates, formatInstant, isExpired, nights, pricingSummary, quotationKindLabels, zoneLabel, type BaggageAllowance, type FareRules, type FerryDetails, type HotelStay, type Inclusion } from "@/lib/quotation-details";
+import { airportName, cityName, dayDifference, formatDuration, isOvernightConnection, itineraryType, journeyAirlines, journeyDuration, journeyRoute, journeyTitle, layoverMinutes, segmentDuration, type FlightJourney, type FlightSegment } from "@/lib/flight-itinerary";
+import { componentAmount, componentTitle, derivedTripDates, expandedDetails, formatInstant, isExpired, nights, packageServiceLabels, pricingSummary, quotationKindLabels, zoneLabel, type BaggageAllowance, type FareRules, type FerryDetails, type GeneralService, type HotelStay, type Inclusion, type PackageComponent } from "@/lib/quotation-details";
 import type { QuotationRecord } from "@/lib/quotation-data";
 import { isDiscount, lineAmount } from "@/lib/money";
 import { formatQuotationAmount, quotationNotices } from "@/lib/quotation-types";
@@ -86,6 +86,8 @@ function makeStyles(compact: boolean) {
     layoverText: { ...tx(7.3) },
     columns: { flexDirection: "row", gap: 10 },
     card: { flex: 1, border: `1 solid ${color.line}`, borderRadius: 6, padding: pad },
+    // Same look as card, for blocks stacked vertically (card's flex: 1 would collapse them).
+    block: { border: `1 solid ${color.line}`, borderRadius: 6, padding: pad },
     cardTitle: { fontWeight: 700, color: color.soft, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 3, ...tx(6.8) },
     row: { flexDirection: "row", justifyContent: "space-between", gap: 8, paddingVertical: compact ? 0.6 : 1.3, borderBottom: `0.5 solid ${color.line}` },
     rowLast: { flexDirection: "row", justifyContent: "space-between", gap: 8, paddingVertical: compact ? 0.6 : 1.3 },
@@ -212,7 +214,7 @@ function Journey({ journey, index, styles }: { journey: FlightJourney; index: nu
         return <View key={segment.id || position}>
           {previous ? <View style={styles.layover} wrap={false}>
             <Icon name="clock" size={8} />
-            <Text style={styles.layoverText}>{sameAirport ? `Conexión en ${cityName(segment.origen, segment.origenNombre)} (${segment.origen})` : `Conexión con cambio de aeropuerto: de ${previous.destino} a ${segment.origen}`}{wait !== null && wait > 0 ? ` · espera de ${formatDuration(wait)}` : ""}</Text>
+            <Text style={styles.layoverText}>{sameAirport ? `Conexión en ${cityName(segment.origen, segment.origenNombre)} (${segment.origen})` : `Conexión con cambio de aeropuerto: de ${previous.destino} a ${segment.origen}`}{wait !== null && wait > 0 ? ` · espera de ${formatDuration(wait)}` : ""}{wait !== null && isOvernightConnection(previous, segment, wait) ? " · conexión nocturna" : ""}</Text>
           </View> : null}
           <Segment segment={segment} styles={styles} />
         </View>;
@@ -335,10 +337,8 @@ function Hotel({ hotel, photos, styles }: { hotel: HotelStay; photos: Map<string
 }
 
 function Pricing({ record, styles }: { record: QuotationRecord; styles: Styles }) {
-  const { quotation, items, details } = record;
-  const summary = pricingSummary(items, details);
+  const { quotation, items } = record;
   const money = (amount: number) => formatQuotationAmount(amount, quotation.moneda);
-  const currencyName = quotation.moneda === "USD" ? "dólares estadounidenses (USD)" : "lempiras (HNL)";
   return <View>
     <View style={styles.table}>
       <View style={styles.tableHead}><Text style={[styles.th, styles.cConcept]}>Concepto</Text><Text style={[styles.th, styles.cQty]}>Cant.</Text><Text style={[styles.th, styles.cUnit]}>Precio unit.</Text><Text style={[styles.th, styles.cSub]}>Subtotal</Text></View>
@@ -349,8 +349,20 @@ function Pricing({ record, styles }: { record: QuotationRecord; styles: Styles }
         <Text style={[styles.tdStrong, styles.cSub]}>{isDiscount(item.tipo) ? "– " : ""}{money(Math.abs(lineAmount(item)))}</Text>
       </View>)}
     </View>
+    <Totals record={record} styles={styles} />
+  </View>;
+}
+
+// Subtotal, discounts, total, deposit and balance; shared by the itemized table and the package total.
+function Totals({ record, styles, note }: { record: QuotationRecord; styles: Styles; note?: string }) {
+  const { quotation, items, details } = record;
+  const summary = pricingSummary(items, details);
+  const money = (amount: number) => formatQuotationAmount(amount, quotation.moneda);
+  const currencyName = quotation.moneda === "USD" ? "dólares estadounidenses (USD)" : "lempiras (HNL)";
+  return <View>
     <View style={styles.totals}>
       <View style={{ flex: 1, paddingRight: 10 }}>
+        {note ? <Text style={styles.body}>{note}</Text> : null}
         <Text style={styles.small}>Precios en {currencyName}.</Text>
         {summary.porPasajero !== null ? <Text style={styles.small}>Equivale a {money(summary.porPasajero)} por pasajero.</Text> : null}
       </View>
@@ -364,6 +376,72 @@ function Pricing({ record, styles }: { record: QuotationRecord; styles: Styles }
     </View>
     {details.pago.instrucciones ? <Text style={[styles.remarks, { marginTop: 4 }]}><Text style={{ fontWeight: 700 }}>Pago: </Text>{details.pago.instrucciones}</Text> : null}
   </View>;
+}
+
+// ----- combined package (V6) -----
+
+const modeLabel = { compartido: "Servicio compartido", privado: "Servicio privado", "": "" } as const;
+
+// Transfers, tours, activities, insurance and other services: the facts the advisor entered, what is
+// included or not, and the cancellation policy.
+function ServiceCard({ component, service, styles }: { component: PackageComponent; service: GeneralService; styles: Styles }) {
+  const coverage = component.tipo === "seguro" || component.tipo === "asistencia";
+  const transfer = component.tipo === "traslado";
+  const when = coverage ? [service.fecha ? `Desde el ${shortDate(service.fecha)}` : "", service.fechaFin ? `hasta el ${shortDate(service.fechaFin)}` : ""].filter(Boolean).join(" ") : longDate(service.fecha);
+  const rows = [
+    [coverage ? "Vigencia" : "Fecha", when], [transfer ? "Hora de recogida" : "Hora", service.hora], [transfer ? "Lugar de recogida" : "Punto de encuentro", service.lugar],
+    ["Duración", service.duracion], ["Modalidad", modeLabel[service.modalidad]], [coverage ? "Proveedor" : "Operador", service.operador],
+  ].filter(([, value]) => value);
+  return <View style={styles.block}>
+    {service.descripcion && service.descripcion !== componentTitle(component) ? <Text style={styles.bodyBold}>{service.descripcion}</Text> : null}
+    {rows.length ? <View style={[styles.grid, { marginTop: 2 }]}>{rows.map(([key, value]) => <View key={key} style={styles.gridCell} wrap={false}><Text style={styles.gridKey}>{key}</Text><Text style={styles.gridValue}>{value}</Text></View>)}</View> : null}
+    <Inclusions title={coverage ? "¿Qué incluye la cobertura?" : "¿Qué incluye el servicio?"} items={service.inclusiones} styles={styles} />
+    {service.cancelacion ? <Text style={[styles.small, { marginTop: 3 }]}><Text style={{ fontWeight: 700, color: color.ink }}>Cancelación: </Text>{service.cancelacion}</Text> : null}
+  </View>;
+}
+
+// "Su paquete incluye": the services in order, so the customer sees the whole trip before the details.
+function PackageOverview({ components, styles }: { components: PackageComponent[]; styles: Styles }) {
+  const detail = (component: PackageComponent) => {
+    if (component.hotel) { const stay = nights(component.hotel.checkIn, component.hotel.checkOut); return [stay ? plural(stay, "noche", "noches") : "", shortDate(component.hotel.checkIn)].filter(Boolean).join(" · "); }
+    if (component.vuelo) return itineraryType(component.vuelo.vuelos.journeys);
+    if (component.ferry) return shortDate(component.ferry.legs[0]?.salidaFecha ?? "");
+    return shortDate(component.servicio?.fecha ?? "");
+  };
+  return <View style={styles.section} wrap={false}>
+    <Text style={styles.sectionTitle}>Su paquete incluye</Text>
+    <View style={[styles.amenities, { rowGap: 2 }]}>{components.map((component, index) => <View key={component.id} style={[styles.amenity, { width: "48%" }]}>
+      <Text style={[styles.bodyBold, { color: color.deep, width: 12 }]}>{index + 1}.</Text>
+      <Text style={[styles.body, { flex: 1 }]}><Text style={{ fontWeight: 700 }}>{packageServiceLabels[component.tipo]}: </Text>{componentTitle(component)}{detail(component) ? <Text style={{ color: color.soft }}>{` · ${detail(component)}`}</Text> : null}</Text>
+    </View>)}</View>
+  </View>;
+}
+
+function PackageComponentBlock({ component, index, record, photos, styles }: { component: PackageComponent; index: number; record: QuotationRecord; photos: Map<string, PdfPhoto>; styles: Styles }) {
+  const { paquete } = record.details;
+  const amount = paquete.mostrarPrecios ? componentAmount(record.items, paquete.lineas, component.id) : null;
+  const heading = <View style={[styles.sectionTitle, { flexDirection: "row", justifyContent: "space-between" }]}>
+    <Text style={{ fontWeight: 800, flex: 1 }}><Text style={{ color: color.deep }}>{index + 1}. {packageServiceLabels[component.tipo]}</Text>{`  ${componentTitle(component)}`}</Text>
+    {amount !== null ? <Text style={{ fontWeight: 700 }}>{formatQuotationAmount(amount, record.quotation.moneda)}</Text> : null}
+  </View>;
+  const journeys = component.vuelo?.vuelos.journeys.filter(journey => journey.segmentos.length) ?? [];
+  const notes = component.notas ? <Text style={[styles.remarks, { marginTop: 2 }]}>{component.notas}</Text> : null;
+  if (component.vuelo) {
+    const { tarifas, equipaje } = component.vuelo;
+    return <View style={styles.section}>
+      <View wrap={false}>{heading}{journeys[0] ? <Journey journey={journeys[0]} index={0} styles={styles} /> : <Text style={styles.small}>Itinerario por confirmar.</Text>}</View>
+      {journeys.slice(1).map((journey, position) => <Journey key={journey.id || position} journey={journey} index={position + 1} styles={styles} />)}
+      {tarifas.length || equipaje.length ? <View style={styles.columns} wrap={false}>
+        {tarifas.length ? <FareCard fares={tarifas} styles={styles} /> : null}
+        {equipaje.length ? <BaggageCard allowances={equipaje} styles={styles} /> : null}
+      </View> : null}
+      {notes}
+    </View>;
+  }
+  if (component.hotel) return <View style={styles.section}><View wrap={false}>{heading}<Hotel hotel={component.hotel} photos={photos} styles={styles} /></View>{notes}</View>;
+  if (component.ferry) return <View style={styles.section}>{heading}<Ferry ferry={component.ferry} styles={styles} />{notes}</View>;
+  if (component.servicio) return <View style={styles.section} wrap={false}>{heading}<ServiceCard component={component} service={component.servicio} styles={styles} />{notes}</View>;
+  return null;
 }
 
 function Notices({ record, validUntil, styles }: { record: QuotationRecord; validUntil: string; styles: Styles }) {
@@ -404,7 +482,10 @@ function QuotationDocument({ record, options, compact }: { record: QuotationReco
   const validUntil = formatInstant(expiry, zone);
   const logo = `data:image/png;base64,${readFileSync(join(process.cwd(), "public", "logo-white.png")).toString("base64")}`;
   const issued = new Intl.DateTimeFormat("es-HN", { day: "numeric", month: "long", year: "numeric", timeZone: zone }).format(new Date(options.issuedAt ?? quotation.created_at));
+  const combined = kind === "combinado";
+  const components = combined ? details.paquete.componentes : [];
   const journeys = details.vuelos.journeys.filter(journey => journey.segmentos.length);
+  const allJourneys = expandedDetails(details).vuelos.journeys.filter(journey => journey.segmentos.length);
   const showFlights = (kind === "vuelo" || kind === "paquete") && journeys.length > 0;
   const showHotels = (kind === "hotel" || kind === "paquete") && details.hoteles.length > 0;
   const showFerry = (kind === "ferry" || kind === "paquete") && details.ferry.legs.length > 0;
@@ -412,7 +493,9 @@ function QuotationDocument({ record, options, compact }: { record: QuotationReco
   const summary = pricingSummary(record.items, details);
   const travellers = passengerSummary(details);
   const subtitle = [quotationKindLabels[kind], showFlights ? itineraryType(journeys) : ""].filter(Boolean).join(" · ");
-  const airlinesText = showFlights ? Array.from(new Set(journeys.flatMap(journeyAirlines))).join(" / ") : "";
+  const airlinesText = showFlights || combined ? Array.from(new Set((combined ? allJourneys : journeys).flatMap(journeyAirlines))).join(" / ") : "";
+  const packageName = combined ? details.paquete.nombre : "";
+  const itemizedPrices = !combined || details.paquete.mostrarPrecios;
   const whatsapp = `+504 ${siteConfig.whatsappNumber.slice(3, 7)}-${siteConfig.whatsappNumber.slice(7)}`;
   const whatsappHref = `https://wa.me/${siteConfig.whatsappNumber}?text=${encodeURIComponent(`Hola, quisiera confirmar la cotización ${quotation.codigo}.`)}`;
   return <Document title={`Cotización ${quotation.codigo}`} author="viatour" subject={`Cotización de viaje: ${quotation.destino}`} language="es-HN">
@@ -436,7 +519,8 @@ function QuotationDocument({ record, options, compact }: { record: QuotationReco
         </View>
         <View style={styles.summaryBox}>
           <Text style={styles.label}>{subtitle}</Text>
-          <Text style={styles.strong}>{quotation.destino}</Text>
+          <Text style={styles.strong}>{packageName || quotation.destino}</Text>
+          {packageName ? <Text style={styles.small}>{quotation.destino}</Text> : null}
           <Text style={styles.small}>{[trip.salida ? shortDate(trip.salida) : "", trip.regreso ? shortDate(trip.regreso) : ""].filter(Boolean).join(" – ")}</Text>
           {details.origen || airlinesText ? <Text style={styles.small}>{[details.origen ? `Desde ${details.origen}` : "", airlinesText].filter(Boolean).join(" · ")}</Text> : null}
         </View>
@@ -475,9 +559,11 @@ function QuotationDocument({ record, options, compact }: { record: QuotationReco
         <Text style={styles.sectionTitle}>Servicios incluidos</Text>
         <View style={styles.amenities}>{details.servicios.map(service => <View key={service.id} style={[styles.amenity, { width: "48%", marginBottom: 1 }]}><Icon name="check" size={8} stroke={color.success} /><Text style={[styles.body, { flex: 1 }]}>{service.tipo ? <Text style={{ fontWeight: 700 }}>{service.tipo}: </Text> : null}{service.descripcion}</Text></View>)}</View>
       </View> : null}
+      {components.length ? <PackageOverview components={components} styles={styles} /> : null}
+      {components.map((component, index) => <PackageComponentBlock key={component.id} component={component} index={index} record={record} photos={photos} styles={styles} />)}
       <View style={styles.section} wrap={false}>
-        <Text style={styles.sectionTitle}>Detalle de precio</Text>
-        <Pricing record={record} styles={styles} />
+        <Text style={styles.sectionTitle}>{itemizedPrices ? "Detalle de precio" : "Precio del paquete"}</Text>
+        {itemizedPrices ? <Pricing record={record} styles={styles} /> : <Totals record={record} styles={styles} note={components.length ? `Precio total por ${components.length === 1 ? "el servicio detallado" : `los ${components.length} servicios detallados`} en esta cotización.` : undefined} />}
       </View>
       <Conditions record={record} validUntil={validUntil} styles={styles} />
       {quotation.notas ? <View style={styles.section} wrap={false}><Text style={styles.sectionTitle}>Observaciones</Text><Text style={styles.remarks}>{quotation.notas}</Text></View> : null}

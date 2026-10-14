@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { adminSession, requireAdmin } from "@/lib/admin";
 import { getAdminQuotation, isMissingColumn, toRecord } from "@/lib/quotation-data";
+import { isMissingTable } from "@/lib/catalog";
 import { renderQuotationPdf, quotationPdfFilename } from "@/lib/quotation-pdf";
 import { loadQuotationPhotos, quotationMediaBucket } from "@/lib/quotation-media";
 import { derivedTripDates, legacyValidityDate, photoPathPattern, quotationReadiness, resolveTermsApproval, sanitizeDetails, zonedToIso } from "@/lib/quotation-details";
@@ -28,11 +29,14 @@ const schemaMissing = "Para guardar cotizaciones de vuelo, hotel o paquete, ejec
 const lockedMessage = "El cliente aceptó esta cotización: su contenido quedó bloqueado. Para cambiar precios o condiciones, cree una enmienda.";
 const photoGraceDays = 7;
 
-type DbError = { code?: string } | null | undefined;
+type DbError = { code?: string; message?: string } | null | undefined;
 // "Function not found" from PostgREST or Postgres: the SQL that defines it has not been run yet.
 const missingFunction = (error: DbError) => error?.code === "PGRST202" || error?.code === "42883";
+// The 'combinado' type arrives with docs/sql/quotations_v6.sql; before it, the tipo check rejects it.
+const packageSchemaMissing = (error: DbError) => error?.code === "23514" && /quotations_tipo_check/.test(error?.message ?? "");
+const packageSchemaMessage = "Para guardar paquetes combinados, ejecute primero docs/sql/quotations_v6.sql en Supabase.";
 // check_violation raised by the database lock on accepted quotations (docs/sql/quotations_v5.sql).
-const lockedByDatabase = (error: DbError) => error?.code === "23514";
+const lockedByDatabase = (error: DbError) => error?.code === "23514" && !packageSchemaMissing(error);
 const sameName = (left: string, right: string) => left.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, " ").trim().toLowerCase() === right.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
 
 function quotationCode() {
@@ -111,6 +115,7 @@ export async function saveQuotation(payloadText: string): Promise<QuotationActio
       if (payload.tipo !== "general") return { error: schemaMissing };
       saved = await client.from("quotations").update(base).eq("id", quotationId).select("id,updated_at").maybeSingle();
     }
+    if (packageSchemaMissing(saved.error)) return { error: packageSchemaMessage };
     if (lockedByDatabase(saved.error)) return { error: lockedMessage, locked: true };
     if (saved.error) return { error: "No se pudo guardar la cotización. Revise los datos e intente nuevamente." };
     if (!saved.data) return { error: "Otra persona u otra pestaña guardó cambios en esta cotización. Recargue la página para ver la versión más reciente antes de seguir editando.", conflict: true };
@@ -129,6 +134,7 @@ export async function saveQuotation(payloadText: string): Promise<QuotationActio
       if (payload.tipo !== "general") return { error: schemaMissing };
       saved = await client.from("quotations").insert({ ...base, agente_id: user.id, codigo: quotationCode(), estado: "borrador" }).select("id,updated_at").single();
     }
+    if (packageSchemaMissing(saved.error)) return { error: packageSchemaMessage };
     if (saved.error || !saved.data) return { error: "No se pudo crear la cotización. Revise los datos e intente nuevamente." };
     quotationId = String(saved.data.id);
     updatedAt = String(saved.data.updated_at ?? now);
@@ -167,7 +173,9 @@ export async function duplicateQuotation(id: string, mode: "copia" | "enmienda" 
   if (!validUuid(id)) return { error: "Cotización inválida." };
   const record = await getAdminQuotation(client, id);
   if (!record) return { error: "No se encontró la cotización." };
-  const details = { ...record.details, vuelos: { ...record.details.vuelos, confirmado: false }, equipajeConfirmado: false, validez: { ...record.details.validez, venceEn: "", limitePago: "", limiteEmision: "" }, refCreacion: "", aprobacionCondiciones: null, enmiendaDe: mode === "enmienda" ? record.quotation.codigo : "" };
+  // A package's flights must be confirmed again too, as in a flight quotation.
+  const paquete = { ...record.details.paquete, componentes: record.details.paquete.componentes.map(component => component.vuelo ? { ...component, vuelo: { ...component.vuelo, vuelos: { ...component.vuelo.vuelos, confirmado: false }, equipajeConfirmado: false } } : component) };
+  const details = { ...record.details, vuelos: { ...record.details.vuelos, confirmado: false }, equipajeConfirmado: false, validez: { ...record.details.validez, venceEn: "", limitePago: "", limiteEmision: "" }, refCreacion: "", aprobacionCondiciones: null, enmiendaDe: mode === "enmienda" ? record.quotation.codigo : "", paquete };
   const copy: Record<string, unknown> = {
     customer_id: record.quotation.customer_id, cliente_nombre: record.quotation.cliente_nombre, cliente_email: record.quotation.cliente_email, cliente_telefono: record.quotation.cliente_telefono,
     destino: record.quotation.destino, moneda: record.quotation.moneda, validez: legacyValidityDate(zonedToIso(`${new Date(Date.now() + 86400000).toISOString().slice(0, 10)}T23:59`)),
@@ -291,12 +299,14 @@ export async function cleanupUnusedHotelPhotos(_: PhotoCleanupState, form: FormD
     for (const file of page.data ?? []) files.push({ path: `hotel/${file.name}`, created: Date.parse(String(file.created_at ?? "")) });
     if ((page.data ?? []).length < 1000) break;
   }
-  const [quotations, versions] = await Promise.all([
+  const [quotations, versions, hotelCatalog] = await Promise.all([
     client.from("quotations").select("detalles").limit(20000),
     client.from("quotation_versions").select("snapshot").limit(20000),
+    // Catalog photos (docs/sql/quotations_v6.sql) are in use too; before V6 the table does not exist.
+    client.from("hotel_catalog").select("fotos").limit(20000),
   ]);
-  if (quotations.error || versions.error) return { error: "No se pudieron revisar las cotizaciones. Intente nuevamente." };
-  const used = new Set(`${JSON.stringify(quotations.data ?? [])}${JSON.stringify(versions.data ?? [])}`.match(/hotel\/[0-9a-f]{32}\.jpg/g) ?? []);
+  if (quotations.error || versions.error || (hotelCatalog.error && !isMissingTable(hotelCatalog.error))) return { error: "No se pudieron revisar las cotizaciones. Intente nuevamente." };
+  const used = new Set(`${JSON.stringify(quotations.data ?? [])}${JSON.stringify(versions.data ?? [])}${JSON.stringify(hotelCatalog.error ? [] : hotelCatalog.data ?? [])}`.match(/hotel\/[0-9a-f]{32}\.jpg/g) ?? []);
   const cutoff = Date.now() - photoGraceDays * 86400000;
   const unused = files.filter(file => photoPathPattern.test(file.path) && !used.has(file.path) && Number.isFinite(file.created) && file.created < cutoff).map(file => file.path);
   if (!remove) return { unused: unused.length, checked: files.length };

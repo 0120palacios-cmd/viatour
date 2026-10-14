@@ -89,8 +89,8 @@ const manufacturers = /\b(Airbus|Boeing|Embraer|Bombardier|ATR|Canadair|De Havil
 const operatedPattern = /(?:plane and crew by|operated by|operado por|avi[oó]n y tripulaci[oó]n (?:de|por)|vuelo operado por)\s+(.+)$/i;
 const headerPattern = /^(departing|departure|outbound|returning|return|vuelo de ida|vuelo de salida|vuelo de regreso|vuelo de vuelta|vuelo de retorno|ida|regreso|vuelta|retorno|salida)(?:\s+(?:flight|trip))?\b[\s:,·–—-]*(.*)$/;
 const legPattern = /^(?:flight|vuelo|tramo|trip|leg)\s*(\d{1,2})\b[\s:,·–—-]*(.*)$/;
-const noisePattern = /^(svg|path|img|icon|image|select flight|seleccionar vuelo|seleccionar|select|book|book with|reservar|more details|mas detalles|hide details|ocultar detalles|details|detalles|show more|ver mas|toggle|close|cerrar|info|nonstop|directo|sin escalas|\d+ stops?|\d+ escalas?|round trip|ida y vuelta|one way|solo ida|per person|por persona|price|precio|best|mejor|cheapest|mas barato|track prices|seguir precios|share|compartir)$/;
-const amenityPattern = /(legroom|espacio para las piernas|wi-?fi|in-seat|usb|stream media|on-demand|video|entretenimiento|tomacorriente|power outlet|emissions|emisiones|co2|kg co|trees|arboles|often delayed|suele retrasarse|se retrasa|carbon|carbono|typical for this route|tipico para esta ruta|seat\b|asiento\b|personal device|dispositivo personal|livestream|television|meal|comida)/;
+const noisePattern = /^(svg|path|img|icon|image|select flight|seleccionar vuelo|seleccionar|select|book|book with|reservar|more details|mas detalles|hide details|ocultar detalles|details|detalles|show more|ver mas|toggle|close|cerrar|info|nonstop|directo|sin escalas|\d+ stops?|\d+ escalas?|round trip|ida y vuelta|one way|solo ida|per person|por persona|price|precio|best|mejor|cheapest|mas barato|track prices|seguir precios|share|compartir|long layover|overnight layover|escala larga|conexion larga|escala nocturna)$/;
+const amenityPattern = /(legroom|espacio para las piernas|wi-?fi|in-seat|usb|stream media|on-demand|video|entretenimiento|tomacorriente|power outlet|emissions|emisiones|co2|kg co|trees|arboles|often delayed|suele retrasarse|se retrasa|carbon|carbono|contrail|estelas? de condensacion|typical for this route|tipico para esta ruta|seat\b|asiento\b|personal device|dispositivo personal|livestream|television|meal|comida)/;
 const separatePattern = /(separate tickets|boletos separados|boletos independientes|reservas separadas|self-transfer|self transfer|transbordo por cuenta propia)/;
 const layoverWords = /(layover|escala|conexion|connection|stopover)/;
 const pricePattern = /^(?:us\$|\$|l\.?|lps\.?|hnl|usd|€)\s?[\d.,]+|^[\d.,]+\s?(?:usd|hnl)$/;
@@ -101,8 +101,21 @@ function entity(code: number) {
   return code >= 32 && code <= 0x10ffff && !(code >= 0x7f && code <= 0x9f) ? String.fromCodePoint(code) : " ";
 }
 
+// Google Flights copied from the page glues words together: "1:14 PMMiami International Airport (MIA)",
+// "8:10 AM+1Philadelphia", "Departing flightTue, Nov 10", "Lowsvg". These are separated before parsing.
+// A glued "AM"/"PM" is only split when no time in the text uses the 24-hour clock (13:00 and later), so a
+// 24-hour itinerary with an uppercase name such as "AMSTERDAM" is never misread.
+function separateGluedTokens(text: string) {
+  const twelveHour = !/(?:^|[^\d])(?:1[3-9]|2[0-3]):[0-5]\d/.test(text);
+  let result = text
+    .replace(/\b(Departing flight|Departure flight|Outbound flight|Returning flight|Return flight|Vuelo de ida|Vuelo de regreso|Vuelo de salida|Vuelo de vuelta)(?=[A-Za-zÁÉÍÓÚáéíóú0-9])/gi, "$1 ")
+    .replace(/(\d{1,2}:[0-5]\d[^\S\n]?(?:[AaPp]\.?[^\S\n]?[Mm]\.?)?[^\S\n]?\+[^\S\n]?\d)(?=[^\s\d])/g, "$1 ");
+  if (twelveHour) result = result.replace(/(\d{1,2}:[0-5]\d[^\S\n]?(?:[AP]M|[ap]\.[^\S\n]?m\.))(?=[^\s.,;:)\]])/g, "$1 ");
+  return result;
+}
+
 export function cleanItineraryText(raw: string) {
-  return raw.slice(0, maxItineraryText)
+  const decoded = raw.slice(0, maxItineraryText)
     .replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, "\n")
     .replace(/<[^>]{0,2000}>/g, "\n")
     .replace(/&#x([0-9a-f]{1,6});/gi, (_, hex: string) => entity(parseInt(hex, 16))).replace(/&#(\d{1,7});/g, (_, digits: string) => entity(Number(digits)))
@@ -111,16 +124,24 @@ export function cleanItineraryText(raw: string) {
     .replace(/[​-‍⁠﻿]/g, "")
     .replace(/\r\n?/g, "\n")
     .replace(/[^\S\n]+/g, " ")
+    // Markdown emphasis from rich-text copies ("**+1**", "__AA 360__").
+    .replace(/\*\*|__/g, "");
+  return separateGluedTokens(decoded)
     .replace(/\s*[·•|]\s*/g, "\n")
     .replace(/(\([A-Z]{3}\))(?=[^\S\n]*[^\s)])/g, "$1\n")
     .replace(/[^\S\n]+(?=\d{1,2}:\d{2}(?:[^\S\n]?[AaPp]\.?[^\S\n]?[Mm]\.?)?(?:[^\S\n]|$|\+))/gm, "\n")
     .replace(/[^\S\n]+(?=(?:Travel time|Tiempo de viaje|Tiempo de vuelo|Duración|Duration)\b)/gi, "\n")
     .replace(/[^\S\n]+(?=(?:Plane and crew by|Operated by|Operado por|Vuelo operado por)\b)/gi, "\n")
+    // Google's amenity bullets, when the copy has no line breaks, would otherwise stick to the flight number.
+    .replace(/[^\S\n]+(?:-[^\S\n]+)?(?=(?:Average|Below average|Above average) legroom|Free Wi-Fi|Wi-Fi for a fee|In-seat (?:power|USB)|Power & USB|Stream media|On-demand video|Live TV|Emissions estimate|Contrail warming|Espacio (?:promedio |reducido |amplio )?para las piernas|Wi-Fi gratis|Wi-Fi con cargo|Emisiones estimadas)/g, "\n")
     .replace(/[^\S\n]+(?=(?:Departing flight|Returning flight|Return flight|Vuelo de ida|Vuelo de regreso|Vuelo de salida|Vuelo de vuelta)\b)/gi, "\n")
     .replace(/[^\S\n]+(?=\d{1,2}[^\S\n]?(?:hr|hrs|h|horas?)\b(?:[^\S\n]?\d{1,2}[^\S\n]?min)?[^\S\n]+(?:layover|de escala|escala|conexión))/gi, "\n")
     .replace(/[^\S\n]+(?=(?:Escala|Conexión)[^\S\n]+(?:de|en)\b)/g, "\n")
     .replace(/[^\S\n]*((?:Separate tickets|Boletos separados|Self[- ]transfer)[^\n.]*\.?)[^\S\n]*/gi, "\n$1\n")
-    .split("\n").map(line => line.trim()).filter(line => line && !/^[a-z]+(?:_[a-z]+)+$/.test(line));
+    .split("\n")
+    // List bullets and an icon name glued to the end of a word ("Lowsvg") are presentation only.
+    .map(line => line.trim().replace(/^[-*•]\s+/, "").replace(/(?<=[a-z])svg$/, "").trim())
+    .filter(line => line && !/^[a-z]+(?:_[a-z]+)+$/.test(line) && !/^[-–—*•]+$/.test(line));
 }
 
 function cabinFrom(text: string) {
@@ -162,8 +183,12 @@ function attributesOf(line: string): Attributes | null {
   if (manufacturer) {
     let tail = rest.slice(manufacturer.index);
     let head = rest.slice(0, manufacturer.index);
-    const flightAtEnd = /\s([A-Z]{2}|[A-Z]\d|\d[A-Z])\s?(\d{1,4})\s*$/.exec(tail);
-    if (flightAtEnd) { head += ` ${flightAtEnd[0]}`; tail = tail.slice(0, flightAtEnd.index); }
+    // The flight number may follow the aircraft with or without a space: "Boeing 737AA 1339",
+    // "Airbus A321neoAA 3308", "Boeing 737MAX 8 PassengerAA 360". The model right after the
+    // manufacturer ("Airbus A321") is never taken as a flight number.
+    const flightAtEnd = /(?:\s|(?<=[a-z0-9]))([A-Z]{2}|[A-Z]\d|\d[A-Z])\s?(\d{1,4})\s*$/.exec(tail);
+    const isModel = flightAtEnd && tail.slice(0, flightAtEnd.index).trim().toLowerCase() === manufacturer[0].toLowerCase();
+    if (flightAtEnd && !isModel) { head += ` ${flightAtEnd[0].trim()}`; tail = tail.slice(0, flightAtEnd.index); }
     const cabin = cabinFrom(tail);
     if (cabin) { attributes.cabin = cabin; tail = tail.replace(cabinRemoval, " "); }
     attributes.aircraft = cleanAircraft(tail);
@@ -235,25 +260,38 @@ function flag(segment: FlightSegment, field: string) {
   if (!segment.revisar.includes(field)) segment.revisar.push(field);
 }
 
+// Google Flights writes "+1" next to a time that falls on the day after the journey's date (the date in
+// "Departing flight Tue, Nov 10"), not after the segment's own departure. Marked times are placed from
+// that date; the layover and the flight duration are used to cross-check them.
 function assignDates(drafts: Draft[], journeys: JourneyDraft[], reference: string, issues: ItineraryIssue[]) {
   let lowerBound = reference;
   let previous: Draft | null = null;
   const yearNotes = new Set<string>();
+  const journeyBase = new Map<number, string>();
   for (const draft of drafts) {
     const segment = draft.segment;
-    const departureParts = draft.points[0]?.date ?? (previous?.journey !== draft.journey || !previous ? journeys[draft.journey]?.date : null) ?? null;
+    const fromHeader = !draft.points[0]?.date && (!previous || previous.journey !== draft.journey) ? journeys[draft.journey]?.date ?? null : null;
+    const departureParts = draft.points[0]?.date ?? fromHeader;
+    const departureMarker = draft.points[0]?.plusDays ?? null;
+    const base = journeyBase.get(draft.journey);
     if (departureParts) {
       const resolved = resolveYear(departureParts, lowerBound);
       segment.salidaFecha = resolved.date;
       if (resolved.review) flag(segment, "salidaFecha");
       if (resolved.issue) yearNotes.add(resolved.issue);
+      if (fromHeader && resolved.date) journeyBase.set(draft.journey, resolved.date);
     } else if (previous && previous.segment.llegadaFecha && previous.segment.llegadaHora && segment.salidaHora) {
       const arrival = clockMinutes(previous.segment.llegadaHora) ?? 0;
       const departure = clockMinutes(segment.salidaHora) ?? 0;
+      const byMarker = base && departureMarker !== null ? addDays(base, departureMarker) : "";
       if (draft.layoverBefore !== null && previous.segment.destino === segment.origen) {
         const total = arrival + draft.layoverBefore;
         segment.salidaFecha = addDays(previous.segment.llegadaFecha, Math.floor(total / 1440));
-        if (total % 1440 !== departure) { flag(segment, "salidaFecha"); issues.push({ nivel: "aviso", campo: "salidaHora", mensaje: `Vuelo ${segment.vuelo || segment.origen}: la escala indicada no coincide con los horarios.` }); }
+        if (total % 1440 !== departure) { flag(segment, "salidaFecha"); issues.push({ nivel: "aviso", categoria: "contradictorio", campo: "salidaHora", mensaje: `Vuelo ${segment.vuelo || segment.origen}: la escala indicada no coincide con los horarios.` }); }
+        else if (byMarker && byMarker !== segment.salidaFecha) { flag(segment, "salidaFecha"); issues.push({ nivel: "aviso", categoria: "contradictorio", campo: "salidaFecha", mensaje: `Vuelo ${segment.vuelo || segment.origen}: el día indicado (+${departureMarker}) no coincide con la escala.` }); }
+      } else if (byMarker) {
+        segment.salidaFecha = byMarker;
+        if (byMarker < previous.segment.llegadaFecha) flag(segment, "salidaFecha");
       } else {
         segment.salidaFecha = addDays(previous.segment.llegadaFecha, departure >= arrival ? 0 : 1);
         if (!draft.connected) flag(segment, "salidaFecha");
@@ -270,8 +308,14 @@ function assignDates(drafts: Draft[], journeys: JourneyDraft[], reference: strin
       const marker = draft.points[1]?.plusDays;
       const computed = arrivalOffset(segment, segment.salidaFecha);
       if (marker !== null && marker !== undefined) {
-        segment.llegadaFecha = addDays(segment.salidaFecha, marker);
-        if (computed !== null && computed !== marker) flag(segment, "llegadaFecha");
+        // Journey-relative first (Google Flights); segment-relative as the alternative reading. The
+        // duration and time zones decide between them when both are possible.
+        const journeyDate = journeyBase.get(draft.journey);
+        const readings = Array.from(new Set([journeyDate ? addDays(journeyDate, marker) : "", addDays(segment.salidaFecha, marker)])).filter(date => date && date >= segment.salidaFecha);
+        const offset = (date: string) => dayDifference(segment.salidaFecha, date);
+        const chosen = readings.find(date => computed !== null && offset(date) === computed) ?? readings[0] ?? addDays(segment.salidaFecha, marker);
+        segment.llegadaFecha = chosen;
+        if (computed !== null ? offset(chosen) !== computed : readings.length > 1) flag(segment, "llegadaFecha");
       } else if (computed !== null) {
         segment.llegadaFecha = addDays(segment.salidaFecha, computed);
       } else {
@@ -286,7 +330,7 @@ function assignDates(drafts: Draft[], journeys: JourneyDraft[], reference: strin
     if (segment.salidaFecha) lowerBound = segment.salidaFecha;
     previous = draft;
   }
-  for (const note of yearNotes) issues.push({ nivel: "aviso", campo: "salidaFecha", mensaje: note });
+  for (const note of yearNotes) issues.push({ nivel: "aviso", categoria: /no coincide/.test(note) ? "contradictorio" : "confirmar", campo: "salidaFecha", mensaje: note });
 }
 
 function labelJourneys(groups: { tipo: JourneyKind | null; segments: FlightSegment[] }[]): FlightJourney[] {
@@ -362,7 +406,7 @@ export function parseItinerary(raw: string, input: ParseOptions = {}): ParseResu
   const options: Required<ParseOptions> = { referencia: input.referencia && /^\d{4}-\d{2}-\d{2}$/.test(input.referencia) ? input.referencia : new Date().toISOString().slice(0, 10), idPrefix: input.idPrefix ?? "s" };
   const issues: ItineraryIssue[] = [];
   const ignored: string[] = [];
-  if (raw.length > maxItineraryText) issues.push({ nivel: "aviso", mensaje: `El texto se recortó a ${maxItineraryText.toLocaleString("es-HN")} caracteres.` });
+  if (raw.length > maxItineraryText) issues.push({ nivel: "aviso", categoria: "confirmar", mensaje: `El texto se recortó a ${maxItineraryText.toLocaleString("es-HN")} caracteres.` });
   const lines = cleanItineraryText(raw);
   let separate = false;
 
@@ -478,12 +522,12 @@ export function parseItinerary(raw: string, input: ParseOptions = {}): ParseResu
     }
     if (layoverWords.test(lower) && (parseDurationText(lower) !== null || /overnight|nocturna/.test(lower))) {
       layoverSeen = parseDurationText(lower);
-      if (/change (?:of )?airport|cambio de aeropuerto|cambia de aeropuerto/.test(lower)) issues.push({ nivel: "aviso", mensaje: "El itinerario incluye un cambio de aeropuerto durante una conexión." });
+      if (/change (?:of )?airport|cambio de aeropuerto|cambia de aeropuerto/.test(lower)) issues.push({ nivel: "aviso", categoria: "confirmar", mensaje: "El itinerario incluye un cambio de aeropuerto durante una conexión." });
       finish();
       expectLayoverPlace = !/\([A-Z]{3}\)/.test(line);
       continue;
     }
-    if (/change (?:of )?airport|cambio de aeropuerto/.test(lower)) { issues.push({ nivel: "aviso", mensaje: "El itinerario incluye un cambio de aeropuerto durante una conexión." }); continue; }
+    if (/change (?:of )?airport|cambio de aeropuerto/.test(lower)) { issues.push({ nivel: "aviso", categoria: "confirmar", mensaje: "El itinerario incluye un cambio de aeropuerto durante una conexión." }); continue; }
     const airport = airportPattern.exec(line);
     if (airport && !currencyCodes.has(airport[2])) {
       if (expectLayoverPlace && !pendingTime) { expectLayoverPlace = false; continue; }
@@ -534,7 +578,7 @@ export function parseItinerary(raw: string, input: ParseOptions = {}): ParseResu
       groups[groups.length - 1].segments.push(draft.segment);
       if (draft.points.length < 2) {
         flag(draft.segment, "destino"); flag(draft.segment, "llegadaHora");
-        issues.push({ nivel: "error", mensaje: `Vuelo desde ${draft.segment.origen}: no se encontró el aeropuerto u hora de llegada.` });
+        issues.push({ nivel: "error", categoria: "faltante", mensaje: `Vuelo desde ${draft.segment.origen}: no se encontró el aeropuerto u hora de llegada.` });
       }
     });
   } else {
@@ -551,15 +595,15 @@ export function parseItinerary(raw: string, input: ParseOptions = {}): ParseResu
       counter += 1;
       segment.id = `${options.idPrefix}${counter}`;
       fillNames(segment);
-      if (!segment.aerolinea && segment.vuelo) {
-        const known = airlineName(segment.vuelo.slice(0, 2));
-        if (known) { segment.aerolinea = known; flag(segment, "aerolinea"); }
-      }
-      for (const code of [segment.origen, segment.destino]) if (code && !airportInfo(code)) issues.push({ nivel: "info", mensaje: `${code} no está en la lista de aeropuertos de referencia: se usa el nombre del texto y no se verifica la duración con su zona horaria.` });
+      const known = segment.vuelo ? airlineName(segment.vuelo.slice(0, 2)) : null;
+      if (!segment.aerolinea && known) { segment.aerolinea = known; flag(segment, "aerolinea"); }
+      // "American" written next to an AA flight is the short form of the designator's airline.
+      else if (known && strip(known).startsWith(`${strip(segment.aerolinea)} `)) segment.aerolinea = known;
+      for (const code of [segment.origen, segment.destino]) if (code && !airportInfo(code)) issues.push({ nivel: "info", categoria: "confirmar", mensaje: `${code} no está en la lista de aeropuertos de referencia: se usa el nombre del texto y no se verifica la duración con su zona horaria.` });
     });
   });
-  if (!result.length) issues.push({ nivel: "error", mensaje: "No se reconoció ningún vuelo. Revise que el texto incluya horarios y códigos de aeropuerto, por ejemplo (SAP), o ingrese los vuelos manualmente." });
-  if (separate) issues.push({ nivel: "aviso", mensaje: "El texto indica boletos separados: cada boleto tiene sus propias condiciones. Indíquelo en las condiciones de la cotización." });
+  if (!result.length) issues.push({ nivel: "error", categoria: "faltante", mensaje: "No se reconoció ningún vuelo. Revise que el texto incluya horarios y códigos de aeropuerto, por ejemplo (SAP), o ingrese los vuelos manualmente." });
+  if (separate) issues.push({ nivel: "aviso", categoria: "confirmar", mensaje: "El texto indica boletos separados: cada boleto tiene sus propias condiciones. Indíquelo en las condiciones de la cotización." });
   const validation = result.length ? validateItinerary(result) : [];
   const seen = new Set<string>();
   const merged = [...issues, ...validation].filter(issue => { const key = `${issue.nivel}|${issue.mensaje}`; if (seen.has(key)) return false; seen.add(key); return true; });

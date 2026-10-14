@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
-import { canonicalItemType, itemTypes, newId, pricingSummary, type QuotationDetails, type QuotationKind } from "@/lib/quotation-details";
+import { canonicalItemType, componentTitle, itemTypes, newId, packageServiceItemTypes, packageServiceLabels, pricingSummary, type QuotationDetails, type QuotationKind } from "@/lib/quotation-details";
 import { lineAmount } from "@/lib/money";
 import { formatQuotationAmount, type Currency } from "@/lib/quotation-types";
 import { draftItem, itemsAsNumbers, type DraftItem } from "./draft";
@@ -22,8 +22,16 @@ export function PricingSection({ kind, items, setItems, currency, setCurrency, d
   const { adultos, ninos, infantes } = details.pasajeros;
   const travellers = adultos + ninos + infantes;
   const setItem = (key: string, field: keyof DraftItem, value: string) => setItems(items.map(item => item.key === key ? { ...item, [field]: value } : item));
-  const add = (descripcion: string, tipo: string, cantidad = 1) => setItems([...items, draftItem(descripcion, tipo, String(cantidad))]);
-  const quick: [string, () => void][] = [
+  const add = (descripcion: string, tipo: string, cantidad = 1, componente = "") => setItems([...items, draftItem(descripcion, tipo, String(cantidad), "", componente)]);
+  const combined = kind === "combinado";
+  const components = details.paquete.componentes;
+  const quick: [string, () => void][] = combined ? [
+    ["Precio total del paquete", () => add(details.paquete.nombre ? `Paquete ${details.paquete.nombre}` : "Paquete", "Paquete", 1)],
+    ...components.map(component => [`Precio: ${componentTitle(component)}`, () => add(componentTitle(component), packageServiceItemTypes[component.tipo], component.vuelo ? Math.max(1, adultos + ninos) : 1, component.id)] as [string, () => void]),
+    ["Impuestos y tasas", () => add("Impuestos y tasas", "Impuestos y tasas")],
+    ["Cargo por servicio", () => add("Cargo por servicio", "Cargo por servicio")],
+    ["Descuento", () => add("Descuento", "Descuento")],
+  ] : [
     ...(kind === "vuelo" || kind === "paquete" ? [
       ["Tarifa aérea por adulto", () => add("Tarifa aérea — Adulto", "Tarifa aérea", adultos || 1)],
       ...(ninos ? [["Tarifa aérea por niño", () => add("Tarifa aérea — Niño", "Tarifa aérea", ninos)] as [string, () => void]] : []),
@@ -58,12 +66,12 @@ export function PricingSection({ kind, items, setItems, currency, setCurrency, d
       {items.length ? <div className="space-y-2">{items.map((item, index) => {
         const invalid = !amountPattern.test(item.precio_unitario) || !/^\d{1,6}$/.test(item.cantidad) || Number(item.cantidad) <= 0;
         const discount = item.tipo.trim().toLowerCase() === "descuento";
-        return <div key={item.key} className={cn("grid gap-2 rounded-card border bg-canvas p-3 sm:grid-cols-12", invalid ? "border-error/50" : "border-line")}>
-          <label className="sm:col-span-5"><span className="sr-only">Concepto {index + 1}</span><input className={inputClass} placeholder="Concepto que verá el cliente" maxLength={500} value={item.descripcion} onChange={event => setItem(item.key, "descripcion", event.target.value)} /></label>
-          <label className="sm:col-span-2"><span className="sr-only">Tipo del concepto {index + 1}</span><select className={inputClass} value={canonicalItemType(item.tipo) ?? ""} aria-invalid={!canonicalItemType(item.tipo) || undefined} onChange={event => setItem(item.key, "tipo", event.target.value)}><option value="">Tipo</option>{itemTypes.map(type => <option key={type} value={type}>{type}</option>)}</select></label>
-          <label className="sm:col-span-1"><span className="sr-only">Cantidad del concepto {index + 1}</span><input className={inputClass} inputMode="numeric" aria-invalid={!/^\d{1,6}$/.test(item.cantidad) || Number(item.cantidad) <= 0 || undefined} value={item.cantidad} onChange={event => setItem(item.key, "cantidad", event.target.value.replace(/\D/g, "").slice(0, 6))} /></label>
-          <label className="sm:col-span-2"><span className="sr-only">Precio unitario del concepto {index + 1} en {currency}</span><input className={inputClass} inputMode="decimal" placeholder="0.00" aria-invalid={!amountPattern.test(item.precio_unitario) || undefined} value={item.precio_unitario} onChange={event => { const value = event.target.value.replace(",", "."); if (amountPattern.test(value)) setItem(item.key, "precio_unitario", value); }} /></label>
-          <div className="flex items-center justify-between gap-2 sm:col-span-2">
+        return <div key={item.key} className={cn("grid gap-2 rounded-card border bg-canvas p-3 sm:grid-cols-[minmax(0,1fr)_4.5rem_7rem_auto] 2xl:grid-cols-[minmax(0,1fr)_9rem_4.5rem_7rem_auto]", invalid ? "border-error/50" : "border-line")}>
+          <label className="sm:col-span-full 2xl:col-span-1"><span className="sr-only">Concepto {index + 1}</span><input className={inputClass} placeholder="Concepto que verá el cliente" maxLength={500} value={item.descripcion} onChange={event => setItem(item.key, "descripcion", event.target.value)} /></label>
+          <label><span className="sr-only">Tipo del concepto {index + 1}</span><select className={inputClass} value={canonicalItemType(item.tipo) ?? ""} aria-invalid={!canonicalItemType(item.tipo) || undefined} onChange={event => setItem(item.key, "tipo", event.target.value)}><option value="">Tipo</option>{itemTypes.map(type => <option key={type} value={type}>{type}</option>)}</select></label>
+          <label><span className="sr-only">Cantidad del concepto {index + 1}</span><input className={inputClass} inputMode="numeric" aria-invalid={!/^\d{1,6}$/.test(item.cantidad) || Number(item.cantidad) <= 0 || undefined} value={item.cantidad} onChange={event => setItem(item.key, "cantidad", event.target.value.replace(/\D/g, "").slice(0, 6))} /></label>
+          <label><span className="sr-only">Precio unitario del concepto {index + 1} en {currency}</span><input className={inputClass} inputMode="decimal" placeholder="0.00" aria-invalid={!amountPattern.test(item.precio_unitario) || undefined} value={item.precio_unitario} onChange={event => { const value = event.target.value.replace(",", "."); if (amountPattern.test(value)) setItem(item.key, "precio_unitario", value); }} /></label>
+          <div className="flex items-center justify-between gap-2">
             <span className={cn("t-small font-semibold whitespace-nowrap", discount && "text-success")}>{discount ? "– " : ""}{money(Math.abs(lineAmount({ tipo: item.tipo, cantidad: Number(item.cantidad) || 0, precio_unitario: Number(item.precio_unitario) || 0 })))}</span>
             <span className="flex gap-1">
               <IconButton label={`Subir concepto ${index + 1}`} disabled={index === 0} onClick={() => move(index, -1)}><ArrowUp size={15} strokeWidth={2} /></IconButton>
@@ -71,6 +79,7 @@ export function PricingSection({ kind, items, setItems, currency, setCurrency, d
               <IconButton label={`Quitar concepto ${index + 1}`} className="text-error" onClick={() => setItems(items.filter(entry => entry.key !== item.key))}><Trash2 size={15} strokeWidth={2} /></IconButton>
             </span>
           </div>
+          {combined ? <label className="flex items-center gap-2 sm:col-span-full"><span className="t-small whitespace-nowrap text-ink-soft">Corresponde a</span><span className="sr-only">el concepto {index + 1}</span><select className={cn(inputClass, "h-10 sm:max-w-md")} value={components.some(component => component.id === item.componente) ? item.componente : ""} onChange={event => setItem(item.key, "componente", event.target.value)}><option value="">Todo el paquete</option>{components.map((component, position) => <option key={component.id} value={component.id}>{position + 1}. {packageServiceLabels[component.tipo]}: {componentTitle(component)}</option>)}</select></label> : null}
         </div>;
       })}</div> : <p className="rounded-card border border-line bg-canvas p-4 t-small text-ink-soft">Agregue los conceptos de precio con los botones de arriba o con «Agregar concepto». El tipo «Descuento» resta del total.</p>}
       <SmallButton onClick={() => setItems([...items, draftItem()])}><Plus size={16} strokeWidth={2} aria-hidden="true" />Agregar concepto</SmallButton>
@@ -80,6 +89,10 @@ export function PricingSection({ kind, items, setItems, currency, setCurrency, d
         {summary.porPasajero !== null ? <><dt className="t-small text-ink-soft">Por pasajero ({travellers})</dt><dd className="sm:text-right">{money(summary.porPasajero)}</dd></> : null}
         {summary.saldo !== null ? <><dt className="t-small text-ink-soft">Saldo después del anticipo</dt><dd className={cn("sm:text-right", summary.saldo < 0 && "text-error")}>{money(summary.saldo)}</dd></> : null}
       </dl>
+      {combined ? <fieldset className="space-y-2 rounded-card border border-line bg-canvas p-4">
+        <legend className="px-1 font-semibold text-ink">Cómo ve el cliente el precio</legend>
+        {([[false, "Solo el total del paquete", "El PDF lista los servicios incluidos y muestra un solo total (más descuentos, anticipo y saldo si los hay). Los precios por servicio no se muestran."], [true, "Desglosado por servicio", "El PDF muestra cada concepto de precio y el precio de cada servicio junto a él."]] as const).map(([value, label, hint]) => <label key={label} className="flex items-start gap-3 t-small text-ink"><input type="radio" name="modo-precio" className="mt-1 size-4 accent-[var(--color-brand)]" checked={details.paquete.mostrarPrecios === value} onChange={() => update(current => ({ ...current, paquete: { ...current.paquete, mostrarPrecios: value } }))} /><span><span className="font-semibold">{label}</span><span className="block text-ink-soft">{hint}</span></span></label>)}
+      </fieldset> : null}
       <label className="flex items-center gap-3 t-small text-ink"><input type="checkbox" className="size-4 accent-[var(--color-brand)]" checked={details.pago.precioPorPasajero} onChange={event => update(current => ({ ...current, pago: { ...current.pago, precioPorPasajero: event.target.checked } }))} />Mostrar el precio por pasajero en el PDF</label>
       <div className="grid gap-3 sm:grid-cols-3">
         <TextField label={`Anticipo (${currency})`} inputMode="decimal" value={details.pago.deposito} onChange={value => { const clean = value.replace(",", "."); if (amountPattern.test(clean)) update(current => ({ ...current, pago: { ...current.pago, deposito: clean } })); }} hint="Opcional" />
