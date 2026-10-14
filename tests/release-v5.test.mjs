@@ -1,4 +1,5 @@
 import { test } from 'node:test';
+import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import { load } from './security-support.mjs';
 import { details, pdf } from './pdf-support.mjs';
@@ -121,4 +122,32 @@ test('ferry and hotel PDFs render the inclusions and every leg', async () => {
     assert.equal(buffer.subarray(0, 5).toString(), '%PDF-');
     assert.ok(pdf.pdfPageCount(buffer) <= 2);
   }
+});
+
+// ---- Price-line types accepted by production (quotation_items_tipo_check) ----
+
+test('price-line types are canonical; legacy codes map; unknown types are rejected', () => {
+  assert.equal(details.canonicalItemType('tarifa aerea'), 'Tarifa aérea');
+  assert.equal(details.canonicalItemType('  DESCUENTO '), 'Descuento');
+  assert.equal(details.canonicalItemType('vuelo'), 'Tarifa aérea');
+  assert.equal(details.canonicalItemType('paquete'), 'Paquete');
+  assert.equal(details.canonicalItemType('Promoción especial'), null);
+  assert.equal(details.canonicalItemType(''), null);
+  assert.ok(details.itemTypes.includes('Ferry') && details.itemTypes.includes('Paquete'));
+});
+
+test('the payload rejects a price line with an unknown type and normalizes known ones', () => {
+  const validation = load('src/lib/quotation-validation.ts', { '@/lib/quotation-types': load('src/lib/quotation-types.ts') });
+  const payload = load('src/lib/quotation-payload.ts', { '@/lib/quotation-details': details, '@/lib/quotation-types': load('src/lib/quotation-types.ts'), '@/lib/quotation-validation': validation });
+  const base = { cliente: { nombre: 'Ana', email: '' }, moneda: 'USD', tipo: 'general', detalles: {} };
+  const bad = payload.parseQuotationPayload(JSON.stringify({ ...base, items: [{ descripcion: 'X', tipo: 'Inventado', cantidad: '1', precio_unitario: '5' }] }));
+  assert.match(bad.error, /elija un tipo de la lista/);
+  const good = payload.parseQuotationPayload(JSON.stringify({ ...base, items: [{ descripcion: 'X', tipo: 'descuento', cantidad: '1', precio_unitario: '5' }, { descripcion: 'Y', tipo: 'hotel', cantidad: '2', precio_unitario: '5' }] }));
+  assert.deepEqual(plain(good.payload.items.map(item => item.tipo)), ['Descuento', 'Hotel']);
+});
+
+test('every type the editor offers is accepted by the migrated database constraint', () => {
+  const sql = fs.readFileSync('docs/sql/quotations_v5.sql', 'utf8');
+  const allowed = sql.slice(sql.indexOf('add constraint quotation_items_tipo_check'), sql.indexOf('-- 5. Una sola reserva'));
+  for (const type of details.itemTypes) assert.ok(allowed.includes(`'${type}'`), type);
 });

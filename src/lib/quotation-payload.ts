@@ -1,4 +1,4 @@
-import { quotationKinds, sanitizeDetails, type QuotationDetails, type QuotationKind } from "@/lib/quotation-details";
+import { canonicalItemType, quotationKinds, sanitizeDetails, type QuotationDetails, type QuotationKind } from "@/lib/quotation-details";
 import { currencies, type Currency, type QuotationItem } from "@/lib/quotation-types";
 import { emailPattern, validUuid } from "@/lib/quotation-validation";
 
@@ -56,7 +56,8 @@ export function parseQuotationPayload(raw: unknown): Result {
   for (const [index, entry] of rawItems.entries()) {
     const item = (entry && typeof entry === "object" ? entry : {}) as Record<string, unknown>;
     const descripcion = text(item.descripcion, 500);
-    const tipoItem = text(item.tipo, 80);
+    const tipoItem = canonicalItemType(text(item.tipo, 80));
+    if (!tipoItem) return { error: `Concepto de precio ${index + 1}: elija un tipo de la lista.` };
     const cantidad = String(item.cantidad ?? "").trim();
     const precio = String(item.precio_unitario ?? "").trim();
     // quotation_items.cantidad is an integer column in production: a decimal would be rounded by the database.

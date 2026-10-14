@@ -138,6 +138,16 @@ $$;
 revoke all on function public.replace_quotation_items(uuid, jsonb) from public, anon;
 grant execute on function public.replace_quotation_items(uuid, jsonb) to authenticated;
 
+-- 4b. Tipos de concepto de precio. La restricción original solo aceptaba 'vuelo', 'hotel', 'tour',
+-- 'traslado', 'paquete' y 'otro', mientras el panel guarda tipos legibles ("Tarifa aérea", "Descuento"…):
+-- por eso fallaba guardar los conceptos de precio. Se reemplaza por una que acepta los tipos del panel y
+-- conserva los seis valores anteriores; no modifica filas existentes.
+alter table public.quotation_items drop constraint if exists quotation_items_tipo_check;
+alter table public.quotation_items add constraint quotation_items_tipo_check check (tipo is null or tipo in (
+  'vuelo', 'hotel', 'tour', 'traslado', 'paquete', 'otro',
+  'Tarifa aérea', 'Impuestos y tasas', 'Hotel', 'Ferry', 'Paquete', 'Traslado', 'Tour', 'Seguro', 'Asistencia',
+  'Equipaje', 'Cargo por servicio', 'Descuento', 'Otro'));
+
 -- 5. Una sola reserva por cotización: dos clics o dos pestañas no pueden convertir dos veces.
 -- (El preflight comprueba que hoy no haya duplicados; si los hay, esta línea detiene la migración.)
 create unique index if not exists reservations_quotation_unique on public.reservations (quotation_id) where quotation_id is not null;
@@ -186,6 +196,8 @@ commit;
 --   drop function if exists public.quotation_items_lock_accepted();
 --   drop function if exists public.replace_quotation_items(uuid, jsonb);
 --   drop index if exists public.reservations_quotation_unique;
+--   alter table public.quotation_items drop constraint if exists quotation_items_tipo_check;
+--   alter table public.quotation_items add constraint quotation_items_tipo_check check (tipo = any (array['vuelo', 'hotel', 'tour', 'traslado', 'paquete', 'otro'])) not valid;
 --   drop index if exists public.quotations_ref_creacion_idx;
 --   drop index if exists public.quotations_vence_en_idx;
 --   alter table public.quotations drop constraint if exists quotations_tipo_check;

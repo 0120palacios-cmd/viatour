@@ -61,7 +61,18 @@ export const hotelInclusionSuggestions = ["Desayuno", "Almuerzo", "Cena", "Plan 
 export const ferryInclusionSuggestions = ["Equipaje", "Asiento asignado", "Cabina", "Transporte de vehículo", "Comidas", "Bebidas", "Servicios a bordo"];
 export const inclusionStateLabels = { incluido: "Incluido", no_incluido: "No incluido", con_cargo: "Con cargo adicional" } as const;
 export const mealPlans = ["Solo alojamiento", "Desayuno incluido", "Media pensión", "Pensión completa", "Todo incluido"];
-export const itemTypes = ["Tarifa aérea", "Impuestos y tasas", "Hotel", "Ferry", "Traslado", "Tour", "Seguro", "Asistencia", "Equipaje", "Cargo por servicio", "Descuento", "Otro"];
+// Price-line types. The database only accepts these (and six legacy codes), see quotation_items_tipo_check
+// in docs/sql/quotations_v5.sql, so the editor offers a fixed list instead of free text.
+export const itemTypes = ["Tarifa aérea", "Impuestos y tasas", "Hotel", "Ferry", "Paquete", "Traslado", "Tour", "Seguro", "Asistencia", "Equipaje", "Cargo por servicio", "Descuento", "Otro"];
+const legacyItemTypes: Record<string, string> = { vuelo: "Tarifa aérea", hotel: "Hotel", tour: "Tour", traslado: "Traslado", paquete: "Paquete", otro: "Otro" };
+const fold = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+
+// The canonical type for a value typed or stored before (case and accents ignored), or null if unknown.
+export function canonicalItemType(value: string) {
+  const folded = fold(value);
+  if (!folded) return null;
+  return itemTypes.find(type => fold(type) === folded) ?? legacyItemTypes[folded] ?? null;
+}
 export const baggageLabels = { personal: "Artículo personal", mano: "Equipaje de mano", documentado: "Equipaje documentado" } as const;
 
 // Draft wording supplied by the owner on 2026-10-12 as an example; pending legal review before it is

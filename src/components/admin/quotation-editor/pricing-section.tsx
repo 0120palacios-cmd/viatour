@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
-import { itemTypes, newId, pricingSummary, type QuotationDetails, type QuotationKind } from "@/lib/quotation-details";
+import { canonicalItemType, itemTypes, newId, pricingSummary, type QuotationDetails, type QuotationKind } from "@/lib/quotation-details";
 import { lineAmount } from "@/lib/money";
 import { formatQuotationAmount, type Currency } from "@/lib/quotation-types";
 import { draftItem, itemsAsNumbers, type DraftItem } from "./draft";
@@ -55,13 +55,12 @@ export function PricingSection({ kind, items, setItems, currency, setCurrency, d
         {ninos ? <TextField label="Edades de los niños" value={details.pasajeros.edadesNinos} onChange={value => update(current => ({ ...current, pasajeros: { ...current.pasajeros, edadesNinos: value.slice(0, 60) } }))} placeholder="5 y 9 años" className="sm:col-span-2" /> : null}
       </div>
       <div className="flex flex-wrap gap-1.5">{quick.map(([label, action]) => <SmallButton key={label} className="min-h-9 text-[13px]" onClick={action}><Plus size={14} strokeWidth={2} aria-hidden="true" />{label}</SmallButton>)}</div>
-      <datalist id="item-types">{itemTypes.map(type => <option key={type} value={type} />)}</datalist>
       {items.length ? <div className="space-y-2">{items.map((item, index) => {
         const invalid = !amountPattern.test(item.precio_unitario) || !/^\d{1,6}$/.test(item.cantidad) || Number(item.cantidad) <= 0;
         const discount = item.tipo.trim().toLowerCase() === "descuento";
         return <div key={item.key} className={cn("grid gap-2 rounded-card border bg-canvas p-3 sm:grid-cols-12", invalid ? "border-error/50" : "border-line")}>
           <label className="sm:col-span-5"><span className="sr-only">Concepto {index + 1}</span><input className={inputClass} placeholder="Concepto que verá el cliente" maxLength={500} value={item.descripcion} onChange={event => setItem(item.key, "descripcion", event.target.value)} /></label>
-          <label className="sm:col-span-2"><span className="sr-only">Tipo del concepto {index + 1}</span><input className={inputClass} list="item-types" placeholder="Tipo" maxLength={80} value={item.tipo} onChange={event => setItem(item.key, "tipo", event.target.value)} /></label>
+          <label className="sm:col-span-2"><span className="sr-only">Tipo del concepto {index + 1}</span><select className={inputClass} value={canonicalItemType(item.tipo) ?? ""} aria-invalid={!canonicalItemType(item.tipo) || undefined} onChange={event => setItem(item.key, "tipo", event.target.value)}><option value="">Tipo</option>{itemTypes.map(type => <option key={type} value={type}>{type}</option>)}</select></label>
           <label className="sm:col-span-1"><span className="sr-only">Cantidad del concepto {index + 1}</span><input className={inputClass} inputMode="numeric" aria-invalid={!/^\d{1,6}$/.test(item.cantidad) || Number(item.cantidad) <= 0 || undefined} value={item.cantidad} onChange={event => setItem(item.key, "cantidad", event.target.value.replace(/\D/g, "").slice(0, 6))} /></label>
           <label className="sm:col-span-2"><span className="sr-only">Precio unitario del concepto {index + 1} en {currency}</span><input className={inputClass} inputMode="decimal" placeholder="0.00" aria-invalid={!amountPattern.test(item.precio_unitario) || undefined} value={item.precio_unitario} onChange={event => { const value = event.target.value.replace(",", "."); if (amountPattern.test(value)) setItem(item.key, "precio_unitario", value); }} /></label>
           <div className="flex items-center justify-between gap-2 sm:col-span-2">

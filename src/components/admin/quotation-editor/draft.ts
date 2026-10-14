@@ -1,4 +1,4 @@
-import { defaultDetails, newId, type QuotationDetails, type QuotationKind } from "@/lib/quotation-details";
+import { canonicalItemType, defaultDetails, newId, type QuotationDetails, type QuotationKind } from "@/lib/quotation-details";
 import type { Currency } from "@/lib/quotation-types";
 
 // Editor state. Prices stay strings while typing ("12." is a valid intermediate value) and become
@@ -27,7 +27,7 @@ export function toPayload(draft: EditorDraft) {
   return JSON.stringify({
     id: draft.id, expectedUpdatedAt: draft.updatedAt, leadId: draft.leadId, customerId: draft.customerId || null,
     cliente: draft.cliente, tipo: draft.tipo, destino: draft.destino, moneda: draft.moneda, notas: draft.notas, detalles: draft.detalles,
-    items: draft.items.map(item => ({ descripcion: item.descripcion, tipo: item.tipo, cantidad: item.cantidad.trim(), precio_unitario: item.precio_unitario.trim() || "0" })),
+    items: draft.items.map(item => ({ descripcion: item.descripcion, tipo: canonicalItemType(item.tipo) ?? item.tipo, cantidad: item.cantidad.trim(), precio_unitario: item.precio_unitario.trim() || "0" })),
   });
 }
 

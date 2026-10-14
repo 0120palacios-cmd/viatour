@@ -25,7 +25,7 @@ insert into public.admins values ('${ADMIN}'), ('${ADMIN2}');
 create function public.is_admin() returns boolean language sql stable security definer set search_path = '' as $$ select exists (select 1 from public.admins where user_id = auth.uid()) $$;
 create table public.customers (id uuid primary key default gen_random_uuid(), nombre text not null, email text not null, telefono text, notas text, created_at timestamptz default now(), updated_at timestamptz default now());
 create table public.quotations (id uuid primary key default gen_random_uuid(), codigo text unique not null, customer_id uuid references public.customers(id), cliente_nombre text not null, cliente_email text not null, cliente_telefono text, destino text not null, moneda text not null check (moneda in ('USD','HNL')), validez date not null, notas text, total numeric(12,2) not null default 0, estado text not null default 'borrador' check (estado in ('borrador','enviada','aceptada','rechazada','expirada')), agente_id uuid not null, created_at timestamptz not null default now(), updated_at timestamptz not null default now());
-create table public.quotation_items (id uuid primary key default gen_random_uuid(), quotation_id uuid not null references public.quotations(id) on delete cascade, descripcion text not null, tipo text, cantidad integer not null default 1 check (cantidad > 0), precio_unitario numeric not null default 0 check (precio_unitario >= 0), orden integer not null default 0);
+create table public.quotation_items (id uuid primary key default gen_random_uuid(), quotation_id uuid not null references public.quotations(id) on delete cascade, descripcion text not null, tipo text constraint quotation_items_tipo_check check (tipo = any (array['vuelo','hotel','tour','traslado','paquete','otro'])), cantidad integer not null default 1 check (cantidad > 0), precio_unitario numeric not null default 0 check (precio_unitario >= 0), orden integer not null default 0);
 create table public.reservations (id uuid primary key default gen_random_uuid(), quotation_id uuid references public.quotations(id), codigo text);
 create table public.invoices (id uuid primary key default gen_random_uuid(), numero text not null default 'FAC-' || substr(md5(random()::text), 1, 6), reservation_id uuid not null references public.reservations(id), cliente_nombre text not null, moneda text not null default 'USD', total numeric not null default 0, estado text not null default 'emitida', fecha_emision date not null default current_date, fecha_vencimiento date, notas text, created_at timestamptz not null default now(), updated_at timestamptz not null default now());
 alter table public.invoices enable row level security;
@@ -47,7 +47,7 @@ insert into public.quotations (codigo, cliente_nombre, cliente_email, destino, m
 values ('COT-A', 'Cliente A', 'a@example.com', 'Cancún', 'USD', '2026-10-20', 'Incluye traslados', 1980, 'enviada', '${ADMIN}'),
        ('COT-B', 'Cliente B', 'b@example.com', 'Madrid', 'HNL', '2026-09-01', null, 50000, 'aceptada', '${ADMIN}');
 insert into public.quotation_items (quotation_id, descripcion, tipo, cantidad, precio_unitario, orden)
-select id, 'Paquete', 'Paquete', 2, total / 2, 0 from public.quotations;
+select id, 'Paquete', 'paquete', 2, total / 2, 0 from public.quotations;
 `);
 const before = (await db.query(`select codigo, cliente_nombre, destino, total::text, estado, validez::text, notas from public.quotations order by codigo`)).rows;
 const itemsBefore = (await db.query(`select count(*)::int as n from public.quotation_items`)).rows[0].n;
@@ -58,6 +58,10 @@ const as = async (role, uid, statement, params = []) => {
 };
 
 const migration = sql('quotations_v5.sql');
+await check('before the migration, a readable price-line type is rejected (reproduces the production bug)', async () => {
+  const id = (await db.query("select id from public.quotations where codigo = 'COT-A'")).rows[0].id;
+  await assert.rejects(db.query("insert into public.quotation_items (quotation_id, descripcion, tipo, cantidad, precio_unitario) values ($1, 'x', 'Tarifa aérea', 1, 1)", [id]), /quotation_items_tipo_check/);
+});
 await check('backup script copies quotation data into a private schema', async () => {
   await db.exec(sql('quotations_v5_backup.sql'));
   assert.equal((await db.query('select count(*)::int as n from backup_v5.quotations')).rows[0].n, 2);
@@ -72,6 +76,12 @@ await check('existing quotations are preserved unchanged, defaults applied, no b
   const added = (await db.query(`select tipo, detalles::text, vence_en, version from public.quotations`)).rows;
   assert.ok(added.every(row => row.tipo === 'general' && row.detalles === '{}' && row.vence_en === null && row.version === 0));
   assert.equal((await db.query(`select count(*)::int as n from public.quotation_items`)).rows[0].n, itemsBefore);
+});
+await check('after the migration, editor types and legacy codes are accepted; unknown types are not', async () => {
+  const id = (await db.query("select id from public.quotations where codigo = 'COT-A'")).rows[0].id;
+  for (const tipo of ['Tarifa aérea', 'Descuento', 'Ferry', 'Paquete', 'hotel', 'otro']) await db.query("insert into public.quotation_items (quotation_id, descripcion, tipo, cantidad, precio_unitario) values ($1, 'x', $2, 1, 1)", [id, tipo]);
+  await assert.rejects(db.query("insert into public.quotation_items (quotation_id, descripcion, tipo, cantidad, precio_unitario) values ($1, 'x', 'Inventado', 1, 1)", [id]), /quotation_items_tipo_check/);
+  await db.query("delete from public.quotation_items where quotation_id = $1 and descripcion = 'x'", [id]);
 });
 await check('verify script runs and reports no lost or changed quotations', async () => {
   await db.exec(sql('quotations_v5_verify.sql'));
