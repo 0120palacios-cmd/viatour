@@ -5,7 +5,8 @@ import { QuotationEditor } from "@/components/admin/quotation-editor/editor";
 import { initialDraft } from "@/components/admin/quotation-editor/draft";
 import { leadQuotationPrefill } from "@/lib/lead-admin";
 import { recentQuotationHotels } from "@/lib/quotation-data";
-import { quotationKinds, type QuotationKind } from "@/lib/quotation-details";
+import { editorCatalogs } from "@/lib/catalog-data";
+import { creatableKinds, type QuotationKind } from "@/lib/quotation-details";
 import { validUuid } from "@/lib/quotation-validation";
 import type { Customer } from "@/lib/quotation-types";
 
@@ -15,7 +16,7 @@ function kindFromService(service: unknown): QuotationKind | null {
   const value = String(service ?? "").toLowerCase();
   if (value.includes("vuelo")) return "vuelo";
   if (value.includes("hotel")) return "hotel";
-  if (value.includes("paquete")) return "paquete";
+  if (value.includes("paquete")) return "combinado";
   if (value.includes("ferry")) return "ferry";
   return null;
 }
@@ -23,13 +24,16 @@ function kindFromService(service: unknown): QuotationKind | null {
 export default async function NewQuotationPage({ searchParams }: { searchParams: Promise<{ lead?: string; tipo?: string }> }) {
   const { client } = await requireAdmin();
   const { lead, tipo } = await searchParams;
-  const [customers, recentHotels, schema] = await Promise.all([
+  const [customers, recentHotels, schema, catalogs] = await Promise.all([
     client.from("customers").select("id,nombre,email,telefono,notas").order("nombre", { ascending: true }).limit(1000),
     recentQuotationHotels(client),
     client.from("quotations").select("tipo").limit(1),
+    editorCatalogs(client),
   ]);
   if (customers.error) throw new Error("No se pudieron cargar los clientes.");
-  let kind: QuotationKind = quotationKinds.includes(tipo as QuotationKind) ? tipo as QuotationKind : "vuelo";
+  // New quotations use the kinds offered today; an old "?tipo=paquete" link opens the combined package.
+  const requested = tipo === "paquete" ? "combinado" : tipo;
+  let kind: QuotationKind = creatableKinds.includes(requested as QuotationKind) ? requested as QuotationKind : "vuelo";
   let draft = initialDraft(kind);
   let fromLead = false;
   if (lead && validUuid(lead)) {
@@ -47,6 +51,6 @@ export default async function NewQuotationPage({ searchParams }: { searchParams:
     <Link href={fromLead ? "/admin/leads" : "/admin/cotizaciones"} className="text-brand underline underline-offset-4">{fromLead ? "Volver a leads" : "Volver a cotizaciones"}</Link>
     <h1 className="t-h1">Crear cotización</h1>
     {fromLead ? <p className="rounded-card border border-line bg-brand-tint p-4 text-ink">Datos precargados desde el lead. Lo que escribió el cliente quedó en las notas internas; revise el correo, que es necesario para enviar la cotización.</p> : null}
-    <QuotationEditor initial={draft} customers={(customers.data ?? []) as Customer[]} recentHotels={recentHotels} meta={{ schemaReady: !schema.error }} />
+    <QuotationEditor initial={draft} customers={(customers.data ?? []) as Customer[]} recentHotels={recentHotels} meta={{ schemaReady: !schema.error }} catalogs={catalogs} />
   </div>;
 }

@@ -36,6 +36,8 @@ Design and product decisions live in `bible_desing.md` (Design Bible) and `build
 
 **Admin (`/admin`)**: Supabase Auth email/password; access requires membership in `public.admins`, checked via `requireAdmin()` in `src/lib/admin.ts` (`getUser()` + `is_admin()` RPC) on every page and Server Action. Admin uses the session client, never the service role. Generic CRUD lives under `src/app/admin/(protected)/[section]`; quotations, reservations, invoicing (PDFs via `@react-pdf/renderer` in `src/lib/*-pdf.tsx`), customers, tickets and promotions have dedicated routes. The public header/footer are hidden on admin paths by `PublicChrome`.
 
+**Quotations V6** (`docs/quotations-v6.md`): `combinado` packages store ordered service components in `detalles.paquete` and reuse the V5 flight/hotel/ferry editors through an adapter (`package-section.tsx`); price lines stay the only source of the total. Admin-only catalogs (`/admin/catalogos`, `src/lib/catalog*.ts`, tables from `docs/sql/quotations_v6.sql`) are copied into a quotation, never referenced live.
+
 **Client portal (`/mi-reserva`)**: OTP-based access (`src/lib/portal.ts`, signed with `PORTAL_SECRET`) for customers to view reservations, invoices, documents and support tickets.
 
 **Other pieces:** travel-requirements checker with pluggable providers (`src/lib/requirements/`, selected by `REQUIREMENTS_PROVIDER`, falls back to offline data); consent-gated GA4/Meta pixels (`src/components/analytics.tsx`, `cookie-consent.tsx`); CSP is report-only and set in `next.config.ts` (production only); `.github/workflows/backup.yml` does a daily `pg_dump`.

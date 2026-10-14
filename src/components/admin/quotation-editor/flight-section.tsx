@@ -1,15 +1,22 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { AlertTriangle, ArrowDown, ArrowUp, CheckCircle2, Info, Plane, Plus, Trash2, Wand2 } from "lucide-react";
 import { parseItinerary, maxItineraryText, type ParseResult } from "@/lib/flight-parser";
-import { computedDuration, emptySegment, formatDuration, journeyRoute, journeyTitle, layoverMinutes, validateItinerary, type FlightJourney, type FlightSegment, type ItineraryIssue, type JourneyKind } from "@/lib/flight-itinerary";
+import { computedDuration, emptySegment, formatDuration, isOvernightConnection, journeyRoute, journeyTitle, layoverMinutes, segmentStatus, segmentStatusLabels, validateItinerary, type FlightJourney, type FlightSegment, type ItineraryIssue, type JourneyKind, type SegmentStatus } from "@/lib/flight-itinerary";
 import { airportInfo } from "@/lib/flight-reference";
 import { newId, separateTicketsClause, type QuotationDetails } from "@/lib/quotation-details";
 import { AreaField, Field, IconButton, inputClass, Notice, Section, SelectField, SmallButton, TextField } from "./fields";
+import { useCatalogs } from "./catalog-context";
 import { cn } from "cn";
 
-type Props = { details: QuotationDetails; update: (change: (details: QuotationDetails) => QuotationDetails) => void; onApplyItinerary?: (journeys: FlightJourney[]) => void };
+type Props = { details: QuotationDetails; update: (change: (details: QuotationDetails) => QuotationDetails) => void; onApplyItinerary?: (journeys: FlightJourney[]) => void; sectionId?: string };
+
+const statusStyles: Record<SegmentStatus, string> = { verificado: "border-success/40 text-success", confirmar: "border-brand/40 bg-brand-tint text-brand-deep", faltante: "border-error/40 text-error", contradictorio: "border-error/40 bg-canvas text-error" };
+
+export function StatusChip({ status }: { status: SegmentStatus }) {
+  return <span className={cn("inline-flex items-center gap-1 rounded-btn border px-2 py-0.5 text-[12px] font-semibold", statusStyles[status])}>{status === "verificado" ? <CheckCircle2 size={13} strokeWidth={2} aria-hidden="true" /> : <AlertTriangle size={13} strokeWidth={2} aria-hidden="true" />}{segmentStatusLabels[status]}</span>;
+}
 
 const cabins = ["Económica", "Económica básica", "Económica Premium", "Ejecutiva (Business)", "Primera clase"];
 
@@ -31,7 +38,7 @@ function DurationInput({ value, onChange, review }: { value: number | null; onCh
   </div>}</Field>;
 }
 
-function SegmentEditor({ segment, index, count, onChange, onMove, onRemove }: { segment: FlightSegment; index: number; count: number; onChange: (segment: FlightSegment) => void; onMove: (direction: -1 | 1) => void; onRemove: () => void }) {
+function SegmentEditor({ segment, index, count, onChange, onMove, onRemove, airlineList }: { segment: FlightSegment; index: number; count: number; onChange: (segment: FlightSegment) => void; onMove: (direction: -1 | 1) => void; onRemove: () => void; airlineList: string }) {
   const set = <K extends keyof FlightSegment>(field: K, value: FlightSegment[K]) => onChange({ ...segment, [field]: value, revisar: segment.revisar.filter(item => item !== field) });
   const flagged = (field: string) => segment.revisar.includes(field);
   const computed = computedDuration(segment);
@@ -56,7 +63,7 @@ function SegmentEditor({ segment, index, count, onChange, onMove, onRemove }: { 
       <TextField label="Origen (IATA)" value={segment.origen} onChange={value => code("origen", value)} review={flagged("origen")} maxLength={3} autoCapitalize="characters" hint={origin ? origin.ciudad : segment.origenNombre || undefined} />
       <TextField label="Destino (IATA)" value={segment.destino} onChange={value => code("destino", value)} review={flagged("destino")} maxLength={3} autoCapitalize="characters" hint={destination ? destination.ciudad : segment.destinoNombre || undefined} />
       <TextField label="Número de vuelo" value={segment.vuelo} onChange={value => set("vuelo", value.toUpperCase().slice(0, 10))} review={flagged("vuelo")} placeholder="AM 675" />
-      <TextField label="Aerolínea" value={segment.aerolinea} onChange={value => set("aerolinea", value)} review={flagged("aerolinea")} maxLength={80} />
+      <TextField label="Aerolínea" value={segment.aerolinea} onChange={value => set("aerolinea", value)} review={flagged("aerolinea")} maxLength={80} list={airlineList} />
       <TextField label="Fecha de salida" type="date" value={segment.salidaFecha} onChange={value => set("salidaFecha", value)} review={flagged("salidaFecha")} />
       <TextField label="Hora de salida" type="time" value={segment.salidaHora} onChange={value => set("salidaHora", value)} review={flagged("salidaHora")} hint="Hora local del origen" />
       <TextField label="Fecha de llegada" type="date" value={segment.llegadaFecha} onChange={value => set("llegadaFecha", value)} review={flagged("llegadaFecha")} />
@@ -70,10 +77,13 @@ function SegmentEditor({ segment, index, count, onChange, onMove, onRemove }: { 
   </div>;
 }
 
-export function FlightSection({ details, update, onApplyItinerary }: Props) {
+export function FlightSection({ details, update, onApplyItinerary, sectionId = "vuelos" }: Props) {
   const [text, setText] = useState(details.vuelos.textoOriginal);
   const [result, setResult] = useState<ParseResult | null>(null);
   const journeys = details.vuelos.journeys;
+  const airlineList = `${useId()}-airlines`;
+  const catalogs = useCatalogs();
+  const resultIssues = useMemo(() => result ? validateItinerary(result.journeys) : [], [result]);
   const issues = useMemo<ItineraryIssue[]>(() => journeys.length ? validateItinerary(journeys) : [], [journeys]);
   const pending = journeys.some(journey => journey.segmentos.some(segment => segment.revisar.length));
   const hasErrors = issues.some(issue => issue.nivel === "error");
@@ -94,7 +104,7 @@ export function FlightSection({ details, update, onApplyItinerary }: Props) {
   };
 
   const segmentsFound = result?.journeys.reduce((sum, journey) => sum + journey.segmentos.length, 0) ?? 0;
-  return <Section id="vuelos" title="Itinerario de vuelo" description="Pegue el itinerario desde Google Flights, el correo de la aerolínea o el sistema de reservas. Revise cada vuelo antes de confirmarlo."
+  return <Section id={sectionId} title="Itinerario de vuelo" description="Pegue el itinerario desde Google Flights, el correo de la aerolínea o el sistema de reservas. Revise cada vuelo antes de confirmarlo."
     actions={journeys.length ? <SmallButton onClick={() => setJourneys([...journeys, { id: newId(), tipo: journeys.length === 1 ? "regreso" : "tramo", segmentos: [{ ...emptySegment(newId()) }] }])}><Plus size={16} strokeWidth={2} aria-hidden="true" />Agregar tramo</SmallButton> : null}>
     <div className="space-y-3">
       <AreaField label="Itinerario copiado" value={text} onChange={value => setText(value.slice(0, maxItineraryText))} rows={journeys.length ? 4 : 9} hint="Se acepta texto en español o inglés, con o sin saltos de línea, y segmentos de Amadeus o Sabre. El texto se guarda solo para uso interno." />
@@ -104,7 +114,23 @@ export function FlightSection({ details, update, onApplyItinerary }: Props) {
       </div>
       {result ? <div className="space-y-3 rounded-card border border-brand/40 bg-canvas p-4" aria-live="polite">
         <p className="font-semibold text-ink">{segmentsFound ? `Se encontraron ${segmentsFound} ${segmentsFound === 1 ? "vuelo" : "vuelos"} en ${result.journeys.length} ${result.journeys.length === 1 ? "tramo" : "tramos"}.` : "No se encontraron vuelos."}</p>
-        {result.journeys.map((journey, index) => <p key={journey.id} className="t-small text-ink"><span className="font-semibold">{journeyTitle(journey, index)}:</span> {journeyRoute(journey)} · {journey.segmentos.map(segment => segment.vuelo || "sin número").join(", ")}</p>)}
+        {result.journeys.map((journey, index) => <div key={journey.id} className="space-y-1.5">
+          <p className="t-small text-ink"><span className="font-semibold">{journeyTitle(journey, index)}:</span> {journeyRoute(journey)}{journey.segmentos[0]?.salidaFecha ? ` · ${new Intl.DateTimeFormat("es-HN", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(`${journey.segmentos[0].salidaFecha}T12:00:00Z`))}` : ""}</p>
+          <ul className="space-y-1">{journey.segmentos.map((segment, position) => {
+            const previous = journey.segmentos[position - 1];
+            const wait = previous ? layoverMinutes(previous, segment) : null;
+            return <li key={segment.id} className="space-y-1">
+              {previous && wait !== null ? <p className="pl-3 text-[13px] text-ink-soft">Conexión en {segment.origen} · {formatDuration(wait)}{isOvernightConnection(previous, segment, wait) ? " · nocturna" : ""}</p> : null}
+              <p className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-btn border border-line px-3 py-1.5 t-small text-ink">
+                <span className="font-semibold">{segment.vuelo || "Sin número de vuelo"}</span>
+                <span>{segment.origen || "?"} – {segment.destino || "?"}</span>
+                <span className="text-ink-soft">{segment.salidaFecha ? segment.salidaFecha.slice(5).split("-").reverse().join("/") : "sin fecha"} {segment.salidaHora} → {segment.llegadaHora}{segment.llegadaFecha && segment.llegadaFecha !== segment.salidaFecha ? ` (${segment.llegadaFecha.slice(5).split("-").reverse().join("/")})` : ""}</span>
+                {segment.aeronave ? <span className="text-ink-soft">{segment.aeronave}</span> : null}
+                <StatusChip status={segmentStatus(segment, resultIssues, index, position)} />
+              </p>
+            </li>;
+          })}</ul>
+        </div>)}
         <IssueList issues={result.issues} />
         {result.ignoradas.length ? <details className="t-small text-ink-soft"><summary className="cursor-pointer">Líneas no utilizadas ({result.ignoradas.length})</summary><ul className="mt-2 list-disc space-y-0.5 pl-5">{result.ignoradas.map((line, index) => <li key={index}>{line}</li>)}</ul></details> : null}
         <div className="flex flex-wrap gap-2">
@@ -122,7 +148,7 @@ export function FlightSection({ details, update, onApplyItinerary }: Props) {
         </div>
         {journey.segmentos.map((segment, index) => <div key={segment.id} className="space-y-2">
           {index > 0 ? (() => { const wait = layoverMinutes(journey.segmentos[index - 1], segment); return <p className="rounded-btn border border-dashed border-line bg-surface px-3 py-2 t-small text-ink">Conexión en {segment.origen || "?"}{wait !== null ? ` · espera de ${formatDuration(wait) || `${wait} min`}` : ""}</p>; })() : null}
-          <SegmentEditor segment={segment} index={index} count={journey.segmentos.length}
+          <SegmentEditor segment={segment} index={index} count={journey.segmentos.length} airlineList={airlineList}
             onChange={next => setJourney(journeyIndex, { ...journey, segmentos: journey.segmentos.map(item => item.id === segment.id ? next : item) })}
             onMove={direction => { const list = [...journey.segmentos]; const target = index + direction; [list[index], list[target]] = [list[target], list[index]]; setJourney(journeyIndex, { ...journey, segmentos: list }); }}
             onRemove={() => setJourney(journeyIndex, { ...journey, segmentos: journey.segmentos.filter(item => item.id !== segment.id) })} />
@@ -140,6 +166,7 @@ export function FlightSection({ details, update, onApplyItinerary }: Props) {
           <span>El itinerario usa boletos separados (agrega la condición correspondiente).</span>
         </label>
       </div> : null}
+      {catalogs.airlines.length ? <datalist id={airlineList}>{catalogs.airlines.map(airline => <option key={airline.id} value={airline.nombre} />)}</datalist> : null}
       {!journeys.length && !result ? <Notice>Aún no hay vuelos. Pegue el itinerario y presione «Interpretar itinerario», o ingréselos manualmente.</Notice> : null}
     </div>
   </Section>;

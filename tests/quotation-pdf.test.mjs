@@ -15,6 +15,10 @@ const expectedPages = {
   'vuelo-aerolineas-mixtas': 2,
   'hotel-habitaciones-complejas': 2,
   'paquete-vuelo-hotel': 2,
+  // V6 combined packages: several services continue on a second page with the running header.
+  'combinado-vuelo-hotel-traslado': 2,
+  'combinado-hotel-ferry': 2,
+  'combinado-varios-vuelos-y-hoteles': 2,
 };
 
 for (const [name, build] of Object.entries(samples)) {

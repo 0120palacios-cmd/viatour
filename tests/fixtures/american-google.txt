@@ -1,0 +1,124 @@
+Departing flightTue, Nov 10
+
+svg
+
+1:14 PMAEROPUERTO INTERNACIONAL RAMÓN VILLEDA MORALES, SAN PEDRO SULA (SAP)
+
+Travel time: 2 hr 25 min
+
+4:39 PMMiami International Airport (MIA)
+
+American
+
+Economy
+
+Boeing 737MAX 8 PassengerAA 360
+
+- Average legroom (30 in)
+- Free Wi-Fi
+- In-seat power & USB outlets
+- Stream media to your device
+- Emissions estimate: 115 kg CO2e
+- Contrail warming potential: Lowsvg
+
+2 hr 21 min layoverMiami (MIA)
+
+7:00 PMMiami International Airport (MIA)
+
+Travel time: 2 hr 54 min
+
+9:54 PMPhiladelphia International Airport (PHL)
+
+American
+
+Economy
+
+Boeing 737AA 1339
+
+- Average legroom (30 in)
+- Free Wi-Fi
+- In-seat power & USB outlets
+- Stream media to your device
+- Emissions estimate: 164 kg CO2e
+- Contrail warming potential: Mediumsvg
+
+10 hr 16 min layoverPhiladelphia (PHL)
+
+Long layover
+
+8:10 AM+1Philadelphia International Airport (PHL)
+
+Travel time: 1 hr 29 min
+
+9:39 AM+1Boston Logan International Airport (BOS)
+
+American
+
+Economy
+
+Airbus A321neoAA 3308
+
+- Average legroom (30 in)
+- Free Wi-Fi
+- In-seat power & USB outlets
+- Stream media to your device
+- Emissions estimate: 55 kg CO2e
+- Contrail warming potential: Lowsvg
+
+Returning flightTue, Nov 24
+
+svg
+
+6:00 AMBoston Logan International Airport (BOS)
+
+Travel time: 1 hr 40 min
+
+7:40 AMPhiladelphia International Airport (PHL)
+
+American
+
+Economy
+
+Airbus A321AA 690
+
+- Average legroom (30 in)
+- Free Wi-Fi
+- In-seat power & USB outlets
+- Stream media to your device
+- Emissions estimate: 80 kg CO2e
+- Contrail warming potential: Lowsvg
+
+30 min layoverPhiladelphia (PHL)
+
+8:10 AMPhiladelphia International Airport (PHL)
+
+Travel time: 3 hr 10 min
+
+11:20 AMMiami International Airport (MIA)
+
+American
+
+Economy
+
+Airbus A321neoAA 2534
+
+- Average legroom (30 in)
+- Free Wi-Fi
+- In-seat power & USB outlets
+- Stream media to your device
+- Emissions estimate: 125 kg CO2e
+- Contrail warming potential: Lowsvg
+
+1 hr 38 min layoverMiami (MIA)
+
+12:58 PMMiami International Airport (MIA)
+
+Travel time: 2 hr 38 min
+
+2:36 PMAEROPUERTO INTERNACIONAL RAMÓN VILLEDA MORALES, SAN PEDRO SULA (SAP)
+
+American
+
+Economy
+
+Airbus A319AA 349

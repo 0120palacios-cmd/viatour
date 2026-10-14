@@ -7,9 +7,11 @@ import { Button } from "@/components/ui/button";
 import { SendQuotationForm } from "@/components/admin/quotation-actions";
 import { duplicateQuotation, saveQuotation, type CustomerSuggestion } from "@/app/admin/cotizaciones/actions";
 import { cityName, type FlightJourney } from "@/lib/flight-itinerary";
-import { emptyBaggage, emptyFerry, emptyFare, emptyHotel, quotationKindLabels, quotationReadiness, termsTemplates, type HotelStay, type QuotationDetails, type QuotationKind } from "@/lib/quotation-details";
+import { creatableKinds, emptyBaggage, emptyFerry, emptyFare, emptyHotel, quotationKindAdminLabels, quotationReadiness, termsTemplates, type HotelStay, type QuotationDetails, type QuotationKind } from "@/lib/quotation-details";
 import type { Customer } from "@/lib/quotation-types";
-import { itemsAsNumbers, toPayload, type DraftItem, type EditorDraft } from "./draft";
+import { detailsForSave, itemsAsNumbers, toPayload, type DraftItem, type EditorDraft } from "./draft";
+import { PackageSection } from "./package-section";
+import { CatalogProvider, emptyCatalogs, type EditorCatalogValue } from "./catalog-context";
 import { FlightSection, IssueList } from "./flight-section";
 import { FareBaggageSection } from "./fare-baggage-section";
 import { HotelSection } from "./hotel-section";
@@ -21,17 +23,18 @@ import { cn } from "cn";
 
 type SaveState = "saved" | "dirty" | "saving" | "error" | "conflict";
 export type EditorMeta = { codigo?: string; estado?: string; estadoLabel?: string; expired?: boolean; schemaReady: boolean; sent?: boolean; converted?: boolean };
-type Props = { initial: EditorDraft; customers: Customer[]; recentHotels: HotelStay[]; meta: EditorMeta; sidebar?: React.ReactNode };
+type Props = { initial: EditorDraft; customers: Customer[]; recentHotels: HotelStay[]; meta: EditorMeta; sidebar?: React.ReactNode; catalogs?: EditorCatalogValue };
 
-const kindDescriptions: Record<QuotationKind, string> = { vuelo: "Pegue el itinerario y complete tarifa, equipaje y precio.", hotel: "Hotel, habitaciones, fotos y lo que incluye la estadía.", ferry: "Trayectos en ferry, clase, equipaje y condiciones de la naviera.", paquete: "Vuelos, hotel y servicios en una sola propuesta.", general: "Cualquier otro servicio con conceptos de precio." };
+const kindDescriptions: Record<QuotationKind, string> = { vuelo: "Pegue el itinerario y complete tarifa, equipaje y precio.", hotel: "Hotel, habitaciones, fotos y lo que incluye la estadía.", ferry: "Trayectos en ferry, clase, equipaje y condiciones de la naviera.", paquete: "Vuelos, hotel y servicios en una sola propuesta.", combinado: "Vuelos, hoteles, ferry, traslados, tours y otros servicios en una sola propuesta, en el orden que usted elija.", general: "Cualquier otro servicio con conceptos de precio." };
 const autosaveDelay = 2500;
 const previewDelay = 2000;
 
 function sectionsFor(kind: QuotationKind) {
+  if (kind === "combinado") return [["cliente", "Cliente y viaje"], ["paquete", "Servicios"], ["precio", "Precio"], ["validez", "Validez"], ["condiciones", "Condiciones"], ["notas", "Notas"]] as [string, string][];
   return [["cliente", "Cliente y viaje"], ...(kind === "vuelo" || kind === "paquete" ? [["vuelos", "Vuelos"], ["tarifa", "Clase y equipaje"]] : []), ...(kind === "hotel" || kind === "paquete" ? [["hotel", "Hotel"]] : []), ...(kind === "ferry" ? [["ferry", "Ferry"]] : []), ...(kind !== "vuelo" && kind !== "ferry" ? [["servicios", "Servicios"]] : []), ["precio", "Precio"], ["validez", "Validez"], ["condiciones", "Condiciones"], ["notas", "Notas"]] as [string, string][];
 }
 
-export function QuotationEditor({ initial, customers, recentHotels, meta, sidebar }: Props) {
+export function QuotationEditor({ initial, customers, recentHotels, meta, sidebar, catalogs = emptyCatalogs }: Props) {
   const router = useRouter();
   const [draft, setDraft] = useState(initial);
   const [saveState, setSaveState] = useState<SaveState>(initial.id ? "saved" : "dirty");
@@ -126,7 +129,7 @@ export function QuotationEditor({ initial, customers, recentHotels, meta, sideba
   }, [draft, autoPreview, refreshPreview]);
   useEffect(() => () => { if (previewRef.current) URL.revokeObjectURL(previewRef.current); }, []);
 
-  const readiness = useMemo(() => quotationReadiness(draft.tipo, draft.detalles, itemsAsNumbers(draft.items)), [draft.tipo, draft.detalles, draft.items]);
+  const readiness = useMemo(() => quotationReadiness(draft.tipo, detailsForSave(draft), itemsAsNumbers(draft.items)), [draft]);
   const blocking = readiness.filter(issue => issue.nivel === "error");
 
   const setKind = (tipo: QuotationKind) => change(current => {
@@ -163,7 +166,7 @@ export function QuotationEditor({ initial, customers, recentHotels, meta, sideba
     {!meta.schemaReady ? <Notice tone="error">La base de datos aún no tiene las columnas de cotizaciones estructuradas. Ejecute docs/sql/quotations_v5.sql en Supabase para guardar vuelos, hoteles, fotos y validez con hora.</Notice> : null}
     <fieldset disabled={locked} className="m-0 min-w-0 space-y-6 border-0 p-0">
     {!draft.id ? <Section id="tipo" title="Tipo de cotización">
-      <div className="grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Tipo de cotización">{(Object.keys(quotationKindLabels) as QuotationKind[]).map(kind => <button key={kind} type="button" role="radio" aria-checked={draft.tipo === kind} onClick={() => setKind(kind)} className={cn("rounded-card border p-4 text-left transition-colors", draft.tipo === kind ? "border-brand bg-brand-tint" : "border-line bg-canvas hover:bg-surface")}><span className="block font-semibold text-ink">{quotationKindLabels[kind]}</span><span className="t-small text-ink-soft">{kindDescriptions[kind]}</span></button>)}</div>
+      <div className="grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Tipo de cotización">{(creatableKinds.includes(draft.tipo) ? creatableKinds : [...creatableKinds, draft.tipo]).map(kind => <button key={kind} type="button" role="radio" aria-checked={draft.tipo === kind} onClick={() => setKind(kind)} className={cn("rounded-card border p-4 text-left transition-colors", draft.tipo === kind ? "border-brand bg-brand-tint" : "border-line bg-canvas hover:bg-surface")}><span className="block font-semibold text-ink">{quotationKindAdminLabels[kind]}</span><span className="t-small text-ink-soft">{kindDescriptions[kind]}</span></button>)}</div>
     </Section> : null}
     <Section id="cliente" title="Cliente y viaje">
       <div className="grid gap-3 sm:grid-cols-2">
@@ -179,7 +182,8 @@ export function QuotationEditor({ initial, customers, recentHotels, meta, sideba
     {draft.tipo === "vuelo" || draft.tipo === "paquete" ? <><FlightSection details={draft.detalles} update={update} onApplyItinerary={applyItinerary} /><FareBaggageSection details={draft.detalles} update={update} /></> : null}
     {draft.tipo === "hotel" || draft.tipo === "paquete" ? <HotelSection details={draft.detalles} update={update} recentHotels={recentHotels} /> : null}
     {draft.tipo === "ferry" ? <FerrySection details={draft.detalles} update={update} /> : null}
-    {draft.tipo !== "vuelo" ? <ServicesSection details={draft.detalles} update={update} /> : null}
+    {draft.tipo === "combinado" ? <PackageSection details={draft.detalles} update={update} recentHotels={recentHotels} onApplyItinerary={applyItinerary} /> : null}
+    {draft.tipo !== "vuelo" && draft.tipo !== "combinado" ? <ServicesSection details={draft.detalles} update={update} /> : null}
     <PricingSection kind={draft.tipo} items={draft.items} setItems={(items: DraftItem[]) => change(current => ({ ...current, items }))} currency={draft.moneda} setCurrency={moneda => change(current => ({ ...current, moneda }))} details={draft.detalles} update={update} />
     <ValiditySection details={draft.detalles} update={update} sent={Boolean(meta.sent)} />
     <TermsSection details={draft.detalles} update={update} kind={draft.tipo} />
@@ -216,11 +220,11 @@ export function QuotationEditor({ initial, customers, recentHotels, meta, sideba
     {sidebar}
   </div>;
 
-  return <div className="space-y-4">
+  return <CatalogProvider value={catalogs}><div className="space-y-4">
     <div className="sticky top-0 z-20 -mx-4 border-b border-line bg-canvas/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="t-small text-ink-soft">{meta.codigo ?? "Nueva cotización"} · {quotationKindLabels[draft.tipo]}{meta.estadoLabel ? ` · ${meta.estadoLabel}` : ""}{meta.expired ? " · Vencida" : ""}</p>
+          <p className="t-small text-ink-soft">{meta.codigo ?? "Nueva cotización"} · {quotationKindAdminLabels[draft.tipo]}{meta.estadoLabel ? ` · ${meta.estadoLabel}` : ""}{meta.expired ? " · Vencida" : ""}</p>
           <p role="status" aria-live="polite" className={cn("flex items-center gap-1.5 t-small font-semibold", saveState === "saved" ? "text-success" : saveState === "error" || saveState === "conflict" ? "text-error" : "text-ink")}>{saveState === "saving" ? <Loader2 size={14} className="animate-spin" aria-hidden="true" /> : null}{saveLabel}</p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -240,5 +244,5 @@ export function QuotationEditor({ initial, customers, recentHotels, meta, sideba
       <div className={cn(mobileTab !== "editar" && "hidden lg:block")}>{editor}</div>
       <aside className={cn("lg:sticky lg:top-36 lg:max-h-[calc(100vh-10rem)] lg:overflow-y-auto", mobileTab !== "revisar" && "hidden lg:block")} aria-label="Revisión, vista previa y envío">{panel}</aside>
     </div>
-  </div>;
+  </div></CatalogProvider>;
 }
