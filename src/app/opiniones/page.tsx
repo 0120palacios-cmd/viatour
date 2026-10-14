@@ -37,7 +37,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
   const policy = <div className="flex gap-3 border-t border-line pt-6"><ShieldCheck size={20} strokeWidth={1.75} className="mt-0.5 shrink-0 text-brand" aria-hidden="true" /><div className="space-y-1"><p className="t-small font-semibold text-ink">{v3("reviewsPolicyTitle")}</p><p className="t-small font-normal text-ink-soft">{v3("reviewsPolicyBody")}</p></div></div>;
   const pages = Math.max(1, Math.ceil(matching / 30));
   return <main><div className="container-site pb-12 sm:pb-16">
-    <PageHeader breadcrumbs={[{ label: common("home"), href: "/" }, { label: common("reviews"), href: "/opiniones" }]} title={common("reviews")} intro={home("reviewsIntro")} />
+    <PageHeader breadcrumbs={[{ label: common("home"), href: "/" }, { label: common("reviews"), href: "/opiniones" }]} title={(await getTranslations("v4"))("h1.reviews")} intro={home("reviewsIntro")} />
     {summary.total === 0 ? <div className="grid gap-6 rounded-panel border border-line bg-surface p-6 sm:p-8 md:grid-cols-[minmax(0,1fr)_20rem] md:items-center"><p className="t-body">{t("noPublished")}</p>{actions}</div> : <div className="grid items-start gap-10 lg:grid-cols-[22rem_minmax(0,1fr)] lg:gap-12">
       <aside className="space-y-6 rounded-panel border border-line bg-surface p-6 lg:top-28 lg:[@media(min-height:880px)]:sticky"><RatingSummary summary={summary} filter={{ active: stars, href: value => reviewsHref(value) }} />{actions}{policy}</aside>
       <section id="opiniones-publicadas" className="scroll-mt-28 space-y-8" aria-label={t("published")}>

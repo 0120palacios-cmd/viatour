@@ -18,14 +18,16 @@ import { PackageQuote } from "@/components/packages/package-quote";
 import { PackageGrid } from "@/components/packages/package-card";
 import { PackageGallery } from "@/components/packages/package-gallery";
 import { StickyQuoteBar } from "@/components/quote/sticky-quote-bar";
+import { PaymentClarity } from "@/components/trust/payment-clarity";
+import { displayDuration } from "@/lib/display-rules";
 import { ShareButton } from "@/components/share-button";
 import { canOptimizeImage } from "@/lib/image-optimization";
 import type { Package } from "@/lib/packages";
 import { matchesTravelStyle, travelStyles } from "@/lib/travel-styles";
+import { packageMatchesDestination, regionCategories } from "@/lib/destination-match";
 import type { Locale } from "@/i18n/config";
 
 type Props = { params: Promise<{ slug: string }> };
-function normalizeDestination(value: string) { return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); }
 
 function Gallery({ item }: { item: Package }) {
   const sources = (Array.isArray(item.galeria) ? item.galeria : []).filter(source => typeof source === "string" && source.trim());
@@ -48,12 +50,14 @@ export default async function Page({ params }: Props) {
   const packagePage = await getTranslations("packagePage");
   const ux = await getTranslations("ux");
   const v3 = await getTranslations("v3");
+  const v4 = await getTranslations("v4");
   const locale = (await getLocale()) as Locale;
   const item = await getPackage((await params).slug);
   if (!item) notFound();
   let destination = item.destination_id ? await getDestination(item.destination_id, "id") : null;
   if (!destination) {
-    try { const target = normalizeDestination(item.destino); destination = (await getDestinations()).find(value => normalizeDestination(value.nombre) === target || normalizeDestination(value.slug) === target) ?? null; } catch { destination = null; }
+    // A specific place ("Dubái", "Panamá") before the region that also covers it ("Medio Oriente").
+    try { const all = await getDestinations(); destination = all.find(value => !regionCategories[value.slug] && packageMatchesDestination(item, value)) ?? all.find(value => packageMatchesDestination(item, value)) ?? null; } catch { destination = null; }
   }
   let packages: Package[] = [];
   try { packages = (await getPackages()).filter(value => value.id !== item.id && ((item.categoria && value.categoria === item.categoria) || value.destino.trim().toLocaleLowerCase() === item.destino.trim().toLocaleLowerCase())).slice(0, 3); } catch { packages = []; }
@@ -78,7 +82,7 @@ export default async function Page({ params }: Props) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <ul className="flex flex-wrap gap-2" aria-label={ux("quickFacts")}>
           <li className={chipClass}><MapPin size={16} strokeWidth={1.75} className="text-brand" aria-hidden="true" />{item.destino}</li>
-          {item.duracion && <li className={chipClass}><Clock3 size={16} strokeWidth={1.75} className="text-brand" aria-hidden="true" />{item.duracion}</li>}
+          {displayDuration(item.duracion) && <li className={chipClass}><Clock3 size={16} strokeWidth={1.75} className="text-brand" aria-hidden="true" />{displayDuration(item.duracion)}</li>}
           {item.categoria && <li className={chipClass}><Compass size={16} strokeWidth={1.75} className="text-brand" aria-hidden="true" />{item.categoria}</li>}
         </ul>
         {/* Below 1024px the quote panel follows the content; this puts the next step in the first screen, beside sharing. */}
@@ -94,8 +98,11 @@ export default async function Page({ params }: Props) {
       <p className="t-body measure whitespace-pre-line">{item.descripcion}</p>
       {/* Raw tags become the same travel styles used on /paquetes, each one opening the similar trips. */}
       {(() => { const styles = travelStyles.filter(style => style.tags && matchesTravelStyle({ etiquetas: item.etiquetas ?? [], categoria: null }, style)); return styles.length > 0 && <div className="flex flex-wrap items-center gap-2"><span className="t-small text-ink-soft">{v3("packageFor")}:</span><ul className="flex flex-wrap gap-2">{styles.map(style => <li key={style.slug}><Link href={`/paquetes?estilo=${style.slug}`} className="t-small inline-flex min-h-11 items-center rounded-btn border border-line bg-surface px-3 text-ink transition-colors duration-(--duration-fast) ease-out hover:border-brand hover:text-brand">{v3(`styles.${style.key}`)}</Link></li>)}</ul></div>; })()}
-      <section className="space-y-6" aria-labelledby="package-includes-title"><h2 id="package-includes-title" className="t-h2 inline-flex items-center gap-3"><ListChecks className="text-brand" aria-hidden="true" />{packagePage("includes")}</h2><div className="grid gap-5 md:grid-cols-2"><div className="rounded-card border border-line bg-canvas p-6 shadow-sm"><h3 className="t-h3 mb-5 inline-flex items-center gap-2"><Check className="text-success" aria-hidden="true" />{packagePage("included")}</h3>{item.incluye?.length ? <ul className="space-y-4">{item.incluye.map((value, index) => <li key={index} className="t-body flex gap-3"><Check size={20} strokeWidth={1.75} className="mt-1 shrink-0 text-success" aria-hidden="true" /><span>{value}</span></li>)}</ul> : <p className="t-body text-ink-soft">{packagePage("detailsOnRequest")}</p>}</div><div className="rounded-card border border-line bg-canvas p-6 shadow-sm"><h3 className="t-h3 mb-5 inline-flex items-center gap-2"><X className="text-ink-soft" aria-hidden="true" />{packagePage("notIncluded")}</h3>{item.no_incluye?.length ? <ul className="space-y-4">{item.no_incluye.map((value, index) => <li key={index} className="t-body flex gap-3"><Minus size={20} strokeWidth={1.75} className="mt-1 shrink-0 text-ink-soft" aria-hidden="true" /><span>{value}</span></li>)}</ul> : null}</div></div></section>
+      <section className="space-y-6" aria-labelledby="package-includes-title"><h2 id="package-includes-title" className="t-h2 inline-flex items-center gap-3"><ListChecks className="text-brand" aria-hidden="true" />{packagePage("includes")}</h2><div className="grid gap-5 md:grid-cols-2"><div className="rounded-card border border-line bg-canvas p-6 shadow-sm"><h3 className="t-h3 mb-5 inline-flex items-center gap-2"><Check className="text-success" aria-hidden="true" />{packagePage("included")}</h3>{item.incluye?.length ? <ul className="space-y-4">{item.incluye.map((value, index) => <li key={index} className="t-body flex gap-3"><Check size={20} strokeWidth={1.75} className="mt-1 shrink-0 text-success" aria-hidden="true" /><span>{value}</span></li>)}</ul> : <p className="t-body text-ink-soft">{packagePage("detailsOnRequest")}</p>}</div><div className="rounded-card border border-line bg-canvas p-6 shadow-sm"><h3 className="t-h3 mb-5 inline-flex items-center gap-2"><X className="text-ink-soft" aria-hidden="true" />{packagePage("notIncluded")}</h3>{item.no_incluye?.length ? <ul className="space-y-4">{item.no_incluye.map((value, index) => <li key={index} className="t-body flex gap-3"><Minus size={20} strokeWidth={1.75} className="mt-1 shrink-0 text-ink-soft" aria-hidden="true" /><span>{value}</span></li>)}</ul> : null}<p className="t-small mt-5 border-t border-line pt-4 font-normal text-ink-soft">{v4("clarity.destinationCharges")} <a href="#antes-de-pagar" className="font-semibold text-brand underline underline-offset-4">{v4("clarity.title")}</a></p></div></div></section>
       {itinerary.length > 0 && <section className="space-y-6" aria-labelledby="itinerary-title"><h2 id="itinerary-title" className="t-h2 inline-flex items-center gap-3"><CalendarDays className="text-brand" aria-hidden="true" />{packagePage("itinerary")}</h2><ol>{itinerary.map((day, index) => { const [, title, body] = day.match(/^(.{1,40}?)(?::|\s[—–-])\s+([\s\S]+)$/) ?? []; return <li key={`${index}-${day}`} className="relative flex gap-5 pb-7 last:pb-0"><span aria-hidden="true" className="absolute left-3 top-7 h-[calc(100%-1.25rem)] w-px bg-line"/><span className="relative z-10 flex size-7 shrink-0 items-center justify-center rounded-full border border-brand bg-canvas t-small text-brand">{index + 1}</span><div className="min-w-0 space-y-1 pt-0.5"><h3 className="t-h3">{body ? title : `${packagePage("day")} ${index + 1}`}</h3><p className="t-body whitespace-pre-line text-ink-soft">{body ?? day}</p></div></li>; })}</ol></section>}
+      {/* Charges paid at the destination and unclear rate validity were the most frequent complaints in
+          low-rated reviews; the answer sits on the page, linked from "No incluye". */}
+      <PaymentClarity id="antes-de-pagar" />
     </div><aside id="solicitar-cotizacion" aria-labelledby={`package-quote-title-${item.id}`} className="scroll-mt-24 rounded-panel border border-line bg-canvas p-5 shadow-md sm:p-6"><PackageQuote item={item} intro={packagePage("quoteMessage")} /></aside></div>
     {destination && <section className="space-y-4 rounded-panel border border-line bg-surface p-6 shadow-sm sm:p-8"><h2 className="t-h2 inline-flex items-center gap-3"><Info className="text-brand" aria-hidden="true" />{packagePage("destinationInfo")}</h2><h3 className="t-h3">{destination.nombre}</h3>{destination.intro && <p className="t-body measure text-ink-soft">{destination.intro}</p>}{destination.mejor_epoca && <p className="t-body"><span className="font-semibold">{t("destinationSeason")}: </span>{destination.mejor_epoca}</p>}<div className="flex flex-wrap gap-x-6 gap-y-1"><Link href={`/destinos/${destination.slug}`} className="t-small inline-flex min-h-11 items-center gap-2 text-brand underline underline-offset-4">{packagePage("learnDestination", { name: destination.nombre })}</Link><Link href={{ pathname: "/requisitos", query: { destino: destination.nombre } }} className="t-small inline-flex min-h-11 items-center gap-2 text-brand underline underline-offset-4">{ux("requirementsTitle", { name: destination.nombre })}</Link></div></section>}
     {packages.length > 0 && <section className="space-y-6"><h2 id="related-packages-title" className="t-h2">{packagePage("relatedPackages")}</h2><PackageGrid items={packages} label={packagePage("relatedPackages")} /></section>}

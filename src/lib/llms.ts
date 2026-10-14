@@ -6,6 +6,7 @@ import type { Destination } from "@/lib/destinations";
 import type { FAQ } from "@/lib/faqs";
 import type { Package } from "@/lib/packages";
 import type { ReviewSummary } from "@/lib/reviews";
+import { displayDuration } from "@/lib/display-rules";
 
 export type LlmsContent = {
   siteUrl: string;
@@ -56,7 +57,7 @@ function link(siteUrl: string, name: string, path: string, body?: string) {
 }
 
 function packageFacts(item: Package) {
-  return [item.destino, item.duracion, item.categoria].filter(value => value && value.trim()).join(" · ");
+  return [item.destino, displayDuration(item.duracion), item.categoria].filter(value => value && value.trim()).join(" · ");
 }
 
 function header(content: LlmsContent) {

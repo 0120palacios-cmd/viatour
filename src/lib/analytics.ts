@@ -1,4 +1,4 @@
-export type AnalyticsEvent = "whatsapp_click" | "quote_submit" | "contact_submit" | "newsletter_signup" | "review_submit" | "share" | "google_review_click" | "google_profile_click" | "email_click" | "promo_click" | "reservation_click" | "trip_style_click" | "custom_trip_click";
+export type AnalyticsEvent = "whatsapp_click" | "quote_submit" | "contact_submit" | "newsletter_signup" | "review_submit" | "share" | "google_review_click" | "google_profile_click" | "email_click" | "promo_click" | "reservation_click" | "trip_style_click" | "custom_trip_click" | "quote_start" | "portal_code_requested" | "portal_verified";
 export type EventParams = { service?: string; page?: string; placement?: string; status?: "requested" | "saved" };
 type Pixel = ((...args: unknown[]) => void) & { queue?: unknown[][]; callMethod?: (...args: unknown[]) => void; loaded?: boolean; version?: string; push?: Pixel };
 declare global { interface Window { [key: `ga-disable-${string}`]: boolean | undefined; dataLayer?: unknown[]; gtag?: (...args: unknown[]) => void; fbq?: Pixel; _fbq?: Pixel; viatourAnalytics?: { consent: boolean; ga: boolean; meta: boolean; gaId?: string }; } }
@@ -31,4 +31,13 @@ export function trackEvent(name: AnalyticsEvent, params: EventParams = {}) {
    if (metaStandard) window.fbq?.("track", metaStandard, { content_category: normalized });
   }
  } catch { /* Tracking must never interrupt navigation. */ }
+}
+
+// First interaction with a quote form, once per form instance: compared with quote_submit it shows
+// how many visitors start a request and do not send it. Carries the service only, never field values.
+const startedForms = new WeakSet<EventTarget>();
+export function trackQuoteStart(form: EventTarget, service: string) {
+ if (startedForms.has(form)) return;
+ startedForms.add(form);
+ trackEvent("quote_start", { service });
 }

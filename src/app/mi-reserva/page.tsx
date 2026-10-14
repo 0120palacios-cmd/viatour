@@ -3,27 +3,133 @@ import { cookies } from "next/headers";
 import { useTranslations } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { CalendarDays, Download, FileText, LifeBuoy, LogOut, Map, MessageCircle, Receipt, ShieldCheck, Wallet } from "lucide-react";
+import { ArrowRight, CalendarDays, Download, FileText, LifeBuoy, LogOut, Mail, Map, MessageCircle, Phone, Receipt, ShieldCheck, Wallet } from "lucide-react";
 import { WhatsAppLink } from "@/components/layout/whatsapp-link";
+import { TrackedLink } from "@/components/tracked-link";
 import { localizedPageMetadata } from "@/lib/seo";
-import { PortalAccessForm } from "@/components/portal/access-form";
+import { PortalAccessForm, PortalSignedIn } from "@/components/portal/access-form";
 import { DocumentUploadForm } from "@/components/portal/document-upload-form";
 import { TicketPanel } from "@/components/portal/ticket-panel";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getPortalDocuments, getPortalReservation } from "@/lib/portal-data";
+import { getPortalDocuments, getPortalReservation, type PortalDocument } from "@/lib/portal-data";
 import { portalCookieName, portalPendingCookieName, verifyPortalCookie, verifyPortalPendingCookie } from "@/lib/portal";
+import { hondurasToday, nextStep, tripTiming } from "@/lib/portal-summary";
 import { formatMoney, invoiceStatusLabel, paymentMethodLabel, type ReservationStatus } from "@/lib/reservation-types";
 import { signOutReservation } from "./actions";
 import { siteConfig } from "@/lib/site-config";
 export const dynamic = "force-dynamic";
 export async function generateMetadata(): Promise<Metadata> { return { ...(await localizedPageMetadata("/mi-reserva", "reservation")), robots: { index: false, follow: false } }; }
 function statusKey(status: ReservationStatus) { return ({ pendiente: "pending", confirmada: "confirmed", en_curso: "inProgress", completada: "completed", cancelada: "cancelled" } as Record<ReservationStatus, string>)[status]; }
-function dateLabel(value: string | null, locale: string, fallback: string) { return value ? new Intl.DateTimeFormat(locale === "en" ? "en-US" : "es-HN", { dateStyle: "medium" }).format(new Date(`${value}T12:00:00`)) : fallback; }
+function dateLabel(value: string | null, locale: string, fallback: string) { return value ? new Intl.DateTimeFormat(locale === "en" ? "en-US" : "es-HN", { dateStyle: "medium" }).format(new Date(`${value.slice(0, 10)}T12:00:00`)) : fallback; }
 function statusClass(status: ReservationStatus) { return ({ pendiente: "bg-surface text-ink-soft", confirmada: "bg-brand-tint text-brand-deep", en_curso: "bg-brand-tint text-brand-deep", completada: "bg-surface text-success", cancelada: "bg-surface text-error" } as Record<ReservationStatus, string>)[status]; }
 function maskedReference(value: string | null, fallback: string) { if (!value) return fallback; const clean = value.trim(); return clean.length > 4 ? `****${clean.slice(-4)}` : "****"; }
 function AccessPanel({ showOtp = false }: { showOtp?: boolean }) { const t = useTranslations("portal"); return <section className="mx-auto max-w-xl rounded-panel border bg-canvas p-6 shadow-sm sm:p-8" aria-labelledby="portal-access-title"><p className="t-small text-brand">{t("accessEyebrow")}</p><h1 id="portal-access-title" className="t-h1 mt-2">{t("accessTitle")}</h1><p className="mt-4 text-ink-soft">{t("accessBody")}</p><div className="mt-8"><PortalAccessForm showOtp={showOtp} /></div></section>; }
-function StatusProgress({ status }: { status: ReservationStatus }) { const t = useTranslations("portal"); const steps = [{ key: "pendiente", label: t("pending") }, { key: "confirmada", label: t("confirmed") }, { key: "en_curso", label: t("inProgress") }, { key: "completada", label: t("completed") }] as const; const currentIndex = steps.findIndex(step => step.key === status); const label = t(statusKey(status)); return <div className="space-y-4" aria-label={t("progress", { status: label })}><div className="flex items-center justify-between gap-2" aria-hidden="true">{steps.map((step, index) => { const active = status !== "cancelada" && currentIndex >= index; return <div key={step.key} className="flex min-w-0 flex-1 items-center gap-2 last:flex-none"><span className={`size-3 shrink-0 rounded-full border-2 ${active ? "border-brand bg-brand" : "border-line bg-canvas"}`} /><span className={`t-small hidden sm:block ${active ? "font-semibold text-brand-deep" : "text-ink-soft"}`}>{step.label}</span>{index < steps.length - 1 ? <span className={`h-px min-w-3 flex-1 ${active && currentIndex > index ? "bg-brand" : "bg-line"}`} /> : null}</div>; })}</div><p className={`inline-flex rounded-btn px-3 py-1 t-small ${statusClass(status)}`}>{label}</p></div>; }
-async function PortalView({ reservationId }: { reservationId: string }) { const t = await getTranslations("portal"); const locale = await getLocale(); const client = createAdminClient(); const record = await getPortalReservation(client, reservationId); if (!record) return <AccessPanel />; const documents = await getPortalDocuments(client, reservationId); const paid = record.payments.filter(payment => payment.moneda === record.reservation.moneda).reduce((sum, payment) => sum + Number(payment.monto), 0); const balance = Math.max(0, Number(record.reservation.total) - paid); const whatsappUrl = `https://wa.me/${siteConfig.whatsappNumber}?text=${encodeURIComponent(`Hello, I need a change to my reservation ${record.reservation.codigo}.`)}`; const reservationStatus = t(statusKey(record.reservation.estado)); return <div className="space-y-8"><div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between"><div><p className="t-small text-brand">{t("bookingCodeHeading")}</p><h1 className="t-h1 mt-2">{record.reservation.codigo}</h1><p className="mt-3 text-ink-soft">{record.reservation.destino}</p></div><form action={signOutReservation}><button type="submit" className="inline-flex min-h-12 items-center justify-center gap-2 self-start rounded-btn border border-line px-6 py-3 font-semibold text-ink hover:bg-surface"><LogOut size={18} strokeWidth={1.75} aria-hidden="true" />{t("signOut")}</button></form></div><section className="rounded-panel border bg-surface p-6 sm:p-8" aria-labelledby="portal-status-heading"><div className="mb-8 flex items-start justify-between gap-4"><div><h2 id="portal-status-heading" className="t-h2">{t("status")}</h2><p className="mt-2 text-ink-soft">{t("statusIntro")}</p></div><span className={`rounded-btn px-3 py-1 t-small ${statusClass(record.reservation.estado)}`}>{reservationStatus}</span></div><StatusProgress status={record.reservation.estado} /></section><section className="grid gap-4 sm:grid-cols-2" aria-label={t("date")}><div className="rounded-card border bg-canvas p-6"><p className="t-small text-ink-soft">{t("startDate")}</p><p className="mt-2 flex items-center gap-2 font-semibold"><CalendarDays size={18} className="text-brand" strokeWidth={1.75} aria-hidden="true" />{dateLabel(record.reservation.fecha_inicio, locale, t("toConfirm"))}</p></div><div className="rounded-card border bg-canvas p-6"><p className="t-small text-ink-soft">{t("endDate")}</p><p className="mt-2 flex items-center gap-2 font-semibold"><CalendarDays size={18} className="text-brand" strokeWidth={1.75} aria-hidden="true" />{dateLabel(record.reservation.fecha_fin, locale, t("toConfirm"))}</p></div></section><section className="rounded-panel border bg-surface p-6 sm:p-8" aria-labelledby="portal-items-heading"><h2 id="portal-items-heading" className="t-h2">{t("tripDetail")}</h2><div className="mt-6 overflow-x-auto rounded-card border bg-canvas"><table className="w-full min-w-[480px] text-left"><caption className="sr-only">{t("includedServices")}</caption><thead className="bg-brand-tint text-brand-deep"><tr><th className="p-4">{t("description")}</th><th className="p-4 text-right">{t("quantity")}</th></tr></thead><tbody>{record.items.map(item => <tr key={item.id ?? `${item.descripcion}-${item.orden}`} className="border-t border-line"><td className="p-4">{item.descripcion}</td><td className="p-4 text-right">{item.cantidad}</td></tr>)}{!record.items.length ? <tr><td className="p-4 text-ink-soft" colSpan={2}>{t("noItems")}</td></tr> : null}</tbody></table></div><div className="mt-6 grid gap-4 border-t border-line pt-6 sm:grid-cols-2"><div><p className="t-small text-ink-soft">{t("total")}</p><p className="t-h2 mt-1">{formatMoney(Number(record.reservation.total), record.reservation.moneda)}</p></div><div><p className="t-small text-ink-soft">{t("balance")}</p><p className={`t-h2 mt-1 ${balance <= 0 ? "text-success" : "text-brand-deep"}`}>{balance <= 0 ? t("paid") : formatMoney(balance, record.reservation.moneda)}</p></div></div></section><section className="rounded-panel border bg-surface p-6 sm:p-8" aria-labelledby="portal-payments-heading"><h2 id="portal-payments-heading" className="t-h2">{t("payments")}</h2><div className="mt-6 overflow-x-auto rounded-card border bg-canvas"><table className="w-full min-w-[620px] text-left"><caption className="sr-only">{t("registeredPayments")}</caption><thead className="bg-brand-tint text-brand-deep"><tr><th className="p-4">{t("date")}</th><th className="p-4">{t("method")}</th><th className="p-4 text-right">{t("amount")}</th><th className="p-4">{t("reference")}</th></tr></thead><tbody>{record.payments.map(payment => <tr key={payment.id} className="border-t border-line"><td className="p-4">{dateLabel(payment.fecha_pago, locale, t("toConfirm"))}</td><td className="p-4">{paymentMethodLabel(payment.metodo)}</td><td className="p-4 text-right font-semibold">{formatMoney(Number(payment.monto), payment.moneda)}</td><td className="p-4">{maskedReference(payment.referencia, t("notAvailable"))}</td></tr>)}{!record.payments.length ? <tr><td className="p-4 text-ink-soft" colSpan={4}>{t("noPayments")}</td></tr> : null}</tbody></table></div></section><section className="rounded-panel border bg-surface p-6 sm:p-8" aria-labelledby="portal-invoices-heading"><h2 id="portal-invoices-heading" className="t-h2">{t("invoices")}</h2><div className="mt-6 space-y-4">{record.invoices.map(invoice => <article key={invoice.id} className="flex flex-col gap-4 rounded-card border bg-canvas p-6 sm:flex-row sm:items-center sm:justify-between"><div><h3 className="t-h3">{invoice.numero}</h3><p className="t-small text-ink-soft">{t("issued")}: {dateLabel(invoice.fecha_emision, locale, t("toConfirm"))} · {t("statusLabel")}: {invoiceStatusLabel(invoice.estado)}</p></div><Link className="inline-flex min-h-12 items-center justify-center gap-2 rounded-btn border border-brand px-6 py-3 font-semibold text-brand hover:bg-brand-tint" href={`/api/mi-reserva/facturas/${invoice.id}/pdf`}><Download size={18} strokeWidth={1.75} aria-hidden="true" />{t("downloadPdf")}</Link></article>)}{!record.invoices.length ? <p className="rounded-card border bg-canvas p-6 text-ink-soft">{t("noInvoices")}</p> : null}</div></section><section className="rounded-panel border bg-surface p-6 sm:p-8" aria-labelledby="portal-documents-heading"><h2 id="portal-documents-heading" className="t-h2">{t("documents")}</h2><p className="mt-2 text-ink-soft">{t("documentsIntro")}</p><div className="mt-6 space-y-3">{documents.map(document => <a key={document.path} href={document.url} className="block rounded-card border border-line bg-canvas p-4 text-brand underline underline-offset-4" target="_blank" rel="noreferrer">{document.name}</a>)}{!documents.length ? <p className="rounded-card border border-line bg-canvas p-5 t-small text-ink-soft">{t("noDocuments")}</p> : null}</div><DocumentUploadForm /></section><section className="rounded-panel border bg-surface p-6 sm:p-8" aria-labelledby="portal-tickets-heading"><h2 id="portal-tickets-heading" className="t-h2">{t("supportRequests")}</h2><p className="mt-2 text-ink-soft">{t("supportIntro")}</p><TicketPanel /></section><section className="rounded-panel border border-wa bg-surface p-6 sm:p-8" aria-labelledby="portal-help-heading"><div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><h2 id="portal-help-heading" className="t-h2">{t("needChange")}</h2><p className="mt-2 text-ink-soft">{t("changeIntro")}</p></div><a className="inline-flex min-h-12 items-center justify-center gap-2 rounded-btn bg-wa px-6 py-3 font-semibold text-ink hover:bg-wa-deep" href={whatsappUrl} target="_blank" rel="noopener noreferrer"><MessageCircle size={20} strokeWidth={1.75} aria-hidden="true" />{t("writeUs")}</a></div></section></div>; }
+function StatusProgress({ status }: { status: ReservationStatus }) { const t = useTranslations("portal"); const steps = [{ key: "pendiente", label: t("pending") }, { key: "confirmada", label: t("confirmed") }, { key: "en_curso", label: t("inProgress") }, { key: "completada", label: t("completed") }] as const; const currentIndex = steps.findIndex(step => step.key === status); const label = t(statusKey(status)); return <div className="space-y-3" aria-label={t("progress", { status: label })}><p className={`inline-flex rounded-btn px-3 py-1 t-small ${statusClass(status)}`}>{label}</p><div className="flex items-center justify-between gap-2" aria-hidden="true">{steps.map((step, index) => { const active = status !== "cancelada" && currentIndex >= index; return <div key={step.key} className="flex min-w-0 flex-1 items-center gap-2 last:flex-none"><span className={`size-3 shrink-0 rounded-full border-2 ${active ? "border-brand bg-brand" : "border-line bg-canvas"}`} />{index < steps.length - 1 ? <span className={`h-px min-w-3 flex-1 ${active && currentIndex > index ? "bg-brand" : "bg-line"}`} /> : null}</div>; })}</div></div>; }
+
+const panel = "rounded-panel border border-line bg-canvas p-6 sm:p-8";
+const linkClass = "t-small inline-flex min-h-11 items-center gap-2 font-semibold text-brand underline-offset-4 hover:underline";
+
+function DocumentList({ documents, empty, locale, sentOn, open }: { documents: PortalDocument[]; empty: string; locale: string; sentOn: (date: string) => string; open: string }) {
+  if (!documents.length) return <p className="t-small rounded-card border border-line bg-surface p-4 font-normal text-ink-soft">{empty}</p>;
+  return <ul className="space-y-2">{documents.map(document => <li key={document.path}>
+    {/* The link goes to the API, which checks the session and redirects to a URL signed at that moment. */}
+    <a href={`/api/mi-reserva/documentos?ruta=${encodeURIComponent(document.path)}`} target="_blank" rel="noopener noreferrer" className="group flex min-h-14 items-center gap-3 rounded-card border border-line bg-canvas p-3 transition-colors duration-(--duration-fast) ease-out hover:border-brand">
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-btn bg-brand-tint text-brand"><FileText size={20} strokeWidth={1.75} aria-hidden="true" /></span>
+      <span className="min-w-0 flex-1"><span className="t-small block break-words font-semibold text-ink group-hover:text-brand">{document.source === "agency" ? document.name : sentOn(dateLabel(document.createdAt, locale, ""))}</span></span>
+      <span className="t-small shrink-0 text-brand">{open}</span>
+    </a>
+  </li>)}</ul>;
+}
+
+async function PortalView({ reservationId }: { reservationId: string }) {
+  const t = await getTranslations("portal"); const v4 = await getTranslations("v4.portal"); const locale = await getLocale();
+  const client = createAdminClient();
+  const record = await getPortalReservation(client, reservationId);
+  if (!record) return <AccessPanel />;
+  const { reservation } = record;
+  const documents = await getPortalDocuments(client, reservationId);
+  const agencyDocuments = documents.filter(document => document.source === "agency");
+  const customerDocuments = documents.filter(document => document.source === "customer");
+  const paid = record.payments.filter(payment => payment.moneda === reservation.moneda).reduce((sum, payment) => sum + Number(payment.monto), 0);
+  const balance = Math.max(0, Number(reservation.total) - paid);
+  const whatsappUrl = `https://wa.me/${siteConfig.whatsappNumber}?text=${encodeURIComponent(v4("whatsappMessage", { code: reservation.codigo }))}`;
+  const timing = tripTiming(reservation.fecha_inicio, reservation.fecha_fin, hondurasToday());
+  const timingLabel = timing.kind === "upcoming" ? v4("daysLeft", { days: timing.days }) : timing.kind === "today" ? v4("today") : timing.kind === "ongoing" ? v4("ongoing") : timing.kind === "ended" ? v4("ended", { date: dateLabel(timing.date, locale, "") }) : null;
+  const step = nextStep({ status: reservation.estado, balance, agencyDocuments: agencyDocuments.length });
+  const stepText = step === "balance" ? v4("nextBalance", { amount: formatMoney(balance, reservation.moneda) }) : v4(({ cancelled: "nextCancelled", pending: "nextPending", documents: "nextDocuments", ready: "nextReady" } as const)[step]);
+  const dates = reservation.fecha_inicio ? `${dateLabel(reservation.fecha_inicio, locale, "")}${reservation.fecha_fin && reservation.fecha_fin !== reservation.fecha_inicio ? ` – ${dateLabel(reservation.fecha_fin, locale, "")}` : ""}` : t("toConfirm");
+
+  return <div className="space-y-8">
+    <PortalSignedIn />
+    {/* The trip first: destination, when, status and money in one band, then the single next step. */}
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="min-w-0"><p className="t-small text-brand">{v4("reservationLabel", { code: reservation.codigo })}</p><h1 className="t-h1 mt-2 break-words">{reservation.destino}</h1>{timingLabel && <p className="t-body-lg mt-2 text-ink-soft">{timingLabel}</p>}</div>
+      <form action={signOutReservation}><button type="submit" className="inline-flex min-h-12 items-center justify-center gap-2 self-start rounded-btn border border-line px-5 py-3 font-semibold text-ink hover:bg-surface"><LogOut size={18} strokeWidth={1.75} aria-hidden="true" />{t("signOut")}</button></form>
+    </div>
+    <section aria-label={t("status")} className="grid gap-px overflow-hidden rounded-panel border border-line bg-line sm:grid-cols-3">
+      <div className="space-y-2 bg-canvas p-5 sm:p-6"><p className="t-small text-ink-soft">{v4("dates")}</p><p className="flex items-start gap-2 font-semibold"><CalendarDays size={18} className="mt-0.5 shrink-0 text-brand" strokeWidth={1.75} aria-hidden="true" />{dates}</p></div>
+      <div className="space-y-2 bg-canvas p-5 sm:p-6"><p className="t-small text-ink-soft">{t("status")}</p><StatusProgress status={reservation.estado} /></div>
+      <div className="space-y-1 bg-canvas p-5 sm:p-6"><p className="t-small text-ink-soft">{v4("balanceDue")}</p><p className={`t-h2 ${balance <= 0 ? "text-success" : "text-brand-deep"}`}>{balance <= 0 ? t("paid") : formatMoney(balance, reservation.moneda)}</p><p className="t-small font-normal text-ink-soft">{t("total")}: {formatMoney(Number(reservation.total), reservation.moneda)}</p></div>
+    </section>
+    <section aria-labelledby="portal-next-heading" className="flex flex-col gap-4 rounded-panel border border-brand/30 bg-brand-tint p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+      <div className="space-y-1"><h2 id="portal-next-heading" className="t-small font-semibold text-brand-deep">{v4("nextStep")}</h2><p className="t-body text-ink">{stepText}</p></div>
+      {step === "ready" || step === "documents" ? <Link href="/requisitos" className={`${linkClass} shrink-0`}>{v4("checkRequirements")}<ArrowRight size={16} strokeWidth={1.75} aria-hidden="true" /></Link>
+        : step !== "pending" && <TrackedLink event="whatsapp_click" placement={`portal-next-${step}`} href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-btn bg-wa px-5 py-3 font-semibold text-ink hover:bg-wa-deep"><MessageCircle size={20} strokeWidth={1.75} aria-hidden="true" />{t("writeUs")}</TrackedLink>}
+    </section>
+
+    <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="min-w-0 space-y-8">
+        <section className={panel} aria-labelledby="portal-items-heading">
+          <h2 id="portal-items-heading" className="t-h2">{t("tripDetail")}</h2>
+          {record.items.length ? <ul className="mt-6 divide-y divide-line border-y border-line" aria-label={t("includedServices")}>{record.items.map(item => <li key={item.id ?? `${item.descripcion}-${item.orden}`} className="flex items-start justify-between gap-4 py-4"><span className="t-body min-w-0 break-words">{item.descripcion}</span><span className="t-small shrink-0 text-ink-soft">{t("quantity")}: {item.cantidad}</span></li>)}</ul> : <p className="t-body mt-4 text-ink-soft">{t("noItems")}</p>}
+        </section>
+
+        <section className={panel} aria-labelledby="portal-payments-heading">
+          <h2 id="portal-payments-heading" className="t-h2">{t("payments")}</h2>
+          {/* A list, not a 620px table: phones read every payment without scrolling sideways. */}
+          {record.payments.length ? <ul className="mt-6 divide-y divide-line border-y border-line" aria-label={t("registeredPayments")}>{record.payments.map(payment => <li key={payment.id} className="flex items-start justify-between gap-4 py-4"><div className="min-w-0 space-y-1"><p className="t-body font-semibold">{dateLabel(payment.fecha_pago, locale, t("toConfirm"))}</p><p className="t-small font-normal text-ink-soft">{paymentMethodLabel(payment.metodo)} · {t("reference")}: {maskedReference(payment.referencia, t("notAvailable"))}</p></div><p className="t-body shrink-0 font-semibold">{formatMoney(Number(payment.monto), payment.moneda)}</p></li>)}</ul> : <p className="t-body mt-4 text-ink-soft">{t("noPayments")}</p>}
+        </section>
+
+        <section className={panel} aria-labelledby="portal-invoices-heading">
+          <h2 id="portal-invoices-heading" className="t-h2">{t("invoices")}</h2>
+          <div className="mt-6 space-y-3">{record.invoices.map(invoice => <article key={invoice.id} className="flex flex-col gap-4 rounded-card border border-line p-4 sm:flex-row sm:items-center sm:justify-between"><div><h3 className="t-h3">{invoice.numero}</h3><p className="t-small text-ink-soft">{t("issued")}: {dateLabel(invoice.fecha_emision, locale, t("toConfirm"))} · {t("statusLabel")}: {invoiceStatusLabel(invoice.estado)}</p></div><a className="inline-flex min-h-12 items-center justify-center gap-2 rounded-btn border border-brand px-5 py-3 font-semibold text-brand hover:bg-brand-tint" href={`/api/mi-reserva/facturas/${invoice.id}/pdf`}><Download size={18} strokeWidth={1.75} aria-hidden="true" />{t("downloadPdf")}</a></article>)}{!record.invoices.length ? <p className="t-body text-ink-soft">{t("noInvoices")}</p> : null}</div>
+        </section>
+
+        <section className={panel} aria-labelledby="portal-documents-heading">
+          <h2 id="portal-documents-heading" className="t-h2">{t("documents")}</h2>
+          <p className="mt-2 text-ink-soft">{t("documentsIntro")}</p>
+          <div className="mt-6 grid gap-6 xl:grid-cols-2">
+            <div className="space-y-3"><h3 className="t-small font-semibold text-ink">{v4("fromViatour")}</h3><DocumentList documents={agencyDocuments} empty={v4("noAgencyDocuments")} locale={locale} sentOn={date => v4("sentOn", { date })} open={v4("open")} /></div>
+            <div className="space-y-3"><h3 className="t-small font-semibold text-ink">{v4("fromYou")}</h3><DocumentList documents={customerDocuments} empty={v4("noCustomerDocuments")} locale={locale} sentOn={date => date ? v4("sentOn", { date }) : v4("customerDocument")} open={v4("open")} /></div>
+          </div>
+          <DocumentUploadForm />
+        </section>
+
+        <section id="soporte" className={`${panel} scroll-mt-28`} aria-labelledby="portal-tickets-heading"><h2 id="portal-tickets-heading" className="t-h2">{t("supportRequests")}</h2><p className="mt-2 text-ink-soft">{t("supportIntro")}</p><TicketPanel /></section>
+      </div>
+
+      <aside className="space-y-6 lg:sticky lg:top-28" aria-label={v4("duringTitle")}>
+        {/* "Whom do I contact during the trip?" was a recurring concern in low-rated reviews. */}
+        <section className="space-y-4 rounded-panel border border-line bg-surface p-6" aria-labelledby="portal-during-heading">
+          <div className="flex items-center gap-3"><span className="flex size-10 shrink-0 items-center justify-center rounded-btn bg-canvas text-brand"><LifeBuoy size={20} strokeWidth={1.75} aria-hidden="true" /></span><h2 id="portal-during-heading" className="t-h3">{v4("duringTitle")}</h2></div>
+          <p className="t-small font-normal text-ink-soft">{v4("duringBody", { code: reservation.codigo })}</p>
+          <TrackedLink event="whatsapp_click" placement="portal-during" href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-btn bg-wa px-5 py-3 font-semibold text-ink hover:bg-wa-deep"><MessageCircle size={20} strokeWidth={1.75} aria-hidden="true" />{t("writeUs")}</TrackedLink>
+          <ul className="space-y-1">
+            <li className="t-small inline-flex min-h-11 items-center gap-3 text-ink"><Phone size={18} strokeWidth={1.75} className="text-brand" aria-hidden="true" />+504 8866-8704</li>
+            <li><TrackedLink event="email_click" placement="portal-during" href={`mailto:${siteConfig.supportEmail}?subject=${encodeURIComponent(reservation.codigo)}`} className="t-small inline-flex min-h-11 items-center gap-3 text-brand underline-offset-4 hover:underline"><Mail size={18} strokeWidth={1.75} aria-hidden="true" />{siteConfig.supportEmail}</TrackedLink></li>
+          </ul>
+          <a href="#soporte" className={linkClass}>{v4("sendRequest")}<ArrowRight size={16} strokeWidth={1.75} aria-hidden="true" /></a>
+        </section>
+        <section className="space-y-3 rounded-panel border border-line bg-canvas p-6" aria-labelledby="portal-help-heading">
+          <h2 id="portal-help-heading" className="t-h3">{t("needChange")}</h2>
+          <p className="t-small font-normal text-ink-soft">{t("changeIntro")} {v4("changesPolicy")}</p>
+          <Link href="/legales/cancelaciones" className={linkClass}>{v4("changesLink")}<ArrowRight size={16} strokeWidth={1.75} aria-hidden="true" /></Link>
+        </section>
+      </aside>
+    </div>
+  </div>;
+}
+
 // Signed-out view: the access card first (it holds the H1), and beside it what the portal shows and how to get help.
 function AccessView({ showOtp }: { showOtp: boolean }) {
   const t = useTranslations("portal"); const v3 = useTranslations("v3");
@@ -39,4 +145,4 @@ function AccessView({ showOtp }: { showOtp: boolean }) {
   </div>;
 }
 
-export default async function MiReservaPage() { const cookieStore = await cookies(); const reservationId = verifyPortalCookie(cookieStore.get(portalCookieName)?.value); const pendingId = verifyPortalPendingCookie(cookieStore.get(portalPendingCookieName)?.value); const t = await getTranslations("portal"); return <main className="container-site section-space"><div className="mx-auto max-w-6xl">{reservationId ? <><p className="t-body-lg mb-8 text-ink-soft">{t("headerMessage")}</p><PortalView reservationId={reservationId} /></> : <AccessView showOtp={Boolean(pendingId)} />}</div></main>; }
+export default async function MiReservaPage() { const cookieStore = await cookies(); const reservationId = verifyPortalCookie(cookieStore.get(portalCookieName)?.value); const pendingId = verifyPortalPendingCookie(cookieStore.get(portalPendingCookieName)?.value); return <main className="container-site section-space"><div className="mx-auto max-w-6xl">{reservationId ? <PortalView reservationId={reservationId} /> : <AccessView showOtp={Boolean(pendingId)} />}</div></main>; }

@@ -7,6 +7,7 @@ import { FlightTool, type FlightToolTab } from "@/components/home/flight-tool";
 import { PageHeader } from "@/components/layout/page-header";
 import { FinalCta } from "@/components/home/sections";
 import { QuoteHowItWorks } from "@/components/quote/quote-parts";
+import { PaymentClarity } from "@/components/trust/payment-clarity";
 
 type ServicePageProps = { breadcrumbKey: string; path: string; titleKey: string; introKey: string; defaultTab: FlightToolTab; helpKeys: readonly [string, string, string] };
 // The form is the page: header, then the quote tool beside what the advisor does for you.
@@ -26,6 +27,8 @@ export function ServicePage({ breadcrumbKey, path, titleKey, introKey, defaultTa
           <QuoteHowItWorks />
         </aside>
       </div>
+      {/* After the form: what is confirmed before paying, for visitors who hesitate over money. */}
+      <PaymentClarity className="mt-12 sm:mt-16" />
     </div>
     <FinalCta />
   </main>;

@@ -4,6 +4,7 @@ import { inviteToReview } from "@/lib/review-invitation-send";
 import { sendResendEmail, captureNotificationFailure } from "@/lib/notifications";
 import { siteConfig } from "@/lib/site-config";
 import { leadAge, leadContact } from "@/lib/lead-admin";
+import { listReservationDocuments, portalDocsBucket } from "@/lib/portal-documents";
 
 // Deterministic, rule-based daily routine (no AI): an owner digest plus opt-in automations.
 // Every automatic send is keyed to an exact calendar day, so running once a day sends once.
@@ -77,7 +78,7 @@ export async function runDailyJob(client: SupabaseClient, options: DailyOptions 
   }
 
   // 6. Completed trips (last 60 days) without a review invitation; auto-invite exactly 2 days after return.
-  const completed = await client.from("reservations").select("id,codigo,cliente_nombre,cliente_email,fecha_fin").eq("estado", "completada").gte("fecha_fin", addDays(today, -60)).lte("fecha_fin", addDays(today, -2)).limit(200);
+  const completed = await client.from("reservations").select("id,codigo,cliente_nombre,cliente_email,destino,fecha_fin").eq("estado", "completada").gte("fecha_fin", addDays(today, -60)).lte("fecha_fin", addDays(today, -2)).limit(200);
   if (completed.error) problems.push("reservas completadas");
   const completedRows = (completed.data ?? []) as Row[];
   const emails = [...new Set(completedRows.map(row => s(row.cliente_email).toLowerCase()).filter(Boolean))];
@@ -91,7 +92,7 @@ export async function runDailyJob(client: SupabaseClient, options: DailyOptions 
   const autoInvited = new Set<string>();
   if (options.autoReviews) {
     for (const row of pendingInvites.filter(row => s(row.fecha_fin) === addDays(today, -2))) {
-      const result = await inviteToReview(client, s(row.cliente_nombre).slice(0, 120), s(row.cliente_email).toLowerCase());
+      const result = await inviteToReview(client, s(row.cliente_nombre).slice(0, 120), s(row.cliente_email).toLowerCase(), s(row.destino));
       if (result.ok) { autoInvited.add(s(row.id)); actions.push(`Invitación a opinar enviada a ${s(row.cliente_nombre)} (${s(row.codigo)}).`); }
       else problems.push(`invitación ${s(row.codigo)}`);
     }
@@ -102,10 +103,10 @@ export async function runDailyJob(client: SupabaseClient, options: DailyOptions 
   if (options.docRetentionDays && options.docRetentionDays >= 30) {
     const old = await client.from("reservations").select("id,codigo").in("estado", ["completada", "cancelada"]).lt("fecha_fin", addDays(today, -options.docRetentionDays)).gte("fecha_fin", addDays(today, -options.docRetentionDays - 30)).limit(100);
     for (const row of (old.data ?? []) as Row[]) {
-      const listed = await client.storage.from("portal-docs").list(s(row.id), { limit: 100 });
-      const paths = (listed.data ?? []).map(file => `${s(row.id)}/${file.name}`);
+      // Both folders (shared by viatour, sent by the customer) and older uploads at the reservation root.
+      const paths = (await listReservationDocuments(client.storage.from(portalDocsBucket), s(row.id))).map(document => document.path);
       if (paths.length) {
-        const removed = await client.storage.from("portal-docs").remove(paths);
+        const removed = await client.storage.from(portalDocsBucket).remove(paths);
         if (removed.error) problems.push(`documentos ${s(row.codigo)}`); else actions.push(`${paths.length} documento(s) eliminados de ${s(row.codigo)} por política de conservación.`);
       }
     }

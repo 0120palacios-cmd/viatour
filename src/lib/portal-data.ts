@@ -3,6 +3,8 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Currency } from "@/lib/quotation-types";
 import type { Invoice, Payment, ReservationItem } from "@/lib/reservation-types";
+import { listReservationDocuments, portalDocsBucket, type StoredDocument } from "@/lib/portal-documents";
+import { selectInvoices } from "@/lib/invoice-query";
 
 export type PortalReservation = {
   id: string;
@@ -15,11 +17,10 @@ export type PortalReservation = {
   fecha_fin: string | null;
 };
 
-export type PortalDocument = { name: string; path: string; url: string };
+export type PortalDocument = StoredDocument;
 export type PortalTicket = { id: string; asunto: string; mensaje: string; estado: string; created_at: string; respuesta: string | null };
 
 const portalReservationFields = "id,codigo,destino,moneda,total,estado,fecha_inicio,fecha_fin";
-const portalInvoiceFields = "id,reservation_id,numero,cliente_nombre,cliente_email,cliente_telefono,items,total,moneda,fecha_emision,fecha_vencimiento,estado,notas,created_at,updated_at";
 
 export async function getPortalReservation(client: SupabaseClient, reservationId: string) {
   const reservationResult = await client
@@ -42,11 +43,11 @@ export async function getPortalReservation(client: SupabaseClient, reservationId
       .eq("reservation_id", reservationId)
       .order("fecha_pago", { ascending: false })
       .order("created_at", { ascending: false }),
-    client
+    selectInvoices(fields => client
       .from("invoices")
-      .select(portalInvoiceFields)
+      .select(fields)
       .eq("reservation_id", reservationId)
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })),
   ]);
 
   if (itemsResult.error || paymentsResult.error || invoicesResult.error) return null;
@@ -54,30 +55,25 @@ export async function getPortalReservation(client: SupabaseClient, reservationId
     reservation: reservationResult.data as PortalReservation,
     items: (itemsResult.data ?? []) as ReservationItem[],
     payments: (paymentsResult.data ?? []) as Payment[],
-    invoices: (invoicesResult.data ?? []) as Invoice[],
+    invoices: (invoicesResult.data ?? []) as unknown as Invoice[],
   };
 }
 
 export async function getPortalInvoice(client: SupabaseClient, reservationId: string, invoiceId: string) {
-  const result = await client
+  const result = await selectInvoices(fields => client
     .from("invoices")
-    .select(portalInvoiceFields)
+    .select(fields)
     .eq("id", invoiceId)
     .eq("reservation_id", reservationId)
-    .maybeSingle();
+    .maybeSingle());
   if (result.error || !result.data) return null;
-  return result.data as Invoice;
+  return result.data as unknown as Invoice;
 }
 
-export async function getPortalDocuments(client: SupabaseClient, reservationId: string) {
-  const listed = await client.storage.from("portal-docs").list(reservationId, { limit: 100, sortBy: { column: "created_at", order: "desc" } });
-  if (listed.error) return [] as PortalDocument[];
-  const documents = await Promise.all((listed.data ?? []).filter(file => file.name).map(async file => {
-    const path = `${reservationId}/${file.name}`;
-    const signed = await client.storage.from("portal-docs").createSignedUrl(path, 300);
-    return signed.data?.signedUrl ? { name: file.name, path, url: signed.data.signedUrl } : null;
-  }));
-  return documents.filter((document): document is PortalDocument => Boolean(document));
+// Listed without URLs: each link points to /api/mi-reserva/documentos, which checks the session and
+// signs a short-lived URL at click time, so a page left open never shows an expired link.
+export async function getPortalDocuments(client: SupabaseClient, reservationId: string): Promise<PortalDocument[]> {
+  try { return await listReservationDocuments(client.storage.from(portalDocsBucket), reservationId); } catch { return []; }
 }
 
 export async function getPortalTickets(client: SupabaseClient, reservationId: string) {

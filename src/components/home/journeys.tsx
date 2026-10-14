@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { getTranslations } from "next-intl/server";
-import { ArrowRight, Flag, Gem, Gift, Heart, Landmark, MessageCircle, Mountain, Play, Send, Ship, TicketCheck, TreePalm, Users, type LucideIcon } from "lucide-react";
+import { ArrowRight, Compass, Flag, Gem, Gift, Heart, Hotel, Landmark, MessageCircle, Mountain, Plane, Play, Send, Ship, Sparkles, TicketCheck, TreePalm, Users, type LucideIcon } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { TrackedNavLink } from "@/components/tracked-link";
@@ -19,7 +19,13 @@ async function publishedPackages(): Promise<Package[]> {
 // "What kind of trip?": the first discovery moment after the hero, for visitors who know how they
 // want to travel but not where. Every tile opens the catalogue filtered by that style; the counts are real.
 export async function TripStyles() {
-  const [t, items] = await Promise.all([getTranslations("v3"), publishedPackages()]);
+  const [t, all, items] = await Promise.all([getTranslations("v3"), getTranslations(), publishedPackages()]);
+  const parts = [
+    { href: "/vuelos", label: all("common.flights"), Icon: Plane },
+    { href: "/hoteles", label: all("common.hotels"), Icon: Hotel },
+    { href: "/viaje-a-medida", label: all("common.customTrip"), Icon: Compass },
+    { href: "/descubrir", label: all("home.discoverTitle"), Icon: Sparkles },
+  ];
   return <section className="pt-12 sm:pt-24" aria-labelledby="styles-title"><div className="container-site">
     <div className="mb-8 flex flex-col gap-4 sm:mb-10 sm:flex-row sm:items-end sm:justify-between">
       <div className="max-w-2xl space-y-3"><h2 id="styles-title" className="t-h2">{t("stylesTitle")}</h2><p className="t-body-lg text-ink-soft">{t("stylesIntro")}</p></div>
@@ -33,6 +39,11 @@ export async function TripStyles() {
       </TrackedNavLink></li>;
     })}</ul>
     <p className="t-body mt-6 text-ink-soft">{t("stylesOther")} <TrackedNavLink event="custom_trip_click" placement="home-styles" href="/viaje-a-medida" className="font-semibold text-brand underline underline-offset-4 hover:text-brand-deep">{t("stylesOtherCta")}</TrackedNavLink></p>
+    {/* Visitors who only need a flight or a hotel (or no destination yet) go straight to that service. */}
+    <div className="mt-6 flex flex-col gap-3 border-t border-line pt-6 sm:flex-row sm:items-center sm:gap-6">
+      <p className="t-small shrink-0 font-semibold text-ink">{all("v4.partOfTrip")}</p>
+      <ul className="flex flex-wrap gap-2">{parts.map(({ href, label, Icon }) => <li key={href}><Link href={href} className="t-small inline-flex min-h-11 items-center gap-2 rounded-btn border border-line bg-canvas px-4 text-ink transition-colors duration-(--duration-fast) ease-out hover:border-brand hover:text-brand"><Icon size={18} strokeWidth={1.75} className="text-brand" aria-hidden="true" />{label}</Link></li>)}</ul>
+    </div>
   </div></section>;
 }
 

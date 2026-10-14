@@ -131,8 +131,9 @@ const agencyNode = {
   image: absoluteUrl("/logo-black.png"),
   email: siteConfig.supportEmail,
   telephone: "+504 8866-8704",
-  // Service-area business (Build Brief §3): no public street address, only the country it serves.
-  address: { "@type": "PostalAddress", addressCountry: "HN" },
+  // Service-area business (Build Brief §3): no public street address. The city is the one the approved
+  // Terms already publish (§1: "con operaciones en San Pedro Sula"); areaServed stays the whole country.
+  address: { "@type": "PostalAddress", addressLocality: "San Pedro Sula", addressRegion: "Cortés", addressCountry: "HN" },
   areaServed: { "@type": "Country", name: "Honduras" },
   ...(siteConfig.googleProfileUrl ? { hasMap: siteConfig.googleProfileUrl } : {}),
   knowsLanguage: ["es", "en"],

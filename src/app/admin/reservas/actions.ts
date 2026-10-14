@@ -12,6 +12,8 @@ import { siteConfig } from "@/lib/site-config";
 import { captureNotificationFailure } from "@/lib/notifications";
 import { customerWhatsappHref } from "@/lib/lead-admin";
 import { leadSegments, normalizePhone } from "@/lib/lead-validation";
+import { totalAmount } from "@/lib/money";
+import { isMissingInvoiceColumn } from "@/lib/invoice-query";
 
 export type ReservationActionState = { error?: string; success?: string; reservationId?: string };
 export type InvoiceActionState = { error?: string; success?: string; whatsappUrl?: string; invoiceId?: string };
@@ -52,25 +54,48 @@ function parseItems(form: FormData) {
   return { items } as const;
 }
 
+// Creates the reservation from what the customer accepted: the frozen copy of the accepted sent version
+// when there is one (quotations_v5), otherwise the quotation's current prices, which the database keeps
+// locked while it is accepted. One reservation per quotation: a second click opens the existing one.
 export async function convertQuotationToReservation(_: ReservationActionState, form: FormData): Promise<ReservationActionState> {
   const { client, user } = await requireAdmin();
   const quotationId = clean(form.get("quotation_id"));
   if (!validUuid(quotationId)) return { error: "Cotización inválida." };
-  const quotationResult = await client.from("quotations").select("id,customer_id,cliente_nombre,cliente_email,cliente_telefono,destino,moneda,total,estado,notas").eq("id", quotationId).maybeSingle();
+  const existing = await client.from("reservations").select("id").eq("quotation_id", quotationId).limit(1).maybeSingle();
+  if (existing.data?.id) redirect(`/admin/reservas/${existing.data.id}`);
+  const quotationResult = await client.from("quotations").select("id,customer_id,cliente_nombre,cliente_email,cliente_telefono,destino,moneda,total,estado,notas,agente_id").eq("id", quotationId).maybeSingle();
   if (quotationResult.error || !quotationResult.data) return { error: "No se encontró la cotización." };
   if (quotationResult.data.estado !== "aceptada") return { error: "Solo se puede convertir una cotización aceptada." };
-  const itemsResult = await client.from("quotation_items").select("descripcion,tipo,cantidad,precio_unitario,orden").eq("quotation_id", quotationId).order("orden", { ascending: true });
-  if (itemsResult.error || !itemsResult.data?.length) return { error: "La cotización no tiene ítems para convertir." };
+  type Line = { descripcion: string; tipo: string; cantidad: number; precio_unitario: number; orden: number };
+  let source: Record<string, unknown> = quotationResult.data;
+  let lines: Line[] = [];
+  const acceptedVersion = await client.from("quotations").select("version_aceptada").eq("id", quotationId).maybeSingle();
+  const versionNumber = acceptedVersion.error ? null : acceptedVersion.data?.version_aceptada;
+  if (versionNumber) {
+    const version = await client.from("quotation_versions").select("snapshot").eq("quotation_id", quotationId).eq("version", versionNumber).maybeSingle();
+    const snapshot = version.data?.snapshot as { quotation?: Record<string, unknown>; items?: Line[] } | undefined;
+    if (version.error || !snapshot?.quotation || !Array.isArray(snapshot.items)) return { error: "No se encontró la versión aceptada de la cotización." };
+    source = { ...quotationResult.data, ...Object.fromEntries(["cliente_nombre", "cliente_email", "cliente_telefono", "destino", "moneda", "notas"].map(key => [key, snapshot.quotation?.[key] ?? quotationResult.data?.[key as keyof typeof quotationResult.data]])) };
+    lines = snapshot.items.map((item, orden) => ({ descripcion: String(item.descripcion), tipo: String(item.tipo), cantidad: Number(item.cantidad), precio_unitario: Number(item.precio_unitario), orden }));
+  } else {
+    const itemsResult = await client.from("quotation_items").select("descripcion,tipo,cantidad,precio_unitario,orden").eq("quotation_id", quotationId).order("orden", { ascending: true });
+    if (itemsResult.error) return { error: "No se pudieron leer los precios de la cotización." };
+    lines = (itemsResult.data ?? []).map(item => ({ ...item, cantidad: Number(item.cantidad), precio_unitario: Number(item.precio_unitario) }));
+  }
+  if (!lines.length) return { error: "La cotización no tiene ítems para convertir." };
   const reservation = await client.from("reservations").insert({
-    codigo: code("RES"), quotation_id: quotationId, customer_id: quotationResult.data.customer_id,
-    cliente_nombre: quotationResult.data.cliente_nombre, cliente_email: quotationResult.data.cliente_email,
-    cliente_telefono: quotationResult.data.cliente_telefono, destino: quotationResult.data.destino,
-    moneda: quotationResult.data.moneda, total: quotationResult.data.total, estado: "pendiente",
-    fecha_inicio: null, fecha_fin: null, notas: quotationResult.data.notas, agente_id: user.id,
+    codigo: code("RES"), quotation_id: quotationId, customer_id: source.customer_id,
+    cliente_nombre: source.cliente_nombre, cliente_email: source.cliente_email, cliente_telefono: source.cliente_telefono,
+    destino: source.destino, moneda: source.moneda, total: totalAmount(lines), estado: "pendiente",
+    fecha_inicio: null, fecha_fin: null, notas: source.notas, agente_id: quotationResult.data.agente_id ?? user.id,
   }).select("id").single();
+  if (reservation.error?.code === "23505") {
+    const created = await client.from("reservations").select("id").eq("quotation_id", quotationId).limit(1).maybeSingle();
+    if (created.data?.id) redirect(`/admin/reservas/${created.data.id}`);
+  }
   if (reservation.error || !reservation.data) return { error: "No se pudo crear la reserva." };
   const reservationId = String(reservation.data.id);
-  const items = await client.from("reservation_items").insert(itemsResult.data.map(item => ({ ...item, reservation_id: reservationId })));
+  const items = await client.from("reservation_items").insert(lines.map(item => ({ ...item, reservation_id: reservationId })));
   if (items.error) {
     await client.from("reservations").delete().eq("id", reservationId);
     return { error: "La reserva se creó, pero no se pudieron copiar sus ítems." };
@@ -90,7 +115,7 @@ export async function saveReservation(_: ReservationActionState, form: FormData)
   if (fecha_inicio && fecha_fin && fecha_fin < fecha_inicio) return { error: "La fecha final no puede ser anterior a la fecha inicial." };
   const parsed = parseItems(form);
   if (parsed.error) return parsed;
-  const total = parsed.items.reduce((sum, item) => sum + item.cantidad * item.precio_unitario, 0);
+  const total = totalAmount(parsed.items);
   const updated = await client.from("reservations").update({ estado, fecha_inicio: fecha_inicio || null, fecha_fin: fecha_fin || null, notas: notas || null, total: Number(total.toFixed(2)) }).eq("id", id).select("id").single();
   if (updated.error || !updated.data) return { error: "No se pudo actualizar la reserva." };
   const removed = await client.from("reservation_items").delete().eq("reservation_id", id);
@@ -141,6 +166,7 @@ export async function createInvoice(_: InvoiceActionState, form: FormData): Prom
     items: record.items, total: record.reservation.total, moneda: record.reservation.moneda,
     fecha_emision: new Date().toISOString().slice(0, 10), fecha_vencimiento, estado: "borrador", notas: record.reservation.notas,
   }).select("id").single();
+  if (isMissingInvoiceColumn(result.error)) return { error: "La facturación necesita las columnas de docs/sql/invoices_v5.sql en Supabase. No se creó ninguna factura." };
   if (result.error || !result.data) return { error: "No se pudo crear la factura." };
   refreshReservationPaths(reservationId);
   return { success: "Factura creada.", invoiceId: String(result.data.id) };
