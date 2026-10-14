@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { ArrowDown, ArrowUp, BedDouble, CarFront, ChevronDown, ChevronUp, CopyPlus, LifeBuoy, MapPinned, Plane, Plus, ShieldCheck, Ship, Ticket, Trash2, type LucideIcon } from "lucide-react";
-import { componentTitle, duplicateComponent, emptyComponent, maxPackageComponents, packageServiceKinds, packageServiceLabels, type GeneralService, type PackageComponent, type PackageServiceKind, type QuotationDetails, type ServiceMode } from "@/lib/quotation-details";
+import { componentTitle, duplicateComponent, emptyComponent, maxPackageComponents, packageServiceKinds, packageServiceLabels, packageServiceTypes, serviceType, type GeneralService, type PackageComponent, type PackageServiceKind, type QuotationDetails, type ServiceMode } from "@/lib/quotation-details";
 import type { FlightJourney } from "@/lib/flight-itinerary";
 import type { HotelStay } from "@/lib/quotation-details";
 import { FlightSection } from "./flight-section";
@@ -16,16 +16,30 @@ import { cn } from "cn";
 type Update = (change: (details: QuotationDetails) => QuotationDetails) => void;
 type Props = { details: QuotationDetails; update: Update; recentHotels: HotelStay[]; onApplyItinerary: (journeys: FlightJourney[]) => void };
 
-export const serviceIcons: Record<PackageServiceKind, LucideIcon> = { vuelo: Plane, hotel: BedDouble, ferry: Ship, traslado: CarFront, tour: MapPinned, actividad: Ticket, seguro: ShieldCheck, asistencia: LifeBuoy, otro: Plus };
+// Icon per service type (packageServiceTypes in quotation-details.ts); a new type without one shows "+".
+const serviceIcons: Partial<Record<PackageServiceKind, LucideIcon>> = { vuelo: Plane, hotel: BedDouble, ferry: Ship, traslado: CarFront, tour: MapPinned, actividad: Ticket, seguro: ShieldCheck, asistencia: LifeBuoy, otro: Plus };
+export const serviceIcon = (kind: PackageServiceKind) => serviceIcons[kind] ?? Plus;
 
-const inclusionSuggestions: Partial<Record<PackageServiceKind, string[]>> = {
-  traslado: ["Equipaje", "Asistencia en el aeropuerto", "Silla para niños", "Espera por retraso del vuelo", "Propinas"],
-  tour: ["Transporte", "Guía", "Entradas", "Almuerzo", "Bebidas", "Propinas"],
-  actividad: ["Equipo", "Instructor", "Transporte", "Entradas", "Fotos", "Propinas"],
-  seguro: ["Gastos médicos", "Equipaje", "Cancelación del viaje", "Asistencia 24 horas"],
-  asistencia: ["Gastos médicos", "Asistencia 24 horas", "Equipaje", "Traslado médico"],
-  otro: [],
-};
+// "+ Agregar servicio": opens the list of every registered service type. No type is required and any
+// type can be added again; the chooser closes after adding.
+function AddServicePicker({ label, onAdd, full }: { label: string; onAdd: (kind: PackageServiceKind) => void; full: boolean }) {
+  const [open, setOpen] = useState(false);
+  const panel = useId();
+  return <div className="space-y-2">
+    <SmallButton tone="primary" aria-expanded={open} aria-controls={panel} disabled={full} onClick={() => setOpen(value => !value)}><Plus size={16} strokeWidth={2} aria-hidden="true" />{label}</SmallButton>
+    {full ? <p className="t-small text-ink-soft">El paquete admite hasta {maxPackageComponents} servicios por documento.</p> : null}
+    <div id={panel} hidden={!open} className={cn("rounded-card border border-line bg-canvas p-3", !open && "hidden")}>
+      <p className="mb-2 t-small font-semibold text-ink">Seleccione el tipo de servicio</p>
+      <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3" aria-label="Tipos de servicio">{packageServiceKinds.map(kind => {
+        const Icon = serviceIcon(kind);
+        return <li key={kind}><button type="button" onClick={() => { onAdd(kind); setOpen(false); }} className="flex h-full w-full items-start gap-3 rounded-card border border-line bg-canvas p-3 text-left transition-colors hover:border-brand hover:bg-brand-tint">
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-btn bg-brand-tint text-brand-deep" aria-hidden="true"><Icon size={16} strokeWidth={2} /></span>
+          <span className="min-w-0"><span className="block font-semibold text-ink">{packageServiceTypes[kind].label}</span><span className="block t-small text-ink-soft">{packageServiceTypes[kind].descripcion}</span></span>
+        </button></li>;
+      })}</ul>
+    </div>
+  </div>;
+}
 
 // The details the existing V5 sections edit, with this component's data in place of the quotation's
 // own flights, hotels or ferry. Sections keep working unchanged; their edits are mapped back below.
@@ -61,8 +75,9 @@ function componentUpdate(update: Update, id: string): Update {
 function ServiceEditor({ component, onChange, sectionId }: { component: PackageComponent; onChange: (service: GeneralService, titulo?: string, notas?: string) => void; sectionId: string }) {
   const service = component.servicio!;
   const set = <K extends keyof GeneralService>(field: K, value: GeneralService[K]) => onChange({ ...service, [field]: value });
-  const coverage = component.tipo === "seguro" || component.tipo === "asistencia";
-  const transfer = component.tipo === "traslado";
+  const { variante, sugerencias } = serviceType(component.tipo);
+  const coverage = variante === "cobertura";
+  const transfer = variante === "traslado";
   return <Section id={sectionId} title={packageServiceLabels[component.tipo]} description={coverage ? "Indique solo coberturas y condiciones confirmadas con la aseguradora o el proveedor." : "Describa el servicio tal como lo verá el cliente y marque lo que incluye."}>
     <div className="grid gap-3 sm:grid-cols-2">
       <TextField label="Descripción del servicio *" value={service.descripcion} onChange={value => set("descripcion", value.slice(0, 400))} className="sm:col-span-2"
@@ -73,7 +88,7 @@ function ServiceEditor({ component, onChange, sectionId }: { component: PackageC
       {coverage ? <TextField label="Vigencia hasta" type="date" value={service.fechaFin} onChange={value => set("fechaFin", value)} /> : <TextField label={transfer ? "Hora de recogida" : "Hora de inicio"} type="time" value={service.hora} onChange={value => set("hora", value)} hint="Opcional" />}
       {!coverage ? <TextField label={transfer ? "Lugar de recogida" : "Punto de encuentro"} value={service.lugar} onChange={value => set("lugar", value.slice(0, 200))} hint="Opcional" /> : null}
       {!coverage ? <TextField label="Duración" value={service.duracion} onChange={value => set("duracion", value.slice(0, 80))} placeholder={transfer ? "45 minutos aproximadamente" : "Día completo"} hint="Opcional" /> : null}
-      <div className="sm:col-span-2"><InclusionsEditor title={`¿Qué incluye ${transfer ? "el traslado" : coverage ? "la cobertura" : "el servicio"}?`} items={service.inclusiones} confirmed={service.inclusionesConfirmadas} suggestions={inclusionSuggestions[component.tipo] ?? []} onChange={(inclusiones, inclusionesConfirmadas) => onChange({ ...service, inclusiones, inclusionesConfirmadas })} /></div>
+      <div className="sm:col-span-2"><InclusionsEditor title={`¿Qué incluye ${transfer ? "el traslado" : coverage ? "la cobertura" : "el servicio"}?`} items={service.inclusiones} confirmed={service.inclusionesConfirmadas} suggestions={[...(sugerencias ?? [])]} onChange={(inclusiones, inclusionesConfirmadas) => onChange({ ...service, inclusiones, inclusionesConfirmadas })} /></div>
       <AreaField label="Política de cancelación" value={service.cancelacion} onChange={value => set("cancelacion", value.slice(0, 800))} rows={2} className="sm:col-span-2" hint="Opcional. Solo condiciones confirmadas con el proveedor." />
     </div>
   </Section>;
@@ -105,13 +120,8 @@ export function PackageSection({ details, update, recentHotels, onApplyItinerary
     <Section id="paquete" title="Servicios del paquete" description="Agregue los servicios en el orden en que el cliente los usará. Cada servicio conserva sus propios datos, fechas, inclusiones y condiciones.">
       <div className="space-y-4">
         <TextField label="Nombre del paquete" value={nombre} onChange={value => update(current => ({ ...current, paquete: { ...current.paquete, nombre: value.slice(0, 160) } }))} placeholder="Vacaciones en Cancún" hint="Aparece en el PDF; el destino se indica arriba" />
-        <div>
-          <p className="mb-2 t-small font-semibold text-ink">Agregar servicio</p>
-          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Agregar servicio al paquete">{packageServiceKinds.map(tipo => { const Icon = serviceIcons[tipo]; return <SmallButton key={tipo} disabled={full} onClick={() => add(tipo)}><Icon size={16} strokeWidth={2} aria-hidden="true" />{packageServiceLabels[tipo]}</SmallButton>; })}</div>
-          {full ? <p className="mt-2 t-small text-ink-soft">El paquete admite hasta {maxPackageComponents} servicios.</p> : null}
-        </div>
         {componentes.length ? <ol className="space-y-2" aria-label="Orden de los servicios">{componentes.map((component, index) => {
-          const Icon = serviceIcons[component.tipo];
+          const Icon = serviceIcon(component.tipo);
           return <li key={component.id} className="flex flex-wrap items-center gap-2 rounded-card border border-line bg-canvas p-2 pl-3">
             <span className="flex size-8 shrink-0 items-center justify-center rounded-btn bg-brand-tint text-brand-deep" aria-hidden="true"><Icon size={16} strokeWidth={2} /></span>
             <a href={`#servicio-${component.id}`} className="min-w-0 flex-1 basis-40 text-ink hover:text-brand"><span className="block t-small text-ink-soft">{index + 1}. {packageServiceLabels[component.tipo]}</span><span className="block truncate font-semibold">{componentTitle(component)}</span></a>
@@ -123,11 +133,12 @@ export function PackageSection({ details, update, recentHotels, onApplyItinerary
                 : <IconButton label={`Quitar ${componentTitle(component)}`} className="text-error" onClick={() => setRemoving(component.id)}><Trash2 size={16} strokeWidth={2} /></IconButton>}
             </span>
           </li>;
-        })}</ol> : <Notice>El paquete aún no tiene servicios. Use los botones de arriba; por ejemplo Vuelo, Hotel y Traslado.</Notice>}
+        })}</ol> : <Notice>El paquete aún no tiene servicios. Puede empezar con cualquiera, por ejemplo un hotel, un ferry o un traslado, y combinarlos como quiera.</Notice>}
+        <AddServicePicker label="Agregar servicio" onAdd={add} full={full} />
       </div>
     </Section>
     {componentes.map((component, index) => {
-      const Icon = serviceIcons[component.tipo];
+      const Icon = serviceIcon(component.tipo);
       const open = !collapsed.includes(component.id);
       const sectionUpdate = componentUpdate(update, component.id);
       const view = viewOf(details, component);
@@ -146,5 +157,6 @@ export function PackageSection({ details, update, recentHotels, onApplyItinerary
         </div>
       </div>;
     })}
+    {componentes.length ? <div className="rounded-panel border border-dashed border-line p-4"><AddServicePicker label="Agregar otro servicio" onAdd={add} full={full} /></div> : null}
   </>;
 }

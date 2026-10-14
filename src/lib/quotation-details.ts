@@ -43,12 +43,34 @@ export type IncludedService = { id: string; tipo: string; descripcion: string };
 // ----- combined package (V6) -----
 // A package is an ordered list of service components. Flights, hotels and ferries reuse the V5 structures
 // (and therefore the V5 editors, checks and PDF blocks); transfers, tours and other services share one
-// simple structure. Several components of the same type are allowed (two hotels, several flights).
-export const packageServiceKinds = ["vuelo", "hotel", "ferry", "traslado", "tour", "actividad", "seguro", "asistencia", "otro"] as const;
-export type PackageServiceKind = (typeof packageServiceKinds)[number];
-export const packageServiceLabels: Record<PackageServiceKind, string> = { vuelo: "Vuelo", hotel: "Hotel", ferry: "Ferry", traslado: "Traslado", tour: "Tour o excursión", actividad: "Actividad", seguro: "Seguro de viaje", asistencia: "Asistencia al viajero", otro: "Otro servicio" };
+// simple structure. Any combination, in any order, with repeats (two hotels, several flights) is valid:
+// no service type is required.
+//
+// Service-type registry. Adding a type (for example car rental or cruise) is one entry here, plus an icon
+// in package-section.tsx; the editor, readiness checks, PDF and pricing pick it up from these fields:
+// - data: which structure and editor it uses ("vuelo", "hotel" and "ferry" are the V5 editors;
+//   "servicio" is the general form for transfers, tours, insurance and similar).
+// - variante: wording of the general form and its PDF card ("traslado": pickup time and place;
+//   "cobertura": validity dates and provider; "general": date, time and meeting point).
+// - itemType: price-line type suggested for it (one of itemTypes).
+type ServiceTypeDefinition = { label: string; descripcion: string; data: "vuelo" | "hotel" | "ferry" | "servicio"; variante?: "general" | "traslado" | "cobertura"; itemType: string; sugerencias?: string[] };
+export const packageServiceTypes = {
+  vuelo: { label: "Vuelo", descripcion: "Itinerario pegado o manual, tarifa y equipaje.", data: "vuelo", itemType: "Tarifa aérea" },
+  hotel: { label: "Hotel", descripcion: "Estadía, habitaciones, fotos e inclusiones; desde el catálogo o a mano.", data: "hotel", itemType: "Hotel" },
+  ferry: { label: "Ferry", descripcion: "Trayectos, clase, vehículos y condiciones de la naviera.", data: "ferry", itemType: "Ferry" },
+  traslado: { label: "Traslado", descripcion: "Aeropuerto, hotel o puerto; compartido o privado.", data: "servicio", variante: "traslado", itemType: "Traslado", sugerencias: ["Equipaje", "Asistencia en el aeropuerto", "Silla para niños", "Espera por retraso del vuelo", "Propinas"] },
+  tour: { label: "Tour o excursión", descripcion: "Fecha, punto de encuentro, duración y lo que incluye.", data: "servicio", variante: "general", itemType: "Tour", sugerencias: ["Transporte", "Guía", "Entradas", "Almuerzo", "Bebidas", "Propinas"] },
+  actividad: { label: "Actividad", descripcion: "Buceo, parques, espectáculos u otra actividad.", data: "servicio", variante: "general", itemType: "Tour", sugerencias: ["Equipo", "Instructor", "Transporte", "Entradas", "Fotos", "Propinas"] },
+  seguro: { label: "Seguro de viaje", descripcion: "Vigencia, aseguradora y coberturas confirmadas.", data: "servicio", variante: "cobertura", itemType: "Seguro", sugerencias: ["Gastos médicos", "Equipaje", "Cancelación del viaje", "Asistencia 24 horas"] },
+  asistencia: { label: "Asistencia al viajero", descripcion: "Vigencia, proveedor y lo que cubre.", data: "servicio", variante: "cobertura", itemType: "Asistencia", sugerencias: ["Gastos médicos", "Asistencia 24 horas", "Equipaje", "Traslado médico"] },
+  otro: { label: "Otro servicio", descripcion: "Cualquier otro servicio con su propia descripción.", data: "servicio", variante: "general", itemType: "Otro", sugerencias: [] },
+} as const satisfies Record<string, ServiceTypeDefinition>;
+export type PackageServiceKind = keyof typeof packageServiceTypes;
+export const packageServiceKinds = Object.keys(packageServiceTypes) as PackageServiceKind[];
+export const serviceType = (kind: PackageServiceKind): ServiceTypeDefinition => packageServiceTypes[kind];
+export const packageServiceLabels = Object.fromEntries(packageServiceKinds.map(kind => [kind, packageServiceTypes[kind].label])) as Record<PackageServiceKind, string>;
 // Price-line type suggested for each component (one of itemTypes).
-export const packageServiceItemTypes: Record<PackageServiceKind, string> = { vuelo: "Tarifa aérea", hotel: "Hotel", ferry: "Ferry", traslado: "Traslado", tour: "Tour", actividad: "Tour", seguro: "Seguro", asistencia: "Asistencia", otro: "Otro" };
+export const packageServiceItemTypes = Object.fromEntries(packageServiceKinds.map(kind => [kind, packageServiceTypes[kind].itemType])) as Record<PackageServiceKind, string>;
 export type FlightService = { vuelos: { journeys: FlightJourney[]; textoOriginal: string; confirmado: boolean; boletosSeparados: boolean }; tarifas: FareRules[]; equipaje: BaggageAllowance[]; equipajeConfirmado: boolean };
 export type ServiceMode = "" | "compartido" | "privado";
 export type GeneralService = { descripcion: string; operador: string; fecha: string; hora: string; fechaFin: string; lugar: string; duracion: string; modalidad: ServiceMode; inclusiones: Inclusion[]; inclusionesConfirmadas: boolean; cancelacion: string };
@@ -152,12 +174,13 @@ export const emptyService = (): GeneralService => ({ descripcion: "", operador: 
 export const emptyFlightService = (): FlightService => ({ vuelos: { journeys: [], textoOriginal: "", confirmado: false, boletosSeparados: false }, tarifas: [emptyFare()], equipaje: [emptyBaggage()], equipajeConfirmado: false });
 
 export function emptyComponent(tipo: PackageServiceKind, id = newId()): PackageComponent {
+  const { data } = serviceType(tipo);
   return {
     id, tipo, titulo: "", notas: "",
-    vuelo: tipo === "vuelo" ? emptyFlightService() : null,
-    hotel: tipo === "hotel" ? emptyHotel() : null,
-    ferry: tipo === "ferry" ? emptyFerry(true) : null,
-    servicio: tipo !== "vuelo" && tipo !== "hotel" && tipo !== "ferry" ? emptyService() : null,
+    vuelo: data === "vuelo" ? emptyFlightService() : null,
+    hotel: data === "hotel" ? emptyHotel() : null,
+    ferry: data === "ferry" ? emptyFerry(true) : null,
+    servicio: data === "servicio" ? emptyService() : null,
   };
 }
 
@@ -345,13 +368,14 @@ function sanitizeComponent(value: unknown): PackageComponent | null {
   const source = record(value);
   const tipo = choice<PackageServiceKind>(source.tipo, packageServiceKinds);
   if (!tipo) return null;
+  const { data } = serviceType(tipo);
   const flight = record(source.vuelo);
   return {
     id: id(source.id), tipo, titulo: text(source.titulo, 160), notas: text(source.notas, 1000, true),
-    vuelo: tipo === "vuelo" ? { vuelos: sanitizeFlights(flight.vuelos), tarifas: list(flight.tarifas, 6).map(sanitizeFare), equipaje: list(flight.equipaje, 6).map(sanitizeBaggage), equipajeConfirmado: flight.equipajeConfirmado === true } : null,
-    hotel: tipo === "hotel" ? sanitizeHotel(source.hotel) : null,
-    ferry: tipo === "ferry" ? sanitizeFerry(source.ferry) : null,
-    servicio: tipo !== "vuelo" && tipo !== "hotel" && tipo !== "ferry" ? sanitizeService(source.servicio) : null,
+    vuelo: data === "vuelo" ? { vuelos: sanitizeFlights(flight.vuelos), tarifas: list(flight.tarifas, 6).map(sanitizeFare), equipaje: list(flight.equipaje, 6).map(sanitizeBaggage), equipajeConfirmado: flight.equipajeConfirmado === true } : null,
+    hotel: data === "hotel" ? sanitizeHotel(source.hotel) : null,
+    ferry: data === "ferry" ? sanitizeFerry(source.ferry) : null,
+    servicio: data === "servicio" ? sanitizeService(source.servicio) : null,
   };
 }
 

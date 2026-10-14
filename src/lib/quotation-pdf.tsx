@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { Circle, Document, Font, Image, Link, Page, Path, StyleSheet, Svg, Text, View, renderToBuffer } from "@react-pdf/renderer";
 import { airportName, cityName, dayDifference, formatDuration, isOvernightConnection, itineraryType, journeyAirlines, journeyDuration, journeyRoute, journeyTitle, layoverMinutes, segmentDuration, type FlightJourney, type FlightSegment } from "@/lib/flight-itinerary";
-import { componentAmount, componentTitle, derivedTripDates, expandedDetails, formatInstant, isExpired, nights, packageServiceLabels, pricingSummary, quotationKindLabels, zoneLabel, type BaggageAllowance, type FareRules, type FerryDetails, type GeneralService, type HotelStay, type Inclusion, type PackageComponent } from "@/lib/quotation-details";
+import { componentAmount, componentTitle, derivedTripDates, expandedDetails, formatInstant, isExpired, nights, packageServiceLabels, pricingSummary, serviceType, quotationKindLabels, zoneLabel, type BaggageAllowance, type FareRules, type FerryDetails, type GeneralService, type HotelStay, type Inclusion, type PackageComponent } from "@/lib/quotation-details";
 import type { QuotationRecord } from "@/lib/quotation-data";
 import { isDiscount, lineAmount } from "@/lib/money";
 import { formatQuotationAmount, quotationNotices } from "@/lib/quotation-types";
@@ -385,8 +385,8 @@ const modeLabel = { compartido: "Servicio compartido", privado: "Servicio privad
 // Transfers, tours, activities, insurance and other services: the facts the advisor entered, what is
 // included or not, and the cancellation policy.
 function ServiceCard({ component, service, styles }: { component: PackageComponent; service: GeneralService; styles: Styles }) {
-  const coverage = component.tipo === "seguro" || component.tipo === "asistencia";
-  const transfer = component.tipo === "traslado";
+  const coverage = serviceType(component.tipo).variante === "cobertura";
+  const transfer = serviceType(component.tipo).variante === "traslado";
   const when = coverage ? [service.fecha ? `Desde el ${shortDate(service.fecha)}` : "", service.fechaFin ? `hasta el ${shortDate(service.fechaFin)}` : ""].filter(Boolean).join(" ") : longDate(service.fecha);
   const rows = [
     [coverage ? "Vigencia" : "Fecha", when], [transfer ? "Hora de recogida" : "Hora", service.hora], [transfer ? "Lugar de recogida" : "Punto de encuentro", service.lugar],

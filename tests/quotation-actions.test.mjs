@@ -597,3 +597,28 @@ test('an accepted package converts into a reservation from exactly the accepted 
   assert.deepEqual(json(db.tables.reservation_items.map(item => item.descripcion)), json(db.tables.quotation_versions[0].snapshot.items.map(item => item.descripcion)));
   assert.equal(money.totalAmount(db.tables.reservation_items), 4029.5);
 });
+
+test('a package without flights (hotel + ferry) keeps its exact services in the sent version and the amendment', async () => {
+  const db = fakeDb({ reservation_items: [], payments: [], invoices: [] });
+  const api = actions(db);
+  const record = samples['combinado-hotel-ferry']();
+  const body = overrides => packagePayload({ destino: 'Roatán', detalles: { ...record.details, validez: { ...record.details.validez, venceEn: new Date(Date.now() + 86400000).toISOString() }, refCreacion: 'token-hotel-ferry-1', aprobacionCondiciones: { huella: detailsModule.termsFingerprint(record.details.condiciones), por: '', en: '' } }, items: record.items.map(item => ({ descripcion: item.descripcion, tipo: item.tipo, cantidad: String(item.cantidad), precio_unitario: String(item.precio_unitario) })), ...overrides });
+  const created = await api.saveQuotation(JSON.stringify(body()));
+  assert.equal((await api.sendQuotation({}, form({ id: created.quotationId }))).success, 'Versión 1 enviada al correo del cliente.');
+  const issued = json(db.tables.quotation_versions[0].snapshot);
+  assert.deepEqual(issued.quotation.detalles.paquete.componentes.map(component => component.tipo), ['ferry', 'hotel']);
+  // The draft keeps changing: a transfer is added and the ferry removed.
+  const edited = body({ id: created.quotationId, expectedUpdatedAt: db.tables.quotations[0].updated_at });
+  edited.detalles.paquete.componentes = [edited.detalles.paquete.componentes[1], { ...detailsModule.emptyComponent('traslado', 'traslado9'), servicio: { ...detailsModule.emptyService(), descripcion: 'Traslado muelle – hotel', fecha: '2026-12-18' } }];
+  edited.detalles.paquete.lineas = ['', '', '', ''];
+  assert.equal((await api.saveQuotation(JSON.stringify(edited))).success, 'Cotización guardada.');
+  assert.deepEqual(json(db.tables.quotations[0].detalles.paquete.componentes.map(component => component.tipo)), ['hotel', 'traslado']);
+  assert.deepEqual(json(db.tables.quotation_versions[0].snapshot), issued, 'the issued version is unchanged');
+  // Sent again, accepted, amended: the amendment starts from the accepted combination.
+  await api.sendQuotation({}, form({ id: created.quotationId }));
+  await api.updateQuotationStatus({}, form({ id: created.quotationId, estado: 'aceptada' }));
+  await assert.rejects(api.duplicateQuotation(created.quotationId, 'enmienda'), /redirect/);
+  const amendment = db.tables.quotations.at(-1);
+  assert.deepEqual(json(amendment.detalles.paquete.componentes.map(component => component.tipo)), ['hotel', 'traslado']);
+  assert.equal(json(db.tables.quotation_versions.map(version => version.snapshot.quotation.detalles.paquete.componentes.length)).join(), '2,2');
+});

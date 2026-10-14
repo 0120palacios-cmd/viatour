@@ -1,6 +1,6 @@
 # Cotizaciones V6: paquete combinado, catálogos e intérprete de vuelos (2026-10-14)
 
-Rama `v6-quotations` (a partir de `v4-overhaul`), solo local. No se ejecutaron migraciones en Supabase, no se escribió en la base de producción, no se enviaron correos y no hay commits.
+Rama `v6-quotations` (PR #2). **Migración aplicada en producción el 2026-10-14** (después del respaldo del propietario; verificación: conteos sin cambios, `combinado` aceptado, RLS solo administradores en las tres tablas, anon sin privilegios, auditoría y disparadores de V5 activos). El código aún no está desplegado.
 
 Es una ampliación: los tipos Vuelo, Hotel, Ferry y Otros servicios, el editor, el guardado automático, la aprobación de condiciones, las versiones, el bloqueo de cotizaciones aceptadas, las enmiendas, la conversión a reserva y el diseño del PDF de V5 siguen igual. Los PDF de muestra de V5 se renderizan con el mismo número de páginas y el mismo contenido que antes de V6.
 
@@ -13,6 +13,10 @@ Es una ampliación: los tipos Vuelo, Hotel, Ferry y Otros servicios, el editor, 
 - Cada servicio tiene título opcional para el PDF y notas para el cliente. El paquete tiene nombre ("Vacaciones en Cancún"), condiciones, validez, pasajeros y pago propios.
 - La revisión antes de enviar aplica a cada servicio las mismas reglas de V5, con el prefijo "Servicio N (Tipo)". Duplicar o crear una enmienda pide confirmar de nuevo los vuelos y el equipaje de cada servicio.
 - Archivos: `src/lib/quotation-details.ts` (modelo, saneamiento, revisión), `src/components/admin/quotation-editor/package-section.tsx`.
+
+**Combinaciones libres.** El paquete no exige ningún tipo de servicio: puede empezar con cualquiera (un hotel, un ferry, un traslado, un seguro) y combinar los que quiera en cualquier orden, repitiendo tipos (varios hoteles, vuelos o ferris). El único límite es de tamaño del documento: 16 servicios por cotización. Flujo: Crear cotización → Paquete combinado → «Agregar servicio» → elegir el tipo → completar → «Agregar otro servicio» → vista previa → guardar. Mientras la cotización es borrador se pueden agregar, duplicar, reordenar y quitar servicios; cada versión enviada y aceptada conserva la combinación exacta.
+
+**Nuevos tipos de servicio en el futuro** (alquiler de autos, cruceros, transporte privado…): se agregan con una entrada en el registro `packageServiceTypes` de `src/lib/quotation-details.ts` (nombre, descripción, formulario que usa, variante de texto, tipo de concepto de precio y sugerencias de inclusiones) y un icono en `package-section.tsx`. El editor, la revisión, el precio y el PDF los toman de ahí. Si un tipo nuevo necesita datos propios (por ejemplo, el camarote de un crucero), se agrega una estructura nueva como las de vuelo, hotel y ferry.
 
 ### 2. Precio del paquete
 - Los conceptos de precio siguen siendo la única fuente del total (misma función `replace_quotation_items`, centavos exactos, "Descuento" resta). No hay montos paralelos que se puedan contar dos veces.
@@ -83,7 +87,8 @@ Reversión de código: volver al despliegue anterior; la migración puede quedar
 5. Abra una cotización de V5 existente y confirme que se ve y se envía igual.
 
 ## Verificación hecha (local)
-- Pruebas unitarias: `node --test "tests/*.test.mjs"` → **252 de 252** (205 existentes al empezar V6 y 47 nuevas: intérprete, paquete, catálogos, acciones del paquete y de catálogos).
+- Pruebas unitarias: `node --test "tests/*.test.mjs"` → **265 de 265** (205 existentes al empezar V6 y 60 nuevas: intérprete, paquete, combinaciones libres, catálogos, acciones del paquete y de catálogos).
+- Combinaciones probadas, cada una enviable, con precio por servicio y total, y PDF real en ambos modos: vuelo + ferry, hotel + ferry, vuelo + hotel, dos hoteles, ferry + traslado, hotel + tour + traslado, varios ferris, varios vuelos, tours + traslados, y cinco servicios de cuatro tipos empezando por un seguro. Hotel + ferry conserva su combinación exacta en la versión enviada y en la enmienda aunque el borrador cambie después.
 - `npm run typecheck` y `npm run lint` sin errores ni advertencias; `npm run build` correcto.
 - Migración en PGlite (PostgreSQL real en WASM) con un esquema reconstruido y V5 aplicado: `scripts/test-quotations-v6-migration.mjs` → **17 de 17** (repetible, datos intactos, RLS para administradores, anon sin acceso, auditoría no falsificable, llaves foráneas, unicidad, fotos protegidas, reversión). No sustituye el ensayo sobre una copia de producción.
 - PDF reales: 11 muestras (`node scripts/render-quotation-samples.mjs <carpeta>`), revisadas a la vista; las 8 de V5 sin cambios de diseño ni de páginas.
