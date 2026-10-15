@@ -47,3 +47,36 @@ export function monthTotals(reservations: Row[], payments: Row[]) {
 export function formatAmount(amount: number, currency: string) {
   return `${currency === "HNL" ? "L" : "$"} ${new Intl.NumberFormat("es-HN", { maximumFractionDigits: 0 }).format(amount)} ${currency}`;
 }
+
+// ----- inicio: work queue -----
+
+// Today's calendar day in Honduras (YYYY-MM-DD), plus an offset in days.
+export function hondurasDay(now = new Date(), offsetDays = 0) {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Tegucigalpa", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(now.getTime() + offsetDays * day));
+}
+
+// What each reservation still owes, counting only payments in the reservation's own currency
+// (the same rule as the reservation pages). Reservations with nothing owed are left out.
+export function outstandingBalances(reservations: Row[], payments: Row[]) {
+  const paid = new Map<string, number>();
+  const currency = new Map(reservations.map(row => [String(row.id), String(row.moneda)]));
+  for (const payment of payments) {
+    const id = String(payment.reservation_id);
+    if (currency.get(id) === String(payment.moneda)) paid.set(id, (paid.get(id) ?? 0) + (Number(payment.monto) || 0));
+  }
+  return reservations
+    .filter(row => row.estado !== "cancelada")
+    .map(row => ({ row, balance: Math.round(((Number(row.total) || 0) - (paid.get(String(row.id)) ?? 0)) * 100) / 100 }))
+    .filter(entry => entry.balance > 0);
+}
+
+// Open quotations (draft or sent) whose validity ends within `hours`, soonest first. `expiryOf`
+// returns the effective expiry so legacy date-only quotations are handled the same way.
+export function expiringSoon(rows: Row[], expiryOf: (row: Row) => string, now = new Date(), hours = 48) {
+  const limit = now.getTime() + hours * 3600000;
+  return rows
+    .filter(row => row.estado === "borrador" || row.estado === "enviada")
+    .map(row => ({ row, expiry: expiryOf(row) }))
+    .filter(entry => entry.expiry && Date.parse(entry.expiry) > now.getTime() && Date.parse(entry.expiry) <= limit)
+    .sort((a, b) => Date.parse(a.expiry) - Date.parse(b.expiry));
+}

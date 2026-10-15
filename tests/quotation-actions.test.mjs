@@ -622,3 +622,28 @@ test('a package without flights (hotel + ferry) keeps its exact services in the 
   assert.deepEqual(json(amendment.detalles.paquete.componentes.map(component => component.tipo)), ['hotel', 'traslado']);
   assert.equal(json(db.tables.quotation_versions.map(version => version.snapshot.quotation.detalles.paquete.componentes.length)).join(), '2,2');
 });
+
+test('accepting a quotation never sent from the panel freezes what was accepted, and the reservation uses it', async () => {
+  const db = fakeDb({ reservation_items: [], payments: [], invoices: [] });
+  const api = actions(db);
+  const created = await api.saveQuotation(JSON.stringify(payload()));
+  assert.equal(db.tables.quotation_versions.length, 0);
+  const accepted = await api.updateQuotationStatus({}, form({ id: created.quotationId, estado: 'aceptada' }));
+  assert.match(accepted.success, /se guardó la versión 1/);
+  assert.equal(db.tables.quotation_versions.length, 1);
+  assert.equal(db.tables.quotation_versions[0].snapshot.origen, 'aceptacion');
+  assert.equal(db.tables.quotations[0].estado, 'aceptada');
+  assert.equal(db.tables.quotations[0].version_aceptada, 1);
+  // A later change to the live rows does not reach the reservation: it is built from the frozen version.
+  db.tables.quotation_items.push({ id: 'stray', quotation_id: created.quotationId, descripcion: 'Agregado después', tipo: 'Hotel', cantidad: 1, precio_unitario: 999, orden: 9 });
+  await assert.rejects(reservationActions(db).convertQuotationToReservation({}, form({ quotation_id: created.quotationId })), /redirect:\/admin\/reservas\//);
+  assert.equal(db.tables.reservations[0].total, 604);
+});
+
+test('accepting after a send records the sent version and freezes nothing new', async () => {
+  const db = fakeDb({ reservation_items: [], payments: [], invoices: [] });
+  const { accepted } = await sentAndAccepted(db);
+  assert.match(accepted.success, /versión 1 enviada/);
+  assert.equal(db.tables.quotation_versions.length, 1);
+  assert.equal(db.tables.quotation_versions[0].snapshot.origen, undefined);
+});

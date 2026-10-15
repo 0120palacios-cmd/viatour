@@ -8,6 +8,8 @@ import { getAdminReviewInvitations } from "@/lib/review-invitations";
 import { getReviewPhotoSignedUrl } from "@/lib/reviews";
 import { ReviewInvitationsPanel } from "@/components/admin/review-invitations";
 import { DeleteForm, StatusForm } from "@/components/admin/forms";
+import { EmptyState, FilterNav, PageHeader, Pagination, RecordList, RecordRow, StatusBadge, primaryLink } from "@/components/admin/ui";
+import { reviewStatusLabels } from "@/lib/admin-status";
 
 const sections = { opiniones: "reviews", paquetes: "packages", destinos: "destinations", leads: "leads", blog: "blog_posts", faq: "faqs" } as const;
 const reviewStates = ["todas", "pendiente", "aprobada", "rechazada", "despublicada"];
@@ -46,16 +48,19 @@ export default async function Page({ params, searchParams }: { params: Promise<{
   const page = Math.max(1, Math.min(100000, Number(pagina) || 1));
   const { rows, total } = await adminPage(table, Math.floor(page), estado);
   const invitations = table === "reviews" ? await getAdminReviewInvitations() : null;
-  const title = { reviews: "Opiniones", packages: "Paquetes", destinations: "Destinos", leads: "Leads", blog_posts: "Blog", faqs: "FAQ" }[table];
+  const title = { reviews: "Opiniones", packages: "Paquetes", destinations: "Destinos", leads: "Leads", blog_posts: "Blog", faqs: "Preguntas frecuentes" }[table];
+
+  const createLabel = ({ faqs: "Crear pregunta frecuente", packages: "Crear paquete", blog_posts: "Crear publicación", destinations: "Crear destino" } as Record<string, string>)[table];
+  const descriptions: Record<string, string> = { reviews: "Opiniones enviadas por clientes. Solo las aprobadas se publican en el sitio.", packages: "Paquetes publicados en el sitio. Las cotizaciones se preparan en Cotizaciones.", destinations: "Guías de destino del sitio público.", leads: "Solicitudes de cotización del sitio.", blog_posts: "Publicaciones del blog.", faqs: "Preguntas frecuentes del sitio." };
+  const pageHref = (n: number) => `/admin/${section}?pagina=${n}${estado ? `&estado=${encodeURIComponent(estado)}` : ""}`;
 
   return <>
-    <div className="mb-6 flex flex-wrap justify-between gap-4"><h1 className="t-h1">{title}</h1>{["packages", "destinations", "blog_posts", "faqs"].includes(table) && <Link className="rounded-btn bg-brand px-6 py-3 text-canvas" href={`/admin/${section}/nuevo`}>Crear {table === "faqs" ? "pregunta frecuente" : table === "packages" ? "paquete" : table === "blog_posts" ? "publicación" : "destino"}</Link>}</div>
-    {table === "reviews" && <nav aria-label="Filtrar opiniones por estado" className="mb-6 flex flex-wrap gap-4">{reviewStates.map(state => <Link key={state} aria-current={(estado ?? "todas") === state ? "page" : undefined} className="rounded-btn border p-3 text-brand aria-[current=page]:bg-brand-tint" href={`/admin/opiniones${state === "todas" ? "" : `?estado=${state}`}`}>{state === "todas" ? "Todas" : state}</Link>)}</nav>}
-    {table === "blog_posts" && <nav aria-label="Filtrar publicaciones" className="mb-6 flex flex-wrap gap-4">{[["", "Todas"], ["true", "Publicadas"], ["false", "Borradores"]].map(([value, label]) => <Link key={value} href={`/admin/blog${value ? `?estado=${value}` : ""}`} aria-current={(estado ?? "") === value ? "page" : undefined} className="rounded-btn border p-3 text-brand aria-[current=page]:bg-brand-tint">{label}</Link>)}</nav>}
-    <p className="t-small mb-6 text-ink-soft">{total} registros. Página {Math.floor(page)}.</p>
-    {!rows.length && <p className="rounded-card border p-6">No hay registros en esta vista.</p>}
-    <div className="space-y-6">{rows.map(row => <article key={String(row.id)} className="rounded-card border p-6">{table === "reviews" ? <ReviewRecord row={row} /> : table === "leads" ? <LeadRecord row={row} /> : <div className="flex flex-wrap items-center justify-between gap-4"><div><h2 className="t-h3">{String(row.pregunta ?? row.titulo ?? row.nombre)}</h2><p className="t-small text-ink-soft">{String(row.categoria ?? row.slug ?? "General")} · {row.publicado ? "Publicado" : "Borrador"} · Orden {String(row.orden)}{table === "blog_posts" && <span> · {String(row.categoria)} · {String(row.publicado_en ?? "Sin fecha")}</span>}</p></div><div className="flex items-center gap-4"><Link className="text-brand underline" href={`/admin/${section}/${row.id}`}>Editar</Link><DeleteForm table={table} id={String(row.id)} name={String(row.pregunta ?? row.titulo ?? row.nombre)} /></div></div>}</article>)}</div>
-    <nav aria-label="Páginas de registros" className="mt-6 flex gap-4">{page > 1 && <Link className="text-brand underline" href={`/admin/${section}?pagina=${Math.floor(page) - 1}${estado ? `&estado=${encodeURIComponent(estado)}` : ""}`}>Anterior</Link>}{page * 50 < total && <Link className="text-brand underline" href={`/admin/${section}?pagina=${Math.floor(page) + 1}${estado ? `&estado=${encodeURIComponent(estado)}` : ""}`}>Siguiente</Link>}</nav>
+    <PageHeader title={title} description={descriptions[table]} actions={createLabel ? <Link className={primaryLink} href={`/admin/${section}/nuevo`}>{createLabel}</Link> : undefined} />
+    {table === "reviews" && <FilterNav label="Filtrar opiniones por estado" items={reviewStates.map(state => ({ href: `/admin/opiniones${state === "todas" ? "" : `?estado=${state}`}`, label: state === "todas" ? "Todas" : reviewStatusLabels[state] ?? state, current: (estado ?? "todas") === state }))} />}
+    {table === "blog_posts" && <FilterNav label="Filtrar publicaciones" items={[["", "Todas"], ["true", "Publicadas"], ["false", "Borradores"]].map(([value, label]) => ({ href: `/admin/blog${value ? `?estado=${value}` : ""}`, label, current: (estado ?? "") === value }))} />}
+    {!rows.length ? <EmptyState title="No hay registros en esta vista" /> : table === "reviews" || table === "leads" ? <div className="space-y-4">{rows.map(row => <article key={String(row.id)} className="rounded-card border border-line bg-canvas p-4 sm:p-6">{table === "reviews" ? <ReviewRecord row={row} /> : <LeadRecord row={row} />}</article>)}</div>
+      : <RecordList label={title}>{rows.map(row => <RecordRow key={String(row.id)} href={`/admin/${section}/${row.id}`} title={String(row.pregunta ?? row.titulo ?? row.nombre)} badges={<StatusBadge tone={row.publicado ? "success" : "muted"}>{row.publicado ? "Publicado" : "Borrador"}</StatusBadge>} meta={<>{String(row.categoria ?? row.slug ?? "General")} · Orden {String(row.orden)}{table === "blog_posts" ? ` · ${String(row.publicado_en ?? "Sin fecha")}` : ""}</>} actions={<DeleteForm table={table} id={String(row.id)} name={String(row.pregunta ?? row.titulo ?? row.nombre)} />} />)}</RecordList>}
+    <Pagination label="Páginas de registros" summary={`${total} registros · página ${Math.floor(page)}`} previous={page > 1 ? pageHref(Math.floor(page) - 1) : undefined} next={page * 50 < total ? pageHref(Math.floor(page) + 1) : undefined} />
     {invitations && <ReviewInvitationsPanel available={invitations.available} rows={invitations.rows} />}
   </>;
 }

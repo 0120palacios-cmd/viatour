@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { PageHeader } from "@/components/admin/ui";
 import { pageMetadata } from "@/lib/seo";
 import { requireAdmin } from "@/lib/admin";
 import { QuotationEditor } from "@/components/admin/quotation-editor/editor";
@@ -21,9 +21,9 @@ function kindFromService(service: unknown): QuotationKind | null {
   return null;
 }
 
-export default async function NewQuotationPage({ searchParams }: { searchParams: Promise<{ lead?: string; tipo?: string }> }) {
+export default async function NewQuotationPage({ searchParams }: { searchParams: Promise<{ lead?: string; tipo?: string; cliente?: string }> }) {
   const { client } = await requireAdmin();
-  const { lead, tipo } = await searchParams;
+  const { lead, tipo, cliente } = await searchParams;
   const [customers, recentHotels, schema, catalogs] = await Promise.all([
     client.from("customers").select("id,nombre,email,telefono,notas").order("nombre", { ascending: true }).limit(1000),
     recentQuotationHotels(client),
@@ -47,10 +47,19 @@ export default async function NewQuotationPage({ searchParams }: { searchParams:
       draft = { ...draft, leadId: prefill.leadId, cliente: { nombre: prefill.nombre, email: prefill.email, telefono: prefill.telefono }, destino: prefill.destino, detalles: { ...draft.detalles, notasInternas: prefill.notas } };
     }
   }
-  return <div className="space-y-4">
-    <Link href={fromLead ? "/admin/leads" : "/admin/cotizaciones"} className="text-brand underline underline-offset-4">{fromLead ? "Volver a leads" : "Volver a cotizaciones"}</Link>
-    <h1 className="t-h1">Crear cotización</h1>
+  // Started from a customer's profile: link the quotation to that customer from the first save.
+  let fromCustomer = "";
+  if (!fromLead && cliente && validUuid(cliente)) {
+    const customer = ((customers.data ?? []) as Customer[]).find(item => item.id === cliente) ?? (await client.from("customers").select("id,nombre,email,telefono,notas").eq("id", cliente).maybeSingle()).data as Customer | null;
+    if (customer) {
+      fromCustomer = customer.id;
+      draft = { ...draft, customerId: customer.id, cliente: { nombre: customer.nombre, email: customer.email, telefono: customer.telefono ?? "" } };
+    }
+  }
+  const back = fromLead ? { href: "/admin/leads", label: "Leads" } : fromCustomer ? { href: `/admin/clientes/${fromCustomer}`, label: draft.cliente.nombre } : { href: "/admin/cotizaciones", label: "Cotizaciones" };
+  return <>
+    <PageHeader back={back} title="Crear cotización" />
     {fromLead ? <p className="rounded-card border border-line bg-brand-tint p-4 text-ink">Datos precargados desde el lead. Lo que escribió el cliente quedó en las notas internas; revise el correo, que es necesario para enviar la cotización.</p> : null}
     <QuotationEditor initial={draft} customers={(customers.data ?? []) as Customer[]} recentHotels={recentHotels} meta={{ schemaReady: !schema.error }} catalogs={catalogs} />
-  </div>;
+  </>;
 }

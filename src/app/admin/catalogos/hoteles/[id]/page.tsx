@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { PageHeader } from "@/components/admin/ui";
 import { notFound } from "next/navigation";
 import { pageMetadata } from "@/lib/seo";
 import { requireAdmin } from "@/lib/admin";
@@ -19,9 +19,8 @@ export default async function HotelEntryPage({ params }: { params: Promise<{ id:
   const ready = (await listHotelCatalog(client, { limit: 1 })).ready;
   const entry = id === "nuevo" ? emptyHotelEntry() : await getHotelEntry(client, id);
   if (!entry) notFound();
-  return <div className="space-y-4">
-    <Link href="/admin/catalogos/hoteles" className="text-brand underline underline-offset-4">Volver al catálogo de hoteles</Link>
-    <h1 className="t-h1">{id === "nuevo" ? "Agregar hotel" : entry.nombre}</h1>
+  return <>
+    <PageHeader back={{ href: "/admin/catalogos/hoteles", label: "Catálogo de hoteles" }} title={id === "nuevo" ? "Agregar hotel" : entry.nombre} />
     {ready ? <HotelCatalogForm initial={entry} /> : <SchemaNotice />}
-  </div>;
+  </>;
 }

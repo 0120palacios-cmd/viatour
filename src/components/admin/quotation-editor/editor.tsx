@@ -221,7 +221,7 @@ export function QuotationEditor({ initial, customers, recentHotels, meta, sideba
   </div>;
 
   return <CatalogProvider value={catalogs}><div className="space-y-4">
-    <div className="sticky top-0 z-20 -mx-4 border-b border-line bg-canvas/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
+    <div className="sticky top-0 z-20 -mx-4 border-b border-line bg-canvas/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="t-small text-ink-soft">{meta.codigo ?? "Nueva cotización"} · {quotationKindAdminLabels[draft.tipo]}{meta.estadoLabel ? ` · ${meta.estadoLabel}` : ""}{meta.expired ? " · Vencida" : ""}</p>
@@ -235,14 +235,14 @@ export function QuotationEditor({ initial, customers, recentHotels, meta, sideba
       </div>
       {suggestions.length && !draft.customerId ? <div className="mt-2"><Notice>Ya hay {suggestions.length === 1 ? "un cliente registrado" : "clientes registrados"} con el correo {draft.cliente.email}, con otro nombre. La cotización no se vinculó a ninguno. Si es la misma persona, vincúlela: {suggestions.map(suggestion => <button key={suggestion.id} type="button" className="ml-2 font-semibold text-brand underline underline-offset-4" onClick={() => { change(current => ({ ...current, customerId: suggestion.id })); setSuggestions([]); }}>{suggestion.nombre}</button>)}</Notice></div> : null}
       {message ? <div className="mt-2"><Notice tone={saveState === "error" || saveState === "conflict" ? "error" : "info"}>{message}{saveState === "conflict" ? <> <button type="button" className="font-semibold underline underline-offset-4" onClick={() => window.location.reload()}>Recargar</button></> : null}</Notice></div> : null}
-      <nav aria-label="Secciones de la cotización" className="mt-2 hidden gap-1 overflow-x-auto lg:flex">{sectionsFor(draft.tipo).map(([id, label]) => <a key={id} href={`#${id}`} className="whitespace-nowrap rounded-btn px-3 py-1.5 t-small text-ink-soft hover:bg-surface hover:text-ink">{label}</a>)}</nav>
-      <div className="mt-2 grid grid-cols-2 gap-2 lg:hidden" role="tablist" aria-label="Vista">
+      <nav aria-label="Secciones de la cotización" className="mt-2 hidden gap-1 overflow-x-auto xl:flex">{sectionsFor(draft.tipo).map(([id, label]) => <a key={id} href={`#${id}`} className="whitespace-nowrap rounded-btn px-3 py-1.5 t-small text-ink-soft hover:bg-surface hover:text-ink">{label}</a>)}</nav>
+      <div className="mt-2 grid grid-cols-2 gap-2 xl:hidden" role="tablist" aria-label="Vista">
         {(["editar", "revisar"] as const).map(tab => <button key={tab} type="button" role="tab" aria-selected={mobileTab === tab} onClick={() => setMobileTab(tab)} className={cn("min-h-10 rounded-btn border t-small font-semibold", mobileTab === tab ? "border-brand bg-brand-tint text-brand-deep" : "border-line text-ink")}>{tab === "editar" ? "Editar" : `Revisar y enviar${blocking.length ? ` (${blocking.length})` : ""}`}</button>)}
       </div>
     </div>
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px] xl:grid-cols-[minmax(0,1fr)_420px]">
-      <div className={cn(mobileTab !== "editar" && "hidden lg:block")}>{editor}</div>
-      <aside className={cn("lg:sticky lg:top-36 lg:max-h-[calc(100vh-10rem)] lg:overflow-y-auto", mobileTab !== "revisar" && "hidden lg:block")} aria-label="Revisión, vista previa y envío">{panel}</aside>
+    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px] 2xl:grid-cols-[minmax(0,1fr)_420px]">
+      <div className={cn(mobileTab !== "editar" && "hidden xl:block")}>{editor}</div>
+      <aside className={cn("xl:sticky xl:top-36 xl:max-h-[calc(100vh-10rem)] xl:overflow-y-auto", mobileTab !== "revisar" && "hidden xl:block")} aria-label="Revisión, vista previa y envío">{panel}</aside>
     </div>
   </div></CatalogProvider>;
 }

@@ -50,7 +50,7 @@ export function HotelCatalogForm({ initial }: { initial: HotelCatalogEntry }) {
   });
 
   return <div className="space-y-6">
-    <div className="sticky top-0 z-20 -mx-4 flex flex-wrap items-center justify-between gap-3 border-b border-line bg-canvas/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
+    <div className="sticky top-0 z-20 -mx-4 flex flex-wrap items-center justify-between gap-3 border-b border-line bg-canvas/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
       <p role="status" aria-live="polite" className={cn("t-small font-semibold", dirty ? "text-ink" : "text-success")}>{saving ? "Guardando" : dirty ? "Cambios sin guardar" : entry.id ? "Guardado" : "Hotel nuevo"}{!entry.activo ? " · Inactivo" : ""}</p>
       <div className="flex flex-wrap gap-2">
         {entry.id ? <Button type="button" variant="ghost" className="min-h-10 px-4" disabled={saving} onClick={toggleActive}>{entry.activo ? "Desactivar" : "Activar"}</Button> : null}

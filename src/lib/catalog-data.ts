@@ -2,6 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { airlineEntryFromRow, airlineForEditor, hotelEntryFromRow, hotelForEditor, isMissingTable, type AirlineEntry, type HotelCatalogEntry } from "@/lib/catalog";
 import { sanitizeDetails, expandedDetails } from "@/lib/quotation-details";
+import { serviceEntryFromRow, serviceForEditor, type ServiceCatalogEntry, type ServiceCatalogKind } from "@/lib/service-catalog";
 
 // Catalog reads always use the admin's own session (RLS: public.is_admin()). When the V6 SQL has not been
 // applied the tables do not exist; callers get ready: false and the panel explains what to run.
@@ -11,6 +12,7 @@ export type CatalogResult<T> = { ready: boolean; rows: T[] };
 const hotelFields = "id,nombre,cadena,pais,ciudad,destino,direccion,ubicacion,telefono,email,sitio_web,descripcion,estrellas,fotos,amenidades,habitaciones,planes,inclusiones,check_in,check_out,politicas,cancelacion,impuestos,cargo_resort,referencia_proveedor,notas_internas,activo,updated_at";
 const airlineFields = "id,nombre,iata,icao,pais,operadora,notas_internas,activo,updated_at";
 const presetFields = "id,airline_id,nombre,cabina,tipo_tarifa,aplica_a,equipaje,cambios,cancelacion,reembolso,asientos,restricciones,otras_inclusiones,fuente,verificado_en,activo,updated_at";
+const serviceFields = "id,tipo,nombre,operador,destino,descripcion,lugar,duracion,modalidad,inclusiones,cancelacion,cambios,equipaje_incluido,equipaje_adicional,embarque,documentos,notas_internas,activo,updated_at";
 
 export async function listHotelCatalog(client: SupabaseClient, options: { activeOnly?: boolean; limit?: number } = {}): Promise<CatalogResult<HotelCatalogEntry>> {
   let query = client.from("hotel_catalog").select(hotelFields).order("nombre", { ascending: true }).limit(options.limit ?? 500);
@@ -50,12 +52,14 @@ export async function getAirlineEntry(client: SupabaseClient, id: string): Promi
 
 // What the quotation editor needs: active hotels and airlines with their active presets, plus the
 // airlines and presets used most recently in quotations (shown first in the selectors).
-export type EditorCatalogs = { ready: boolean; hotels: HotelCatalogEntry[]; airlines: AirlineEntry[]; recentAirlines: string[]; recentPresets: string[] };
+// services and servicesReady come from docs/sql/service_catalog_v7.sql, which can be missing while V6 is applied.
+export type EditorCatalogs = { ready: boolean; hotels: HotelCatalogEntry[]; airlines: AirlineEntry[]; recentAirlines: string[]; recentPresets: string[]; servicesReady: boolean; services: ServiceCatalogEntry[] };
 
 export async function editorCatalogs(client: SupabaseClient): Promise<EditorCatalogs> {
-  const [hotels, airlines, recent] = await Promise.all([
+  const [hotels, airlines, services, recent] = await Promise.all([
     listHotelCatalog(client, { activeOnly: true }),
     listAirlineCatalog(client, { activeOnly: true }),
+    listServiceCatalog(client, { activeOnly: true }).catch(() => ({ ready: false, rows: [] as ServiceCatalogEntry[] })),
     client.from("quotations").select("detalles").in("tipo", ["vuelo", "paquete", "combinado"]).order("updated_at", { ascending: false }).limit(40),
   ]);
   const recentAirlines: string[] = [];
@@ -68,5 +72,21 @@ export async function editorCatalogs(client: SupabaseClient): Promise<EditorCata
       if (fare.plantillaId && !recentPresets.includes(fare.plantillaId)) recentPresets.push(fare.plantillaId);
     }
   }
-  return { ready: hotels.ready && airlines.ready, hotels: hotels.rows.map(hotelForEditor), airlines: airlines.rows.map(airlineForEditor), recentAirlines: recentAirlines.slice(0, 8), recentPresets: recentPresets.slice(0, 12) };
+  return { ready: hotels.ready && airlines.ready, hotels: hotels.rows.map(hotelForEditor), airlines: airlines.rows.map(airlineForEditor), recentAirlines: recentAirlines.slice(0, 8), recentPresets: recentPresets.slice(0, 12), servicesReady: services.ready, services: services.rows.map(serviceForEditor) };
+}
+
+export async function listServiceCatalog(client: SupabaseClient, options: { activeOnly?: boolean; tipo?: ServiceCatalogKind } = {}): Promise<CatalogResult<ServiceCatalogEntry>> {
+  let query = client.from("service_catalog").select(serviceFields).order("nombre", { ascending: true }).limit(1000);
+  if (options.activeOnly) query = query.eq("activo", true);
+  if (options.tipo) query = query.eq("tipo", options.tipo);
+  const result = await query;
+  if (isMissingTable(result.error)) return { ready: false, rows: [] };
+  if (result.error) throw new Error("No se pudo cargar el catálogo de servicios.");
+  return { ready: true, rows: (result.data ?? []).map(row => serviceEntryFromRow(row as Record<string, unknown>)) };
+}
+
+export async function getServiceEntry(client: SupabaseClient, id: string): Promise<ServiceCatalogEntry | null> {
+  const result = await client.from("service_catalog").select(serviceFields).eq("id", id).maybeSingle();
+  if (result.error && !isMissingTable(result.error)) throw new Error("No se pudo cargar el servicio.");
+  return result.data ? serviceEntryFromRow(result.data as Record<string, unknown>) : null;
 }

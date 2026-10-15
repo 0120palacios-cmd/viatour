@@ -9,6 +9,7 @@ import { FlightSection } from "./flight-section";
 import { FareBaggageSection } from "./fare-baggage-section";
 import { HotelSection } from "./hotel-section";
 import { FerrySection } from "./ferry-section";
+import { ServiceCatalogTools } from "./service-catalog-tools";
 import { InclusionsEditor } from "./inclusions-editor";
 import { AreaField, IconButton, Notice, Section, Segmented, SmallButton, TextField } from "./fields";
 import { cn } from "cn";
@@ -80,6 +81,7 @@ function ServiceEditor({ component, onChange, sectionId }: { component: PackageC
   const transfer = variante === "traslado";
   return <Section id={sectionId} title={packageServiceLabels[component.tipo]} description={coverage ? "Indique solo coberturas y condiciones confirmadas con la aseguradora o el proveedor." : "Describa el servicio tal como lo verá el cliente y marque lo que incluye."}>
     <div className="grid gap-3 sm:grid-cols-2">
+      <ServiceCatalogTools component={component} onChange={next => onChange(next)} />
       <TextField label="Descripción del servicio *" value={service.descripcion} onChange={value => set("descripcion", value.slice(0, 400))} className="sm:col-span-2"
         placeholder={transfer ? "Traslado aeropuerto – hotel – aeropuerto" : coverage ? "Seguro de viaje con asistencia médica" : "Tour a Chichén Itzá con almuerzo"} />
       <TextField label={coverage ? "Aseguradora o proveedor" : "Operador"} value={service.operador} onChange={value => set("operador", value.slice(0, 120))} hint="Opcional; aparece en el PDF" />

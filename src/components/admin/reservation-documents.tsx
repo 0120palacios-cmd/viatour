@@ -71,8 +71,8 @@ export function ReservationDocuments({ reservationId, documents }: { reservation
       : <Button type="button" variant="ghost" className="px-3" aria-label={`Eliminar ${document.name}`} onClick={() => setConfirming(document.path)}><Trash2 size={16} strokeWidth={1.75} aria-hidden="true" />Eliminar</Button>}
   </li>)}</ul> : <p className="t-small rounded-card border border-line bg-canvas p-4 text-ink-soft">{empty}</p>;
 
-  return <section className="rounded-panel border bg-surface p-6 sm:p-8" aria-labelledby="documents-heading">
-    <h2 id="documents-heading" className="t-h2">Documentos del viaje</h2>
+  return <section className="rounded-card border border-line bg-canvas p-4 sm:p-6" aria-labelledby="documents-heading">
+    <h2 id="documents-heading" className="t-h3">Documentos del viaje</h2>
     <p className="mt-2 text-ink-soft">Lo que comparta aquí aparece en Mi reserva del cliente (boletos, vouchers, itinerario). El nombre del archivo es el que verá el cliente.</p>
     <form onSubmit={upload} className="mt-6 flex flex-wrap items-end gap-4" aria-busy={busy}>
       <label className="t-small block min-w-0 flex-1">Archivos (PDF, JPG, PNG o WebP, hasta 8 MB cada uno)

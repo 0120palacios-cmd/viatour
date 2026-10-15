@@ -1,7 +1,7 @@
 import { pageMetadata } from "@/lib/seo";
 export async function generateMetadata({ params }: { params: Promise<{ section: string; id?: string }> }) { const { section, id } = await params; const url = "/admin/" + section + (id ? "/" + id : ""); return pageMetadata(url, "viatour | Administración de " + section + (id ? " / " + id : ""), "Administración privada de " + section + (id ? ". Registro " + id : "") + ". Contenido excluido de la indexación pública."); }
 import {FAQForm} from "@/components/admin/faq-form";
-import Link from "next/link";
+import { PageHeader } from "@/components/admin/ui";
 import { notFound } from "next/navigation";
 import { requireAdmin, adminRows } from "@/lib/admin";
 import { BlogForm } from "@/components/admin/blog-form";
@@ -29,5 +29,6 @@ export default async function Page({ params }: {
         row = result.data;
     }
     const destinations = table === "packages" ? await adminRows("destinations") : [];
-    return <><Link href={`/admin/${section}`} className="text-brand underline">Volver a {section}</Link><h1 className="t-h1 my-6">{id === "nuevo" ? "Crear" : "Editar"} {table === "faqs" ? "pregunta frecuente" : table === "packages" ? "paquete" : table === "blog_posts" ? "publicación" : "destino"}</h1>{table === "faqs" ? <FAQForm row={row}/> : table === "blog_posts" ? <BlogForm row={row}/> : <ContentForm table={table} row={row} destinations={destinations}/>}</>;
+    const sectionLabel = { faq: "Preguntas frecuentes", paquetes: "Paquetes", blog: "Blog", destinos: "Destinos" }[section] ?? section;
+    return <><PageHeader back={{ href: `/admin/${section}`, label: sectionLabel }} title={`${id === "nuevo" ? "Crear" : "Editar"} ${table === "faqs" ? "pregunta frecuente" : table === "packages" ? "paquete" : table === "blog_posts" ? "publicación" : "destino"}`} />{table === "faqs" ? <FAQForm row={row}/> : table === "blog_posts" ? <BlogForm row={row}/> : <ContentForm table={table} row={row} destinations={destinations}/>}</>;
 }

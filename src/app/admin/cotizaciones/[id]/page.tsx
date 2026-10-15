@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { pageMetadata } from "@/lib/seo";
+import { PageHeader, textLink } from "@/components/admin/ui";
 import { requireAdmin } from "@/lib/admin";
 import { getAdminQuotation, listQuotationVersions, recentQuotationHotels } from "@/lib/quotation-data";
 import { editorCatalogs } from "@/lib/catalog-data";
@@ -53,21 +54,20 @@ export default async function EditQuotationPage({ params, searchParams }: { para
       {quotation.agente_id !== user.id ? <AssignQuotationForm id={id} /> : null}
     </section>
     <section aria-labelledby="versions-title" className="rounded-panel border border-line bg-canvas p-4">
-      <h2 id="versions-title" className="mb-2 font-semibold text-ink">Versiones enviadas</h2>
-      {versions.length ? <ul className="space-y-1.5">{versions.map(version => <li key={version.id} className="flex flex-wrap items-center justify-between gap-2 t-small"><span>Versión {version.version} · {dateTime.format(new Date(version.emitida_en))}</span><a className="text-brand underline underline-offset-4" href={`/api/admin/cotizaciones/${id}/pdf?version=${version.version}&inline=1`} target="_blank" rel="noreferrer">Ver PDF</a></li>)}</ul> : <p className="t-small text-ink-soft">{record.schemaReady ? "Aún no se ha enviado. Cada envío guarda una copia fija de lo que recibió el cliente." : "El historial de versiones se activa con docs/sql/quotations_v5.sql."}</p>}
+      <h2 id="versions-title" className="mb-2 font-semibold text-ink">Versiones</h2>
+      {versions.length ? <ul className="space-y-1.5">{versions.map(version => <li key={version.id} className="flex flex-wrap items-center justify-between gap-2 t-small"><span>Versión {version.version} · {version.origen === "aceptacion" ? "guardada al aceptar" : "enviada"} {dateTime.format(new Date(version.emitida_en))}</span><a className="text-brand underline underline-offset-4" href={`/api/admin/cotizaciones/${id}/pdf?version=${version.version}&inline=1`} target="_blank" rel="noreferrer">Ver PDF</a></li>)}</ul> : <p className="t-small text-ink-soft">{record.schemaReady ? "Aún no se ha enviado. Cada envío guarda una copia fija de lo que recibió el cliente." : "El historial de versiones se activa con docs/sql/quotations_v5.sql."}</p>}
     </section>
     <section aria-labelledby="reservation-title" className="rounded-panel border border-line bg-surface p-4">
       <h2 id="reservation-title" className="mb-1 font-semibold text-ink">Reserva</h2>
       {reservation.data ? <p className="t-small">Convertida en la reserva <Link className="text-brand underline underline-offset-4" href={`/admin/reservas/${reservation.data.id}`}>{String(reservation.data.codigo)}</Link>.</p> : <><p className="mb-3 t-small text-ink-soft">Convierta la cotización solo cuando el cliente la haya aceptado. Crear la reserva aquí no confirma vuelos ni hoteles con los proveedores.</p><ConvertQuotationForm quotationId={id} enabled={quotation.estado === "aceptada"} /></>}
     </section>
   </>;
-  return <div className="space-y-4">
-    <Link href="/admin/cotizaciones" className="text-brand underline underline-offset-4">Volver a cotizaciones</Link>
-    <h1 className="t-h1">{quotation.cliente_nombre} · {quotation.destino}</h1>
+  return <>
+    <PageHeader back={{ href: "/admin/cotizaciones", label: "Cotizaciones" }} title={`${quotation.cliente_nombre} · ${quotation.destino}`} description={quotation.customer_id ? <Link className={textLink} href={`/admin/clientes/${quotation.customer_id}`}>Ver ficha del cliente</Link> : undefined} />
     {enmienda ? <p className="rounded-card border border-line bg-brand-tint p-4 text-ink">Enmienda creada en borrador. La cotización aceptada original no cambió. Actualice lo necesario, apruebe las condiciones y envíe esta nueva cotización al cliente.</p> : null}
     {duplicada ? <p className="rounded-card border border-line bg-brand-tint p-4 text-ink">Esta es una copia nueva en borrador. Actualice fechas, validez y precios, y vuelva a confirmar el itinerario y el equipaje.</p> : null}
     {expired ? <p role="alert" className="rounded-card border border-error/40 bg-canvas p-4 text-error">La validez de esta cotización venció el {dateTime.format(new Date(record.expiry))}. Actualícela antes de volver a enviarla; las versiones ya enviadas no cambian.</p> : null}
     <QuotationEditor initial={draft} customers={(customers.data ?? []) as Customer[]} recentHotels={recentHotels} sidebar={sidebar} catalogs={catalogs}
       meta={{ codigo: quotation.codigo, estado: quotation.estado, estadoLabel: quotationStatusLabel(quotation.estado), expired, schemaReady: record.schemaReady, sent: versions.length > 0 || quotation.estado !== "borrador", converted: Boolean(reservation.data) }} />
-  </div>;
+  </>;
 }

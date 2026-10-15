@@ -108,3 +108,20 @@ test('services can be added, duplicated, reordered and removed while the package
   assert.equal(new Set(record.details.paquete.componentes.map(component => component.id)).size, 3);
   assert.deepEqual(plain(d.quotationReadiness('combinado', record.details, record.items, now).filter(issue => issue.nivel === 'error')), []);
 });
+
+test('hotels are checked against the package flights (warnings only)', () => {
+  const flight = services.vuelo();
+  const journeys = flight.vuelo.vuelos.journeys;
+  const arrival = journeys[0].segmentos.at(-1).llegadaFecha;
+  const homeward = journeys.at(-1).segmentos[0].salidaFecha;
+  const day = (iso, delta) => new Date(Date.parse(`${iso}T12:00:00Z`) + delta * 86400000).toISOString().slice(0, 10);
+  const check = (checkIn, checkOut) => {
+    const details = { ...d.defaultDetails('combinado'), paquete: { ...d.emptyPackage(), componentes: [flight, services.hotel('Hotel de prueba', checkIn, checkOut)] } };
+    return d.quotationReadiness('combinado', details, [{ descripcion: 'Paquete', tipo: 'Paquete', cantidad: 1, precio_unitario: 100 }], now).filter(issue => issue.seccion === 'paquete');
+  };
+  assert.deepEqual(plain(check(arrival, homeward)), [], 'a stay matching the flights raises nothing');
+  const early = check(day(arrival, -1), homeward);
+  assert.equal(early.length, 1); assert.equal(early[0].nivel, 'aviso'); assert.match(early[0].mensaje, /antes de la llegada del vuelo/);
+  assert.match(check(day(arrival, 1), homeward)[0].mensaje, /primera noche/);
+  assert.match(check(arrival, day(homeward, 1))[0].mensaje, /después del vuelo de regreso/);
+});
