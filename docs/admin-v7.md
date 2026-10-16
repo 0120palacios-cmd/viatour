@@ -1,6 +1,6 @@
 # Administración V7: navegación, inicio operativo, listas, CRM y catálogo de servicios (2026-10-14/15)
 
-Rama `v6-quotations`, cambios **sin commit**. Una migración nueva, **no aplicada**: `docs/sql/service_catalog_v7.sql` (ver «Migración»). Nada se envió a GitHub, a producción ni a la base de datos.
+Rama `v6-quotations`, PR #3. Una migración nueva, `docs/sql/service_catalog_v7.sql`, **aplicada en producción el 2026-10-16** después del respaldo del propietario (ver «Migración»).
 
 ## Segunda ronda (2026-10-15)
 - **Aceptar sin haber enviado**: implementada la opción (c) recomendada. Si una cotización nunca se envió desde el panel (por ejemplo, el PDF se compartió por WhatsApp), al marcarla aceptada se guarda en ese momento una versión fija con lo aceptado (`snapshot.origen = "aceptacion"`), y la reserva se crea desde esa versión, no desde el borrador vivo. Si ya se había enviado, se registra la última versión enviada como antes. En «Versiones» se distingue «enviada» de «guardada al aceptar». Una cotización sin conceptos de precio no se puede aceptar. Sin el SQL de V5 (tabla de versiones) el comportamiento anterior se conserva.
@@ -12,8 +12,10 @@ Rama `v6-quotations`, cambios **sin commit**. Una migración nueva, **no aplicad
 - **Hotel frente a vuelos** en paquetes combinados: avisos (no bloquean el envío) si la entrada al hotel es antes de la llegada del vuelo, si hay una noche sin alojamiento entre la llegada y la entrada, o si la salida del hotel es después del vuelo de regreso.
 - Barras de guardado fijas de los formularios de catálogo alineadas con los márgenes del panel.
 
-## Migración (requiere al propietario)
-Mismo proceso del proyecto: respaldo, archivo revisado, nunca `db push` ni `db reset`.
+## Migración
+**Aplicada en producción el 2026-10-16**, después del respaldo del propietario. Verificación (solo lectura): tabla `service_catalog` creada y vacía, RLS activo, una política para administradores (`is_admin()`, todas las operaciones), anon sin lectura ni escritura, disparador de auditoría y 3 índices presentes; conteos sin cambios (2 cotizaciones, 0 versiones, 0 hoteles, 20 aerolíneas). Reversión: `drop table public.service_catalog;`.
+
+Proceso seguido (el mismo del proyecto: respaldo, archivo revisado, nunca `db push` ni `db reset`):
 1. Respaldo con `pg_dump`.
 2. `npx supabase db query --linked --file docs/sql/service_catalog_v7.sql` (una transacción, se puede repetir, no modifica filas; requiere V6).
 3. Consulta de verificación al final del archivo (RLS activo, una política, anon sin acceso).
