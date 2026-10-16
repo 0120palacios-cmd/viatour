@@ -2,12 +2,13 @@
 
 import { createContext, useContext } from "react";
 import type { AirlineEntry, HotelCatalogEntry } from "@/lib/catalog";
+import type { ServiceCatalogEntry } from "@/lib/service-catalog";
 
-// Hotel and airline catalogs for the quotation editor (admin-only data loaded by the page). Sections read
+// Hotel, airline and service catalogs for the quotation editor (admin-only data loaded by the page). Sections read
 // them from context so the same editors work inside a combined package without extra props.
-export type EditorCatalogValue = { ready: boolean; hotels: HotelCatalogEntry[]; airlines: AirlineEntry[]; recentAirlines: string[]; recentPresets: string[] };
+export type EditorCatalogValue = { ready: boolean; hotels: HotelCatalogEntry[]; airlines: AirlineEntry[]; recentAirlines: string[]; recentPresets: string[]; servicesReady?: boolean; services?: ServiceCatalogEntry[] };
 
-export const emptyCatalogs: EditorCatalogValue = { ready: false, hotels: [], airlines: [], recentAirlines: [], recentPresets: [] };
+export const emptyCatalogs: EditorCatalogValue = { ready: false, hotels: [], airlines: [], recentAirlines: [], recentPresets: [], servicesReady: false, services: [] };
 const CatalogContext = createContext<EditorCatalogValue>(emptyCatalogs);
 
 export const CatalogProvider = CatalogContext.Provider;

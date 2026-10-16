@@ -8,10 +8,11 @@ import { load } from './security-support.mjs';
 const catalog = load('src/lib/catalog.ts', { '@/lib/quotation-details': detailsModule }, { crypto });
 const types = load('src/lib/quotation-types.ts');
 const validation = load('src/lib/quotation-validation.ts', { '@/lib/quotation-types': types });
+const serviceCatalog = load('src/lib/service-catalog.ts', { '@/lib/quotation-details': detailsModule, '@/lib/catalog': catalog }, { crypto });
 const json = value => JSON.parse(JSON.stringify(value));
 
 function fakeClient({ error = null, staleUpdates = false } = {}) {
-  const tables = { hotel_catalog: [], airline_catalog: [], airline_fare_presets: [] };
+  const tables = { hotel_catalog: [], airline_catalog: [], airline_fare_presets: [], service_catalog: [] };
   let counter = 0;
   const from = table => {
     const state = { op: 'select', values: null, filters: [] };
@@ -35,7 +36,7 @@ function fakeClient({ error = null, staleUpdates = false } = {}) {
 function catalogActions(db, admin = true) {
   return load('src/app/admin/catalogos/actions.ts', {
     'next/cache': { revalidatePath() {} }, '@/lib/admin': { adminSession: async () => admin ? { client: db.client, user: { id: 'agent-1' } } : null },
-    '@/lib/catalog': catalog, '@/lib/quotation-details': detailsModule, '@/lib/quotation-validation': validation,
+    '@/lib/catalog': catalog, '@/lib/quotation-details': detailsModule, '@/lib/quotation-validation': validation, '@/lib/service-catalog': serviceCatalog,
   });
 }
 
@@ -102,4 +103,62 @@ test('a fare preset is stored for its airline with its baggage', async () => {
   assert.equal(row.airline_id, airline.id);
   assert.equal(row.equipaje.documentado.estado, 'con_cargo');
   assert.equal(row.verificado_en, '2026-10-01');
+});
+
+// ----- V7 service catalog -----
+
+test('a service is created, edited with a concurrency check, and deactivated', async () => {
+  const db = fakeClient();
+  const api = catalogActions(db);
+  const created = await api.saveServiceEntry(JSON.stringify({ tipo: 'tour', nombre: 'Snorkel en West End', operador: 'Operador local', destino: 'Roatán', modalidad: 'compartido', inclusiones: [{ nombre: 'Equipo', estado: 'incluido' }], equipajeIncluido: 'no aplica a tours' }));
+  assert.match(created.success, /agregado/);
+  const row = db.tables.service_catalog[0];
+  assert.equal(row.tipo, 'tour');
+  assert.equal(row.equipaje_incluido, null, 'ferry-only fields are dropped for other types');
+  assert.equal(row.inclusiones.length, 1);
+  const edited = await api.saveServiceEntry(JSON.stringify({ id: created.id, updatedAt: created.updatedAt, tipo: 'tour', nombre: 'Snorkel en West End', duracion: '3 horas' }));
+  assert.match(edited.success, /guardado/);
+  assert.equal(db.tables.service_catalog[0].duracion, '3 horas');
+  assert.match((await api.setServiceActive(created.id, false)).success, /desactivado/);
+  assert.equal(db.tables.service_catalog[0].activo, false);
+});
+
+test('service writes reject unknown types, empty names, expired sessions and stale edits', async () => {
+  const db = fakeClient();
+  assert.match((await catalogActions(db).saveServiceEntry(JSON.stringify({ tipo: 'crucero', nombre: 'X' }))).error, /inválidos/);
+  assert.match((await catalogActions(db).saveServiceEntry(JSON.stringify({ tipo: 'tour', nombre: '  ' }))).error, /nombre del servicio/);
+  assert.match((await catalogActions(db, false).saveServiceEntry(JSON.stringify({ tipo: 'tour', nombre: 'X' }))).error, /sesión venció/);
+  const stale = fakeClient({ staleUpdates: true });
+  const result = await catalogActions(stale).saveServiceEntry(JSON.stringify({ id: '7f4c1a52-1111-4a5b-9c3d-000000000001', updatedAt: '2026-01-01T00:00:00Z', tipo: 'tour', nombre: 'X' }));
+  assert.equal(result.conflict, true);
+  assert.equal(stale.tables.service_catalog.length, 0);
+});
+
+test('service catalog errors explain the missing table and duplicates', async () => {
+  const missing = await catalogActions(fakeClient({ error: { code: '42P01' } })).saveServiceEntry(JSON.stringify({ tipo: 'traslado', nombre: 'Aeropuerto – hotel' }));
+  assert.match(missing.error, /service_catalog_v7\.sql/);
+  const duplicate = await catalogActions(fakeClient({ error: { code: '23505' } })).saveServiceEntry(JSON.stringify({ tipo: 'traslado', nombre: 'Aeropuerto – hotel' }));
+  assert.match(duplicate.error, /Ya existe un servicio/);
+});
+
+test('saving a service from a quotation keeps reusable data only (no dates)', async () => {
+  const db = fakeClient();
+  const component = { id: 'c1', tipo: 'traslado', titulo: 'Traslado de llegada', servicio: { descripcion: 'Aeropuerto de Cancún – hotel', operador: 'Transportes de prueba', fecha: '2026-11-10', hora: '14:30', lugar: 'Terminal 3', modalidad: 'privado', inclusiones: [{ nombre: 'Equipaje', estado: 'incluido' }], inclusionesConfirmadas: true, cancelacion: '24 horas' } };
+  const result = await catalogActions(db).saveServiceFromQuotation(JSON.stringify(component));
+  assert.match(result.success, /Guardado en el catálogo/);
+  const row = db.tables.service_catalog[0];
+  assert.equal(row.tipo, 'traslado');
+  assert.equal(row.nombre, 'Traslado de llegada');
+  assert.equal(row.modalidad, 'privado');
+  assert.ok(!JSON.stringify(row).includes('2026-11-10') && !JSON.stringify(row).includes('14:30'), 'no dates or times reach the catalog');
+});
+
+test('saving a ferry from a quotation stores the shipping line conditions, not the legs', async () => {
+  const db = fakeClient();
+  const ferry = { legs: [{ tipo: 'ida', operador: 'Naviera de prueba', origenPuerto: 'La Ceiba', destinoPuerto: 'Roatán', salidaFecha: '2026-11-10', salidaHora: '09:30' }], equipajeIncluido: '1 maleta de 23 kg', cambios: 'Con cargo', embarque: '45 minutos antes', documentos: 'Identidad o pasaporte', inclusiones: [] };
+  const result = await catalogActions(db).saveServiceFromQuotation(JSON.stringify({ tipo: 'ferry', titulo: 'Naviera de prueba', ferry }));
+  assert.match(result.success, /Guardado/);
+  const row = db.tables.service_catalog[0];
+  assert.deepEqual({ tipo: row.tipo, nombre: row.nombre, operador: row.operador, equipaje: row.equipaje_incluido, embarque: row.embarque }, { tipo: 'ferry', nombre: 'Naviera de prueba', operador: 'Naviera de prueba', equipaje: '1 maleta de 23 kg', embarque: '45 minutos antes' });
+  assert.ok(!JSON.stringify(row).includes('La Ceiba'), 'legs and ports stay in the quotation');
 });

@@ -570,6 +570,34 @@ function packageChecks(details: QuotationDetails, items: PricingLine[], push: Pu
   if (mostrarPrecios && items.length && lineas.length === items.length) {
     for (const [index, component] of componentes.entries()) if (!lineas.includes(component.id)) push("aviso", "precio", `${componentLabel(component, index)}: no tiene un concepto de precio propio; en el PDF aparecerá sin precio.`);
   }
+  stayVersusFlightChecks(componentes, push);
+}
+
+const calendarDay = (value: string) => new Intl.DateTimeFormat("es-HN", { day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(`${value}T12:00:00Z`));
+
+// Hotels against the package's flights: a stay that starts before the customer lands, starts after it
+// (a night without lodging) or ends after the return flight leaves. Warnings only: a late arrival or an
+// extra night can be intentional.
+function stayVersusFlightChecks(componentes: PackageComponent[], push: Push) {
+  const journeys = componentes.flatMap(component => component.vuelo?.vuelos.journeys ?? []).filter(journey => journey.segmentos.length);
+  const arrival = journeys[0]?.segmentos.at(-1)?.llegadaFecha ?? "";
+  const homeward = journeys.length > 1 ? journeys.at(-1)?.segmentos[0]?.salidaFecha ?? "" : "";
+  const stays = componentes.map((component, index) => ({ component, index })).filter(entry => entry.component.hotel);
+  if (!stays.length || (!arrival && !homeward)) return;
+  const sorted = stays.filter(entry => datePattern.test(entry.component.hotel!.checkIn)).sort((a, b) => a.component.hotel!.checkIn.localeCompare(b.component.hotel!.checkIn));
+  const first = sorted[0];
+  if (first && datePattern.test(arrival)) {
+    const { checkIn } = first.component.hotel!;
+    const prefix = `${componentLabel(first.component, first.index)}: `;
+    if (checkIn < arrival) push("aviso", "paquete", `${prefix}la entrada (${calendarDay(checkIn)}) es antes de la llegada del vuelo (${calendarDay(arrival)}).`);
+    else if (checkIn > arrival) push("aviso", "paquete", `${prefix}el vuelo llega el ${calendarDay(arrival)} y la entrada al hotel es el ${calendarDay(checkIn)}; revise el alojamiento de la primera noche.`);
+  }
+  if (datePattern.test(homeward)) {
+    for (const { component, index } of stays) {
+      const { checkOut } = component.hotel!;
+      if (datePattern.test(checkOut) && checkOut > homeward) push("aviso", "paquete", `${componentLabel(component, index)}: la salida del hotel (${calendarDay(checkOut)}) es después del vuelo de regreso (${calendarDay(homeward)}).`);
+    }
+  }
 }
 
 export function quotationReadiness(kind: QuotationKind, details: QuotationDetails, items: PricingLine[], now = new Date()): ReadinessIssue[] {

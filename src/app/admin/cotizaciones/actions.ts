@@ -210,7 +210,7 @@ export async function assignQuotationToMe(_: QuotationActionState, form: FormDat
 // Marking a quotation accepted records which sent version the customer accepted: the reservation is
 // later created from that frozen copy, and the content stays locked while it is accepted.
 export async function updateQuotationStatus(_: QuotationActionState, form: FormData): Promise<QuotationActionState> {
-  const { client } = await requireAdmin();
+  const { client, user } = await requireAdmin();
   const id = clean(form.get("id"));
   const status = clean(form.get("estado"));
   if (!validUuid(id) || !isQuotationStatus(status) || !["aceptada", "rechazada", "expirada"].includes(status)) return { error: "Seleccione un estado válido." };
@@ -219,15 +219,52 @@ export async function updateQuotationStatus(_: QuotationActionState, form: FormD
     if (reservation.data) return { error: "Esta cotización ya se convirtió en reserva; su estado no se puede cambiar." };
   }
   let accepted: number | null = null;
+  let frozenNow = false;
   if (status === "aceptada") {
     const latest = await client.from("quotation_versions").select("version").eq("quotation_id", id).order("version", { ascending: false }).limit(1).maybeSingle();
     accepted = latest.error || !latest.data ? null : Number(latest.data.version);
+    // Never sent from the panel: freeze what is being accepted now, before the quotation locks.
+    // Without the V5 versions table (latest.error) the old behaviour stays.
+    if (!latest.error && !latest.data) {
+      const record = await getAdminQuotation(client, id);
+      if (!record) return { error: "No se encontró la cotización." };
+      if (record.quotation.estado === "aceptada") return { error: "Esta cotización ya está aceptada." };
+      if (record.schemaReady) {
+        if (!record.items.length) return { error: "Agregue al menos un concepto de precio antes de marcarla como aceptada." };
+        const frozen = await freezeVersion(client, user.id, record, "aceptacion");
+        if ("error" in frozen) return { error: frozen.error };
+        accepted = frozen.versionNumber;
+        frozenNow = true;
+      }
+    }
   }
   let result = await client.from("quotations").update({ estado: status, version_aceptada: accepted }).eq("id", id).select("id").single();
   if (isMissingColumn(result.error)) result = await client.from("quotations").update({ estado: status }).eq("id", id).select("id").single();
   if (result.error || !result.data) return { error: "No se pudo actualizar el estado." };
   refreshQuotationPaths(id);
-  return { success: accepted ? `Aceptada: se registró la versión ${accepted} enviada al cliente.` : "Estado actualizado." };
+  return { success: accepted ? frozenNow ? `Aceptada: como no se había enviado desde el panel, se guardó la versión ${accepted} con lo aceptado.` : `Aceptada: se registró la versión ${accepted} enviada al cliente.` : "Estado actualizado." };
+}
+
+type AdminClient = Awaited<ReturnType<typeof requireAdmin>>["client"];
+type FrozenVersion = { versionNumber: number; snapshotRecord: NonNullable<Awaited<ReturnType<typeof getAdminQuotation>>> } | { error: string };
+
+// Freezes the quotation as it stands into an immutable version (quotation_versions). Sending uses it
+// before e-mailing; accepting uses it when nothing was ever sent from the panel (a PDF shared by
+// WhatsApp, for example), so every accepted quotation keeps a fixed copy of what was agreed.
+async function freezeVersion(client: AdminClient, userId: string, record: NonNullable<Awaited<ReturnType<typeof getAdminQuotation>>>, origen: "envio" | "aceptacion"): Promise<FrozenVersion> {
+  const { quotation } = record;
+  const id = quotation.id;
+  // The next number comes from the versions themselves, so a failed counter update can never block later sends.
+  const latest = await client.from("quotation_versions").select("version").eq("quotation_id", id).order("version", { ascending: false }).limit(1).maybeSingle();
+  if (latest.error && !isMissingColumn(latest.error) && latest.error.code !== "42P01") return { error: "No se pudo preparar la versión de la cotización. Intente nuevamente." };
+  const versionNumber = Math.max(Number(quotation.version ?? 0), Number(latest.data?.version ?? 0)) + 1;
+  const row = { ...quotation, version: versionNumber };
+  const snapshot = { quotation: row, items: record.items, emitida_en: new Date().toISOString(), ...(origen === "aceptacion" ? { origen } : {}) };
+  const version = await client.from("quotation_versions").insert({ quotation_id: id, version: versionNumber, snapshot, emitida_por: userId }).select("id").single();
+  if (version.error?.code === "23505") return { error: "Se registró otra versión al mismo tiempo. Recargue la página e intente nuevamente." };
+  if (version.error) return { error: isMissingColumn(version.error) || version.error.code === "42P01" ? schemaMissing : "No se pudo registrar la versión de la cotización. Intente nuevamente." };
+  await client.from("quotations").update({ version: versionNumber }).eq("id", id);
+  return { versionNumber, snapshotRecord: toRecord(row, record.items, true) };
 }
 
 // Sending freezes an immutable version (quotation_versions) and e-mails the PDF rendered from it. The
@@ -249,17 +286,9 @@ export async function sendQuotation(_: QuotationActionState, form: FormData): Pr
   let versionNumber: number | undefined;
   let snapshotRecord = record;
   if (record.schemaReady) {
-    // The next number comes from the versions themselves, so a failed counter update can never block later sends.
-    const latest = await client.from("quotation_versions").select("version").eq("quotation_id", id).order("version", { ascending: false }).limit(1).maybeSingle();
-    if (latest.error && !isMissingColumn(latest.error) && latest.error.code !== "42P01") return { error: "No se pudo preparar la versión de la cotización. Intente nuevamente." };
-    versionNumber = Math.max(Number(quotation.version ?? 0), Number(latest.data?.version ?? 0)) + 1;
-    const row = { ...quotation, version: versionNumber };
-    const snapshot = { quotation: row, items: record.items, emitida_en: new Date().toISOString() };
-    const version = await client.from("quotation_versions").insert({ quotation_id: id, version: versionNumber, snapshot, emitida_por: user.id }).select("id").single();
-    if (version.error?.code === "23505") return { error: "Se registró otra versión al mismo tiempo. Recargue la página e intente nuevamente." };
-    if (version.error) return { error: isMissingColumn(version.error) || version.error.code === "42P01" ? schemaMissing : "No se pudo registrar la versión de la cotización. Intente nuevamente." };
-    await client.from("quotations").update({ version: versionNumber }).eq("id", id);
-    snapshotRecord = toRecord(row, record.items, true);
+    const frozen = await freezeVersion(client, user.id, record, "envio");
+    if ("error" in frozen) return { error: frozen.error };
+    ({ versionNumber, snapshotRecord } = frozen);
   }
   try {
     const photos = await loadQuotationPhotos(client, snapshotRecord.details);

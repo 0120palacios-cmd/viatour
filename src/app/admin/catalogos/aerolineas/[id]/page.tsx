@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { PageHeader } from "@/components/admin/ui";
 import { notFound } from "next/navigation";
 import { pageMetadata } from "@/lib/seo";
 import { requireAdmin } from "@/lib/admin";
@@ -19,9 +19,8 @@ export default async function AirlineEntryPage({ params }: { params: Promise<{ i
   const ready = (await listAirlineCatalog(client)).ready;
   const entry = id === "nuevo" ? emptyAirlineEntry() : await getAirlineEntry(client, id);
   if (!entry) notFound();
-  return <div className="space-y-4">
-    <Link href="/admin/catalogos/aerolineas" className="text-brand underline underline-offset-4">Volver al catálogo de aerolíneas</Link>
-    <h1 className="t-h1">{id === "nuevo" ? "Agregar aerolínea" : entry.nombre}</h1>
+  return <>
+    <PageHeader back={{ href: "/admin/catalogos/aerolineas", label: "Catálogo de aerolíneas" }} title={id === "nuevo" ? "Agregar aerolínea" : entry.nombre} />
     {ready ? <AirlineCatalogForm key={entry.updatedAt || "nuevo"} initial={entry} /> : <SchemaNotice />}
-  </div>;
+  </>;
 }

@@ -5,6 +5,7 @@ import { adminSession } from "@/lib/admin";
 import { airlineEntryErrors, airlineEntryToRow, catalogEntryFromStay, hotelEntryErrors, hotelEntryToRow, isMissingTable, presetErrors, presetToRow, sanitizeAirlineEntry, sanitizeHotelEntry, sanitizePreset } from "@/lib/catalog";
 import { sanitizeDetails } from "@/lib/quotation-details";
 import { validUuid } from "@/lib/quotation-validation";
+import { isServiceCatalogKind, sanitizeServiceEntry, serviceEntryErrors, serviceEntryFromQuotation, serviceEntryToRow } from "@/lib/service-catalog";
 
 // Catalog writes from the admin panel. Every call checks the admin session (without redirecting, so a
 // form with unsaved work is kept), sanitizes the input with the same rules as the reads and writes with
@@ -28,7 +29,7 @@ function parse(payload: string): Record<string, unknown> | null {
 }
 
 function refresh(...paths: string[]) {
-  for (const path of ["/admin/catalogos/hoteles", "/admin/catalogos/aerolineas", "/admin/cotizaciones/nuevo", ...paths]) revalidatePath(path);
+  for (const path of ["/admin/catalogos/hoteles", "/admin/catalogos/aerolineas", "/admin/catalogos/servicios", "/admin/cotizaciones/nuevo", ...paths]) revalidatePath(path);
 }
 
 type DbError = { code?: string; message?: string } | null | undefined;
@@ -136,4 +137,68 @@ export async function saveFarePreset(payload: string): Promise<CatalogActionStat
   if (saved.error || !saved.data) return failure(saved.error, duplicate, "No se pudo crear la tarifa.");
   refresh(`/admin/catalogos/aerolineas/${preset.airlineId}`);
   return { success: "Tarifa agregada.", id: String(saved.data.id), updatedAt: String(saved.data.updated_at) };
+}
+
+// ----- services (docs/sql/service_catalog_v7.sql) -----
+
+const serviceSchemaMissing = "El catálogo de servicios aún no existe en la base de datos. Ejecute docs/sql/service_catalog_v7.sql en Supabase.";
+const serviceDuplicate = "Ya existe un servicio de ese tipo con el mismo nombre y operador. Búsquelo en el catálogo.";
+function serviceFailure(error: DbError, fallback: string): CatalogActionState {
+  if (isMissingTable(error)) return { error: serviceSchemaMissing };
+  if (error?.code === "23505") return { error: serviceDuplicate };
+  return { error: fallback };
+}
+
+export async function saveServiceEntry(payload: string): Promise<CatalogActionState> {
+  const session = await adminSession();
+  if (!session) return { error: sessionExpired };
+  const raw = parse(payload);
+  if (!raw || !isServiceCatalogKind(raw.tipo)) return { error: "Datos del servicio inválidos." };
+  const entry = sanitizeServiceEntry(raw);
+  const errors = serviceEntryErrors(entry);
+  if (errors.length) return { error: errors.join(" ") };
+  const row = serviceEntryToRow(entry);
+  if (entry.id) {
+    let query = session.client.from("service_catalog").update(row).eq("id", entry.id);
+    if (entry.updatedAt) query = query.eq("updated_at", entry.updatedAt);
+    const saved = await query.select("id,updated_at").maybeSingle();
+    if (saved.error) return serviceFailure(saved.error, "No se pudo guardar el servicio. Revise los datos e intente nuevamente.");
+    if (!saved.data) return { error: conflictMessage, conflict: true };
+    refresh(`/admin/catalogos/servicios/${entry.id}`);
+    return { success: "Servicio guardado.", id: entry.id, updatedAt: String(saved.data.updated_at) };
+  }
+  const saved = await session.client.from("service_catalog").insert(row).select("id,updated_at").single();
+  if (saved.error || !saved.data) return serviceFailure(saved.error, "No se pudo crear el servicio. Revise los datos e intente nuevamente.");
+  refresh();
+  return { success: "Servicio agregado al catálogo.", id: String(saved.data.id), updatedAt: String(saved.data.updated_at) };
+}
+
+// "Guardar en el catálogo" from a transfer, tour… or ferry typed in a quotation. Only reusable data goes
+// to the catalog (no dates, legs, passengers or prices); the quotation itself is not changed.
+export async function saveServiceFromQuotation(componentPayload: string): Promise<CatalogActionState> {
+  const session = await adminSession();
+  if (!session) return { error: sessionExpired };
+  const raw = parse(componentPayload);
+  if (!raw || !isServiceCatalogKind(raw.tipo)) return { error: "Datos del servicio inválidos." };
+  const tipo = raw.tipo;
+  // The same sanitizing as a saved quotation: build a one-component package and read it back.
+  const details = sanitizeDetails({ paquete: { componentes: [raw] } });
+  const component = details.paquete.componentes[0];
+  if (!component) return { error: "Datos del servicio inválidos." };
+  const entry = serviceEntryFromQuotation(tipo, { service: component.servicio, ferry: component.ferry, nombre: component.titulo });
+  if (serviceEntryErrors(entry).length) return { error: tipo === "ferry" ? "Indique la naviera en el trayecto o un título para el servicio antes de guardarlo." : "Escriba la descripción del servicio antes de guardarlo en el catálogo." };
+  const saved = await session.client.from("service_catalog").insert(serviceEntryToRow(entry)).select("id,updated_at").single();
+  if (saved.error || !saved.data) return serviceFailure(saved.error, "No se pudo guardar el servicio en el catálogo.");
+  refresh();
+  return { success: "Guardado en el catálogo. Complete sus datos en Catálogos cuando pueda.", id: String(saved.data.id), updatedAt: String(saved.data.updated_at) };
+}
+
+export async function setServiceActive(id: string, active: boolean): Promise<CatalogActionState> {
+  const session = await adminSession();
+  if (!session) return { error: sessionExpired };
+  if (!validUuid(id)) return { error: "Registro inválido." };
+  const saved = await session.client.from("service_catalog").update({ activo: active }).eq("id", id).select("id,updated_at").maybeSingle();
+  if (saved.error || !saved.data) return serviceFailure(saved.error, "No se pudo cambiar el estado del servicio.");
+  refresh(`/admin/catalogos/servicios/${id}`);
+  return { success: active ? "Servicio activado." : "Servicio desactivado. Ya no aparece al cotizar; las cotizaciones existentes no cambian.", id, updatedAt: String(saved.data.updated_at) };
 }

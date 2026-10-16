@@ -6,6 +6,7 @@ import { formatDuration } from "@/lib/flight-itinerary";
 import { AreaField, Field, IconButton, inputClass, Notice, Section, SelectField, SmallButton, TextField } from "./fields";
 import { InclusionsEditor } from "./inclusions-editor";
 import { cn } from "cn";
+import { FerryCatalogTools } from "./service-catalog-tools";
 
 type Props = { details: QuotationDetails; update: (change: (details: QuotationDetails) => QuotationDetails) => void; sectionId?: string };
 
@@ -44,6 +45,7 @@ export function FerrySection({ details, update, sectionId = "ferry" }: Props) {
   return <Section id={sectionId} title="Ferry" description="Trayectos, clase, equipaje y condiciones confirmadas con la naviera. Para un viaje solo de pasajeros basta con naviera, puertos, fecha y hora."
     actions={<><SmallButton onClick={() => set({ legs: [...legs, emptyFerryLeg(legs.length ? "tramo" : "ida")] })}><Plus size={16} strokeWidth={2} aria-hidden="true" />Agregar trayecto</SmallButton>{legs.length ? <SmallButton onClick={addReturn}><ArrowLeftRight size={16} strokeWidth={2} aria-hidden="true" />Agregar regreso</SmallButton> : null}</>}>
     <div className="space-y-4">
+      <FerryCatalogTools ferry={ferry} onChange={next => update(current => ({ ...current, ferry: next }))} />
       {legs.map((leg, index) => <LegEditor key={leg.id} leg={leg} index={index} onChange={next => set({ legs: legs.map(item => item.id === leg.id ? next : item) })} onRemove={() => set({ legs: legs.filter(item => item.id !== leg.id) })} />)}
       {!legs.length ? <Notice>Agregue el primer trayecto en ferry.</Notice> : null}
       <div className="grid gap-3 sm:grid-cols-3">

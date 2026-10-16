@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { CalendarDays, FilePlus2, Mail, MapPin, MessageCircle, Phone, Search, Users } from "lucide-react";
+import { CalendarDays, FilePlus2, Mail, MapPin, MessageCircle, Phone, Users } from "lucide-react";
+import { EmptyState, FilterNav, PageHeader, Pagination, SearchForm, StatusBadge, type Tone } from "@/components/admin/ui";
 import { requireAdmin } from "@/lib/admin";
 import { pageMetadata } from "@/lib/seo";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,7 @@ import { customerWhatsappHref, leadAge, leadContact, leadGreeting, leadServices,
 export const metadata = pageMetadata("/admin/leads", "viatour | Leads", "Bandeja privada de solicitudes de cotización de viatour.");
 
 const pageSize = 25;
-const stateClass: Record<string, string> = { nuevo: "bg-brand-tint text-brand-deep", contactado: "bg-surface text-ink", ganado: "bg-surface text-success", perdido: "bg-surface text-error", cerrado: "bg-surface text-ink-soft" };
+const stateTone: Record<string, Tone> = { nuevo: "info", contactado: "neutral", ganado: "success", perdido: "danger", cerrado: "muted" };
 const serviceLabel = (value: string) => ({ destino: "Destino", descubrimiento: "Descubrir", contacto: "Contacto" } as Record<string, string>)[value] ?? value;
 
 type Search = { estado?: string; servicio?: string; q?: string; pagina?: string };
@@ -44,27 +45,22 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
   const total = result.count ?? 0;
 
   return <div className="space-y-8">
-    <div className="flex flex-wrap items-start justify-between gap-4"><div><h1 className="t-h1">Leads</h1><p className="mt-2 text-ink-soft">Solicitudes de cotización capturadas en el sitio, de la más reciente a la más antigua.</p></div></div>
-    <form role="search" className="flex flex-col gap-3 sm:flex-row" action="/admin/leads">
-      {estado && <input type="hidden" name="estado" value={estado} />}{servicio && <input type="hidden" name="servicio" value={servicio} />}
-      <label className="sr-only" htmlFor="lead-search">Buscar leads</label>
-      <input id="lead-search" name="q" defaultValue={search} placeholder="Buscar por referencia, nombre, teléfono, correo o destino" className="h-12 w-full rounded-btn border border-line bg-canvas px-3 text-ink focus-visible:border-brand" />
-      <Button type="submit" variant="ghost"><Search size={18} strokeWidth={1.75} aria-hidden="true" />Buscar</Button>
-    </form>
+    <PageHeader title="Leads" description="Solicitudes de cotización capturadas en el sitio, de la más reciente a la más antigua. Escriba al cliente y conviértalas en cotización." />
     <div className="space-y-3">
-      <nav aria-label="Filtrar por estado" className="flex flex-wrap gap-2">{[["", "Todos"], ...leadStates.map(value => [value, leadStateLabels[value]])].map(([value, label]) => <Link key={value || "all"} href={filterHref(current, { estado: value })} aria-current={estado === value ? "page" : undefined} className="t-small rounded-btn border border-line px-4 py-2 text-brand aria-[current=page]:bg-brand-tint">{label}</Link>)}</nav>
-      <nav aria-label="Filtrar por servicio" className="flex flex-wrap gap-2">{["", "Vuelos", "Hoteles", "Paquetes", "Paquete", "Viaje a medida", "destino", "descubrimiento", "contacto"].map(value => <Link key={value || "all"} href={filterHref(current, { servicio: value })} aria-current={servicio === value ? "page" : undefined} className="t-small rounded-btn border border-line px-3 py-2 text-ink-soft aria-[current=page]:border-brand aria-[current=page]:text-brand">{value ? serviceLabel(value) : "Todos los servicios"}</Link>)}</nav>
+      <SearchForm id="lead-search" action="/admin/leads" placeholder="Buscar por referencia, nombre, teléfono, correo o destino" defaultValue={search} hidden={{ estado, servicio }} />
+      <FilterNav label="Filtrar por estado" items={[["", "Todos"], ...leadStates.map(value => [value, leadStateLabels[value]])].map(([value, label]) => ({ href: filterHref(current, { estado: value }), label, current: estado === value }))} />
+      <FilterNav label="Filtrar por servicio" items={["", "Vuelos", "Hoteles", "Paquetes", "Paquete", "Viaje a medida", "destino", "descubrimiento", "contacto"].map(value => ({ href: filterHref(current, { servicio: value }), label: value ? serviceLabel(value) : "Todos los servicios", current: servicio === value }))} />
     </div>
-    <p className="t-small text-ink-soft">{total} {total === 1 ? "lead" : "leads"} · página {page}</p>
-    {!rows.length ? <p className="rounded-card border border-line p-6">No hay leads en esta vista.</p> : <div className="space-y-4">{rows.map(row => {
+    <p className="t-small text-ink-soft" aria-live="polite">{total} {total === 1 ? "lead" : "leads"}</p>
+    {!rows.length ? <EmptyState title="No hay leads en esta vista" description={estado || servicio || search ? "Pruebe con otros filtros." : "Las solicitudes del sitio aparecerán aquí."} /> : <div className="space-y-4">{rows.map(row => {
       const contact = leadContact(row);
       const name = String(row.nombre ?? "").trim();
       const whatsapp = contact.telefono ? customerWhatsappHref(contact.telefono, leadGreeting(name, contact.referencia)) : "";
       const state = String(row.estado ?? "nuevo");
       const origin = [contact.origen.pagina && `Página: ${contact.origen.pagina}`, contact.origen.utm_source && `Fuente: ${contact.origen.utm_source}${contact.origen.utm_campaign ? ` / ${contact.origen.utm_campaign}` : ""}`, contact.origen.referrer && `Referencia web: ${contact.origen.referrer}`].filter(Boolean).join(" · ");
-      return <article key={String(row.id)} className="rounded-card border border-line bg-canvas p-4 shadow-sm sm:p-6">
+      return <article key={String(row.id)} className="rounded-card border border-line bg-canvas p-4 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0 space-y-1"><div className="flex flex-wrap items-center gap-2"><h2 className="t-h3 break-words">{name || "Sin nombre"}</h2><span className={`t-small rounded-btn px-3 py-1 ${stateClass[state] ?? stateClass.cerrado}`}>{leadStateLabels[state as LeadState] ?? state}</span>{contact.referencia && <span className="t-small rounded-btn border border-line px-3 py-1 font-semibold tracking-wide">{contact.referencia}</span>}</div><p className="t-small text-ink-soft">{serviceLabel(String(row.servicio ?? ""))} · {leadAge(String(row.created_at))} · {new Intl.DateTimeFormat("es-HN", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Tegucigalpa" }).format(new Date(String(row.created_at)))}</p></div>
+          <div className="min-w-0 space-y-1"><div className="flex flex-wrap items-center gap-2"><h2 className="t-h3 break-words">{name || "Sin nombre"}</h2><StatusBadge tone={stateTone[state] ?? "muted"}>{leadStateLabels[state as LeadState] ?? state}</StatusBadge>{contact.referencia && <span className="t-small rounded-btn border border-line px-3 py-1 font-semibold tracking-wide">{contact.referencia}</span>}</div><p className="t-small text-ink-soft">{serviceLabel(String(row.servicio ?? ""))} · {leadAge(String(row.created_at))} · {new Intl.DateTimeFormat("es-HN", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Tegucigalpa" }).format(new Date(String(row.created_at)))}</p></div>
           <div className="flex flex-wrap gap-2">{whatsapp && <Button asChild variant="whatsapp"><a href={whatsapp} target="_blank" rel="noopener noreferrer"><MessageCircle size={20} strokeWidth={1.75} aria-hidden="true" />Escribir al cliente</a></Button>}<Button asChild variant="ghost"><Link href={`/admin/cotizaciones/nuevo?lead=${row.id}`}><FilePlus2 size={18} strokeWidth={1.75} aria-hidden="true" />Crear cotización</Link></Button></div>
         </div>
         <dl className="mt-4 grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -76,6 +72,6 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
         <div className="mt-4 flex flex-wrap items-end justify-between gap-4 border-t border-line pt-4"><LeadStatusForm id={String(row.id)} estado={state} motivo={String(row.motivo_perdida ?? "")} /><details className="t-small"><summary className="cursor-pointer text-brand">Ver datos completos</summary><pre className="mt-3 max-w-full overflow-auto rounded-btn bg-surface p-4">{JSON.stringify(row.payload, null, 2)}</pre></details></div>
       </article>;
     })}</div>}
-    <nav aria-label="Páginas de leads" className="flex gap-4">{page > 1 && <Link className="text-brand underline underline-offset-4" href={filterHref(current, { pagina: String(page - 1) })}>Anterior</Link>}{page * pageSize < total && <Link className="text-brand underline underline-offset-4" href={filterHref(current, { pagina: String(page + 1) })}>Siguiente</Link>}</nav>
+    <Pagination label="Páginas de leads" summary={`Página ${page} de ${Math.max(1, Math.ceil(total / pageSize))}`} previous={page > 1 ? filterHref(current, { pagina: String(page - 1) }) : undefined} next={page * pageSize < total ? filterHref(current, { pagina: String(page + 1) }) : undefined} />
   </div>;
 }

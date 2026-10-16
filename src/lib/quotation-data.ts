@@ -39,10 +39,11 @@ export async function getAdminQuotation(client: SupabaseClient, id: string): Pro
   return toRecord(quotationResult.data as unknown as Quotation, items, schemaReady);
 }
 
-export type QuotationVersion = { id: string; version: number; emitida_en: string };
+// origen is "aceptacion" for a version frozen when an unsent quotation was accepted; absent for e-mailed ones.
+export type QuotationVersion = { id: string; version: number; emitida_en: string; origen?: string | null };
 
 export async function listQuotationVersions(client: SupabaseClient, id: string): Promise<QuotationVersion[]> {
-  const result = await client.from("quotation_versions").select("id,version,emitida_en").eq("quotation_id", id).order("version", { ascending: false }).limit(50);
+  const result = await client.from("quotation_versions").select("id,version,emitida_en,origen:snapshot->>origen").eq("quotation_id", id).order("version", { ascending: false }).limit(50);
   return result.error ? [] : (result.data ?? []) as QuotationVersion[];
 }
 
