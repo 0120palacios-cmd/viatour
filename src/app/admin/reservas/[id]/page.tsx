@@ -6,6 +6,7 @@ import { getTravel } from "@/lib/travel-data";
 import { getReceipts } from "@/lib/receipt-data";
 import { ReceiptAction } from "@/components/admin/receipt-action";
 import { SendItinerary } from "@/components/admin/send-itinerary";
+import { SendItineraryTest } from "@/components/admin/send-itinerary-test";
 import { PurgeTravel } from "@/components/admin/purge-travel";
 import { ticketingLabels } from "@/lib/travel-operations";
 import { ReservationServices } from "@/components/reservation-services";
@@ -21,10 +22,14 @@ import { InvoiceActions, InvoiceCreateForm, PaymentForm } from "@/components/adm
 import { noindexMetadata } from "@/lib/seo";
 import { ReservationDocuments } from "@/components/admin/reservation-documents";
 import { listReservationDocuments, portalDocsBucket } from "@/lib/portal-documents";
+import { readThread, unreadFor } from "@/lib/reservation-messages";
+import { ReservationMessages } from "@/components/admin/reservation-messages";
+import { testRecipients } from "@/lib/test-recipients";
+import { AccessSurnameForm } from "@/components/admin/access-surname-form";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) { return noindexMetadata(`viatour | Reserva ${(await params).id}`, "Detalle privado de una reserva de viatour."); }
 
-const sections = [["datos", "Datos y servicios"], ["documentos", "Documentos"], ["pagos", "Pagos"], ["facturas", "Facturas"]] as const;
+const sections = [["mensajes", "Mensajes"], ["envio", "Cliente y envíos"], ["datos", "Datos y servicios"], ["documentos", "Documentos"], ["pagos", "Pagos"], ["facturas", "Facturas"]] as const;
 
 // One reservation: a summary column (balance, dates, customer, origin) beside the working sections,
 // which keep their own forms and actions.
@@ -44,6 +49,7 @@ export default async function ReservationDetailPage({ params }: { params: Promis
   const otherCurrency = record.payments.some(payment => payment.moneda !== reservation.moneda);
   // Listed with the admin session; returns nothing until docs/sql/portal_docs_admin.sql has been run.
   const documents = await listReservationDocuments(client.storage.from(portalDocsBucket), reservation.id).catch(() => []);
+  const thread = await readThread(client, id).catch(() => ({ available: false, messages: [] }));
 
   const summary = <div className="space-y-4">
     <section aria-labelledby="balance-title" className="rounded-card border border-line bg-canvas p-4 sm:p-6">
@@ -78,14 +84,15 @@ export default async function ReservationDetailPage({ params }: { params: Promis
   </div>;
 
   return <>
-    <PageHeader back={{ href: "/admin/reservas", label: "Reservas" }} eyebrow={<span className="inline-flex items-center gap-2">{reservation.codigo}<StatusBadge tone={reservationTone[reservation.estado]}>{reservationStatusLabel(reservation.estado)}</StatusBadge></span>} title={`${reservation.cliente_nombre} · ${reservation.destino}`} />
-    <section className="space-y-4 rounded-panel border border-line bg-canvas p-4"><h2 className="t-h3">{reservation.prerreserva ? "Prerreservación" : "Reserva"}</h2><p>Proveedor: {reservation.supplier_status ?? "Pendiente de verificar"}</p><p className="t-small">Asesor responsable: {reservation.agente_id}</p><div className="flex flex-wrap gap-4"><a className={textLink} href={`/api/admin/reservas/${id}/pdf`}>Descargar PDF de reservación</a><a className={textLink} href="/mi-reserva" target="_blank" rel="noreferrer">Abrir acceso al portal</a><a className={textLink} href="#facturas">Generar factura</a></div>{reservation.prerreserva && reservation.estado === "pendiente" ? <PromoteReservationForm id={id} /> : null}<p className="t-small text-ink-soft">Acceso del cliente: referencia {reservation.codigo}, apellido registrado {reservation.cliente_apellido || "pendiente"} y código de verificación por correo.</p></section>
+    <PageHeader back={{ href: "/admin/reservas", label: "Reservas" }} eyebrow={<span className="inline-flex items-center gap-2">{reservation.codigo}<StatusBadge tone={reservationTone[reservation.estado]}>{reservationStatusLabel(reservation.estado)}</StatusBadge>{unreadFor(thread, "agencia") ? <a href="#mensajes" className="t-small rounded-btn bg-brand px-2 text-white">{unreadFor(thread, "agencia")} mensajes sin leer</a> : null}</span>} title={`${reservation.cliente_nombre} · ${reservation.destino}`} />
+    <section className="space-y-4 rounded-panel border border-line bg-canvas p-4"><h2 className="t-h3">{reservation.prerreserva ? "Prerreservación" : "Reserva"}</h2><p>Proveedor: {reservation.supplier_status ?? "Pendiente de verificar"}</p><p className="t-small">Asesor responsable: {reservation.agente_id}</p><div className="flex flex-wrap gap-4"><a className={textLink} href={`/api/admin/reservas/${id}/pdf`}>Descargar PDF de reservación</a><a className={textLink} href={`/admin/reservas/${id}/client-preview`} target="_blank" rel="noopener noreferrer">Ver como cliente</a><a className={textLink} href={`/admin/reservas/${id}/correo`} target="_blank" rel="noopener noreferrer">Vista previa de correos</a><a className={textLink} href="#facturas">Generar factura</a></div>{reservation.prerreserva && reservation.estado === "pendiente" ? <PromoteReservationForm id={id} /> : null}<p className="t-small text-ink-soft">Acceso del cliente: referencia {reservation.codigo}, apellido registrado {reservation.cliente_apellido || "pendiente"} y código de verificación por correo.</p>{reservation.cliente_apellido?.trim() ? null : <AccessSurnameForm id={id} />}</section>
     <nav aria-label="Secciones de la reserva" className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0"><ul className="chip-row flex gap-2">{sections.map(([anchor, label]) => <li key={anchor}><a href={`#${anchor}`} className="t-small inline-flex min-h-10 items-center whitespace-nowrap rounded-btn border border-line bg-canvas px-3 text-ink-soft hover:border-brand hover:text-brand">{label}</a></li>)}</ul></nav>
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
       <div className="order-2 min-w-0 space-y-6 xl:order-1">
+        <ReservationMessages reservationId={id} code={reservation.codigo} customer={reservation.cliente_nombre} thread={thread} />
         {reservation.accepted_snapshot ? <section className="space-y-4 rounded-panel border border-line bg-canvas p-6"><h2 className="t-h3">Servicios de la versión aceptada</h2><ReservationServices value={reservation.accepted_snapshot.quotation.detalles} />{reservation.quotation_id ? <a className={textLink} href={`/api/admin/cotizaciones/${reservation.quotation_id}/pdf?version=${reservation.accepted_snapshot.quotation.version}&inline=1`}>Ver versión aceptada</a> : null}</section> : null}
         <section className="rounded-panel border border-line bg-canvas p-6"><h2 className="t-h3">Itinerario de viaje</h2><details className="mt-4"><summary className="min-h-11 cursor-pointer text-brand">Vista previa del itinerario guardado</summary><iframe loading="lazy" title="Vista previa del itinerario" className="mt-4 h-[720px] w-full rounded-card border border-line" src={`/api/admin/reservas/${id}/itinerario?inline=1`}/></details><div className="mt-4 flex flex-wrap gap-4"><a className={textLink} href={`/api/admin/reservas/${id}/itinerario`}>Descargar itinerario</a><a className={textLink} href={`/api/admin/reservas/${id}/itinerario?format=ics`}>Descargar calendario</a><a className={textLink} href="#pasajeros">Completar pasajeros y emisión</a></div><p className="t-small mt-4 text-ink-soft">Guarde el expediente antes de descargar. El documento no incluye precios ni datos de identificación.</p></section>
-        <section className="rounded-panel border border-line bg-canvas p-6"><h2 className="t-h3">Envío de documentos</h2><SendItinerary id={id} email={reservation.cliente_email} enabled={process.env.TRAVEL_EMAIL_ENABLED === "true" && !!travel.data}/><ul className="mt-4 space-y-2">{(deliveries.data??[]).map(d=><li key={d.id} className="t-small">{d.receipt_id ? "Recibo" : `Itinerario · Revisión ${d.revision}`} · {d.status} · {formatDay(d.created_at)}{d.provider_id?" · Confirmación del proveedor registrada":""}</li>)}</ul></section>
+        <section id="envio" className="scroll-mt-6 rounded-panel border border-line bg-canvas p-6"><h2 className="t-h3">Experiencia del cliente y envíos</h2><p className="t-small mt-1 text-ink-soft">Revise lo que verá el cliente antes de enviar. Los envíos al cliente requieren TRAVEL_EMAIL_ENABLED y su autorización en cada envío.</p><div className="mt-3 flex flex-wrap gap-4"><a className={textLink} href={`/admin/reservas/${id}/client-preview`} target="_blank" rel="noopener noreferrer">Ver como cliente</a><a className={textLink} href={`/admin/reservas/${id}/correo`} target="_blank" rel="noopener noreferrer">Vista previa del correo de itinerario</a><a className={textLink} href={`/api/admin/reservas/${id}/itinerario?inline=1`} target="_blank" rel="noopener noreferrer">Itinerario PDF</a><a className={textLink} href={`/api/admin/reservas/${id}/pdf?inline=1`} target="_blank" rel="noopener noreferrer">Confirmación de reserva PDF</a></div><SendItineraryTest id={id} recipients={testRecipients()}/><SendItinerary id={id} email={reservation.cliente_email} enabled={process.env.TRAVEL_EMAIL_ENABLED === "true" && !!travel.data}/><ul className="mt-4 space-y-2">{(deliveries.data??[]).map(d=><li key={d.id} className="t-small">{d.receipt_id ? "Recibo" : `Itinerario · Revisión ${d.revision}`} · {d.status} · {formatDay(d.created_at)}{d.provider_id?" · Confirmación del proveedor registrada":""}</li>)}</ul></section>
         <TravelEditor id={id} initial={travel.privateData} revision={travel.revision} available={travel.available} hasFlights={travelServices(reservation.accepted_snapshot?.quotation.detalles).vuelos.journeys.some(j=>j.segmentos.length)} />
         {travel.privateData ? <PurgeTravel id={id}/> : null}
         {history.data?.length ? <details className="rounded-panel border border-line bg-canvas p-6"><summary className="min-h-11 cursor-pointer font-semibold">Historial del expediente</summary><ol className="space-y-4 border-l border-line pl-4">{history.data.map(event=><li key={event.revision}><p className="font-semibold">Revisión {event.revision} · {ticketingLabels[event.public_data.status as keyof typeof ticketingLabels]??"Expediente actualizado"}</p><p className="t-small text-ink-soft">{formatDay(event.created_at)} · Responsable: {event.changed_by}</p></li>)}</ol></details> : null}
@@ -108,3 +115,6 @@ export default async function ReservationDetailPage({ params }: { params: Promis
     </div>
   </>;
 }
+
+
+

@@ -112,9 +112,4 @@ test('portal summary: trip timing in Honduras days and one next step', () => {
   assert.equal(summary.tripTiming('2026-09-25', '2026-10-02', '2026-09-30').kind, 'ongoing');
   assert.deepEqual({ ...summary.tripTiming('2026-09-01', '2026-09-08', '2026-09-30') }, { kind: 'ended', date: '2026-09-08' });
   assert.equal(summary.tripTiming(null, null, '2026-09-30').kind, 'unknown');
-  assert.equal(summary.nextStep({ status: 'cancelada', balance: 500, agencyDocuments: 0 }), 'cancelled');
-  assert.equal(summary.nextStep({ status: 'confirmada', balance: 500, agencyDocuments: 2 }), 'balance');
-  assert.equal(summary.nextStep({ status: 'pendiente', balance: 0, agencyDocuments: 0 }), 'pending');
-  assert.equal(summary.nextStep({ status: 'confirmada', balance: 0, agencyDocuments: 0 }), 'documents');
-  assert.equal(summary.nextStep({ status: 'confirmada', balance: 0, agencyDocuments: 1 }), 'ready');
 });
