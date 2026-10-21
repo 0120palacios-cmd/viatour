@@ -46,7 +46,7 @@ function DocumentList({ documents, empty, locale, sentOn, open }: { documents: P
   </li>)}</ul>;
 }
 
-async function PortalView({ reservationId }: { reservationId: string }) {
+export async function PortalView({ reservationId }: { reservationId: string }) {
   const t = await getTranslations("portal"); const v4 = await getTranslations("v4.portal"); const locale = await getLocale();
   const client = createAdminClient();
   const record = await getPortalReservation(client, reservationId);
@@ -58,7 +58,9 @@ async function PortalView({ reservationId }: { reservationId: string }) {
   const agencyDocuments = documents.filter(document => document.source === "agency");
   const customerDocuments = documents.filter(document => document.source === "customer");
   const paid = record.payments.filter(payment => payment.moneda === reservation.moneda).reduce((sum, payment) => sum + Number(payment.monto), 0);
-  const balance = Math.max(0, Number(reservation.total) - paid);
+  const paidInvoice = record.invoices.find(invoice => invoice.estado === "pagada");
+  const financialTotal = paidInvoice ? Number(paidInvoice.total) : Number(reservation.total);
+  const balance = Math.max(0, financialTotal - paid);
   const whatsappUrl = `https://wa.me/${siteConfig.whatsappNumber}?text=${encodeURIComponent(v4("whatsappMessage", { code: reservation.codigo }))}`;
   const timing = tripTiming(reservation.fecha_inicio, reservation.fecha_fin, hondurasToday());
   const timingLabel = timing.kind === "upcoming" ? v4("daysLeft", { days: timing.days }) : timing.kind === "today" ? v4("today") : timing.kind === "ongoing" ? v4("ongoing") : timing.kind === "ended" ? v4("ended", { date: dateLabel(timing.date, locale, "") }) : null;
@@ -77,7 +79,7 @@ async function PortalView({ reservationId }: { reservationId: string }) {
     <section aria-label={t("status")} className="grid gap-px overflow-hidden rounded-panel border border-line bg-line sm:grid-cols-3">
       <div className="space-y-2 bg-canvas p-5 sm:p-6"><p className="t-small text-ink-soft">{v4("dates")}</p><p className="flex items-start gap-2 font-semibold"><CalendarDays size={18} className="mt-0.5 shrink-0 text-brand" strokeWidth={1.75} aria-hidden="true" />{dates}</p></div>
       <div className="space-y-2 bg-canvas p-5 sm:p-6"><p className="t-small text-ink-soft">{t("status")}</p><StatusProgress status={reservation.estado} /></div>
-      <div className="space-y-1 bg-canvas p-5 sm:p-6"><p className="t-small text-ink-soft">{v4("balanceDue")}</p><p className={`t-h2 ${balance <= 0 ? "text-success" : "text-brand-deep"}`}>{balance <= 0 ? t("paid") : formatMoney(balance, reservation.moneda)}</p><p className="t-small font-normal text-ink-soft">{t("total")}: {formatMoney(Number(reservation.total), reservation.moneda)}</p></div>
+      <div className="space-y-1 bg-canvas p-5 sm:p-6"><p className="t-small text-ink-soft">{v4("balanceDue")}</p><p className={`t-h2 ${balance <= 0 ? "text-success" : "text-brand-deep"}`}>{balance <= 0 ? t("paid") : formatMoney(balance, reservation.moneda)}</p><p className="t-small font-normal text-ink-soft">{t("total")}: {formatMoney(financialTotal, reservation.moneda)}</p></div>
     </section>
     <section aria-labelledby="portal-next-heading" className="flex flex-col gap-4 rounded-panel border border-brand/30 bg-brand-tint p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
       <div className="space-y-1"><h2 id="portal-next-heading" className="t-small font-semibold text-brand-deep">{v4("nextStep")}</h2><p className="t-body text-ink">{stepText}</p></div>
