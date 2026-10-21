@@ -1,4 +1,4 @@
-// What the customer sees first in Mi reserva: where the trip stands in time and the one next step.
+// Where a trip stands in time (Mi viaje countdown and trip stages; the next step lives in trip-view.ts).
 // Pure functions so they can be tested without a database.
 
 export type TripTiming = { kind: "upcoming"; days: number } | { kind: "today" } | { kind: "ongoing" } | { kind: "ended"; date: string } | { kind: "unknown" };
@@ -19,13 +19,4 @@ export function tripTiming(start: string | null, end: string | null, today: stri
   if (days === 0) return { kind: "today" };
   const last = end && datePattern.test(end) ? end : start;
   return dayNumber(last) >= dayNumber(today) ? { kind: "ongoing" } : { kind: "ended", date: last };
-}
-
-// One step, in priority order: a cancelled trip, money owed, confirmation, documents, then preparation.
-export function nextStep({ status, balance, agencyDocuments }: { status: string; balance: number; agencyDocuments: number }): NextStep {
-  if (status === "cancelada") return "cancelled";
-  if (balance > 0) return "balance";
-  if (status === "pendiente") return "pending";
-  if (agencyDocuments === 0 && status !== "completada") return "documents";
-  return "ready";
 }
