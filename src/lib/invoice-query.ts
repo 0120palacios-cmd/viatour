@@ -5,7 +5,7 @@
 // exist and fill the rest with empty values; creating an invoice still requires the SQL.
 
 export const invoiceBaseFields = "id,reservation_id,numero,cliente_nombre,total,moneda,fecha_emision,fecha_vencimiento,estado,notas,created_at,updated_at";
-export const invoiceFields = `${invoiceBaseFields},cliente_email,cliente_telefono,items`;
+export const invoiceFields = `${invoiceBaseFields},cliente_email,cliente_telefono,items,commercial_snapshot`;
 
 // A plain shape: the Supabase client cannot type a select whose column list is chosen at runtime.
 type QueryResult = { data: unknown; error: { code?: string; message?: string } | null };
@@ -19,7 +19,8 @@ function complete(row: unknown) {
 }
 
 export async function selectInvoices(query: (fields: string) => PromiseLike<QueryResult>): Promise<QueryResult> {
-  const full = await query(invoiceFields);
+  let full = await query(invoiceFields);
+  if (isMissingInvoiceColumn(full.error)) full = await query(`${invoiceBaseFields},cliente_email,cliente_telefono,items`);
   if (!isMissingInvoiceColumn(full.error)) return { data: full.data, error: full.error };
   const base = await query(invoiceBaseFields);
   if (base.error) return { data: null, error: base.error };

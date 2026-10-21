@@ -1,4 +1,9 @@
+import { travelServices } from "@/lib/travel-services";
 import type { Metadata } from "next";
+import { getTravel } from "@/lib/travel-data";
+import { TravelSummary } from "@/components/travel-summary";
+import { getReceipts } from "@/lib/receipt-data";
+import { ReservationServices } from "@/components/reservation-services";
 import { cookies } from "next/headers";
 import { useTranslations } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
@@ -47,6 +52,8 @@ async function PortalView({ reservationId }: { reservationId: string }) {
   const record = await getPortalReservation(client, reservationId);
   if (!record) return <AccessPanel />;
   const { reservation } = record;
+  const travel = await getTravel(client, reservationId);
+  const receipts = await getReceipts(client, reservationId);
   const documents = await getPortalDocuments(client, reservationId);
   const agencyDocuments = documents.filter(document => document.source === "agency");
   const customerDocuments = documents.filter(document => document.source === "customer");
@@ -61,6 +68,7 @@ async function PortalView({ reservationId }: { reservationId: string }) {
 
   return <div className="space-y-8">
     <PortalSignedIn />
+    <section className="space-y-3 rounded-panel border border-line bg-canvas p-6"><h2 className="t-h2">Mis reservaciones</h2><p>{reservation.prerreserva ? "Prerreservación" : "Reserva"} · {reservation.codigo}</p><p className="t-small text-ink-soft">Confirmación del proveedor: {({ pendiente: "pendiente", parcial: "parcial", confirmada: "confirmada", emitida: "boletos emitidos" } as Record<string, string>)[reservation.supplier_status ?? "pendiente"]}. Este acceso muestra únicamente la reservación verificada.</p><a className="inline-flex min-h-12 items-center font-semibold text-brand underline" href="/api/mi-reserva/pdf">Ver o descargar PDF de reservación</a></section>
     {/* The trip first: destination, when, status and money in one band, then the single next step. */}
     <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
       <div className="min-w-0"><p className="t-small text-brand">{v4("reservationLabel", { code: reservation.codigo })}</p><h1 className="t-h1 mt-2 break-words">{reservation.destino}</h1>{timingLabel && <p className="t-body-lg mt-2 text-ink-soft">{timingLabel}</p>}</div>
@@ -79,8 +87,11 @@ async function PortalView({ reservationId }: { reservationId: string }) {
 
     <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
       <div className="min-w-0 space-y-8">
+        {travel.data?.reviewed ? <TravelSummary data={travel.data} cancelled={reservation.estado === "cancelada"} hasFlights={travelServices(reservation.accepted_snapshot?.quotation?.detalles).vuelos.journeys.some(j=>j.segmentos.length)} /> : null}
+        {receipts.length ? <section className={panel}><h2 className="t-h2">Recibos</h2><ul className="mt-4 space-y-4">{receipts.map(receipt=><li key={receipt.id}><a className={linkClass} href={`/api/mi-reserva/recibos/${receipt.id}`}>Descargar {receipt.number}</a></li>)}</ul></section> : null}
         <section className={panel} aria-labelledby="portal-items-heading">
           <h2 id="portal-items-heading" className="t-h2">{t("tripDetail")}</h2>
+          {reservation.accepted_snapshot?.quotation?.detalles ? <div className="mt-4"><ReservationServices value={reservation.accepted_snapshot.quotation.detalles} /></div> : null}
           {record.items.length ? <ul className="mt-6 divide-y divide-line border-y border-line" aria-label={t("includedServices")}>{record.items.map(item => <li key={item.id ?? `${item.descripcion}-${item.orden}`} className="flex items-start justify-between gap-4 py-4"><span className="t-body min-w-0 break-words">{item.descripcion}</span><span className="t-small shrink-0 text-ink-soft">{t("quantity")}: {item.cantidad}</span></li>)}</ul> : <p className="t-body mt-4 text-ink-soft">{t("noItems")}</p>}
         </section>
 

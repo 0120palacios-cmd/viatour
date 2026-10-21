@@ -66,6 +66,8 @@ function packageRow(item) {
     precio_desde: null,
     moneda: null,
     destination_id: null,
+    // Rich content (docs/sql/packages_ficha.sql must have run first); only packages that define it send it.
+    ...(item.ficha ? { ficha: item.ficha } : {}),
   };
 }
 

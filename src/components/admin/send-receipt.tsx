@@ -1,0 +1,5 @@
+"use client";
+import {useActionState} from "react";
+import {sendReceipt} from "@/app/admin/reservas/send-receipt";
+import {Button} from "@/components/ui/button";
+export function SendReceipt({id,email,enabled}:{id:string;email:string;enabled:boolean}){const [state,action,pending]=useActionState(sendReceipt,{});return <details><summary className="min-h-11 cursor-pointer text-brand">Enviar recibo al cliente</summary><form action={action} className="space-y-3"><input type="hidden" name="id" value={id}/><input type="hidden" name="recipient" value={email}/><label className="flex gap-3"><input required type="checkbox" name="approved" value="si" disabled={!enabled}/>Confirmo enviar este recibo a {email}.</label><Button disabled={!enabled||pending}>Enviar recibo aprobado</Button>{!enabled?<p className="t-small text-ink-soft">Envío deshabilitado por configuración.</p>:null}{state.error?<p role="alert">{state.error}</p>:null}{state.success?<p role="status">{state.success}</p>:null}</form></details>;}

@@ -26,6 +26,12 @@ export type Reservation = {
   notas: string | null;
   agente_id: string;
   created_at: string;
+  prerreserva?: boolean;
+  accepted_version_id?: string | null;
+  accepted_snapshot?: { quotation: import("@/lib/quotation-types").Quotation; items: ReservationItem[] };
+  supplier_status?: string;
+  supplier_reference?: string | null;
+  cliente_apellido?: string | null;
   updated_at?: string;
   // Added by docs/sql/reservations_income.sql; absent until it runs.
   comision?: number | null;
@@ -57,6 +63,8 @@ export type Payment = {
 export type InvoiceItem = ReservationItem;
 
 export type Invoice = {
+  commercial_snapshot?: { reservation_code?: string; payment_terms?: { deposito?: string; instrucciones?: string } };
+  payments_received?: number;
   id: string;
   reservation_id: string;
   numero: string;

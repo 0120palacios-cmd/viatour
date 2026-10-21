@@ -1,6 +1,5 @@
 "use server";
 
-import { randomBytes } from "node:crypto";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin";
@@ -12,8 +11,10 @@ import { siteConfig } from "@/lib/site-config";
 import { captureNotificationFailure } from "@/lib/notifications";
 import { customerWhatsappHref } from "@/lib/lead-admin";
 import { leadSegments, normalizePhone } from "@/lib/lead-validation";
-import { totalAmount } from "@/lib/money";
-import { isMissingInvoiceColumn } from "@/lib/invoice-query";
+import { commercialError } from "@/lib/commercial-errors";
+import { emptyTravel,validateTravel,publicTravel } from "@/lib/travel-operations";
+import { sealTravel } from "@/lib/travel-vault";
+import { hondurasToday } from "@/lib/portal-summary";
 
 export type ReservationActionState = { error?: string; success?: string; reservationId?: string };
 export type InvoiceActionState = { error?: string; success?: string; whatsappUrl?: string; invoiceId?: string };
@@ -21,10 +22,6 @@ export type InvoiceActionState = { error?: string; success?: string; whatsappUrl
 const clean = (value: FormDataEntryValue | null) => String(value ?? "").trim();
 const datePattern = /^\d{4}-\d{2}-\d{2}$/;
 const amountPattern = /^\d+(\.\d{1,2})?$/;
-
-function code(prefix: string) {
-  return `${prefix}-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${randomBytes(2).toString("hex").toUpperCase()}`;
-}
 
 function refreshReservationPaths(id?: string) {
   revalidatePath("/admin", "layout");
@@ -58,50 +55,31 @@ function parseItems(form: FormData) {
 // when there is one (quotations_v5), otherwise the quotation's current prices, which the database keeps
 // locked while it is accepted. One reservation per quotation: a second click opens the existing one.
 export async function convertQuotationToReservation(_: ReservationActionState, form: FormData): Promise<ReservationActionState> {
-  const { client, user } = await requireAdmin();
-  const quotationId = clean(form.get("quotation_id"));
-  if (!validUuid(quotationId)) return { error: "Cotización inválida." };
-  const existing = await client.from("reservations").select("id").eq("quotation_id", quotationId).limit(1).maybeSingle();
-  if (existing.data?.id) redirect(`/admin/reservas/${existing.data.id}`);
-  const quotationResult = await client.from("quotations").select("id,customer_id,cliente_nombre,cliente_email,cliente_telefono,destino,moneda,total,estado,notas,agente_id").eq("id", quotationId).maybeSingle();
-  if (quotationResult.error || !quotationResult.data) return { error: "No se encontró la cotización." };
-  if (quotationResult.data.estado !== "aceptada") return { error: "Solo se puede convertir una cotización aceptada." };
-  type Line = { descripcion: string; tipo: string; cantidad: number; precio_unitario: number; orden: number };
-  let source: Record<string, unknown> = quotationResult.data;
-  let lines: Line[] = [];
-  const acceptedVersion = await client.from("quotations").select("version_aceptada").eq("id", quotationId).maybeSingle();
-  const versionNumber = acceptedVersion.error ? null : acceptedVersion.data?.version_aceptada;
-  if (versionNumber) {
-    const version = await client.from("quotation_versions").select("snapshot").eq("quotation_id", quotationId).eq("version", versionNumber).maybeSingle();
-    const snapshot = version.data?.snapshot as { quotation?: Record<string, unknown>; items?: Line[] } | undefined;
-    if (version.error || !snapshot?.quotation || !Array.isArray(snapshot.items)) return { error: "No se encontró la versión aceptada de la cotización." };
-    source = { ...quotationResult.data, ...Object.fromEntries(["cliente_nombre", "cliente_email", "cliente_telefono", "destino", "moneda", "notas"].map(key => [key, snapshot.quotation?.[key] ?? quotationResult.data?.[key as keyof typeof quotationResult.data]])) };
-    lines = snapshot.items.map((item, orden) => ({ descripcion: String(item.descripcion), tipo: String(item.tipo), cantidad: Number(item.cantidad), precio_unitario: Number(item.precio_unitario), orden }));
-  } else {
-    const itemsResult = await client.from("quotation_items").select("descripcion,tipo,cantidad,precio_unitario,orden").eq("quotation_id", quotationId).order("orden", { ascending: true });
-    if (itemsResult.error) return { error: "No se pudieron leer los precios de la cotización." };
-    lines = (itemsResult.data ?? []).map(item => ({ ...item, cantidad: Number(item.cantidad), precio_unitario: Number(item.precio_unitario) }));
+  const { client } = await requireAdmin();
+  const quotationId = clean(form.get("quotation_id")), versionId = clean(form.get("version_id")), mode = clean(form.get("modo"));
+  if (!validUuid(quotationId) || !validUuid(versionId) || !["prerreserva", "reserva"].includes(mode) || form.get("confirmado") !== "si") return { error: "Revise la versión y confirme la conversión." };
+  const args = { p_id: quotationId, p_version_id: versionId, p_prereservation: mode === "prerreserva", p_lastname: clean(form.get("apellido")) };
+  const passengers = form.get("passengers");
+  let travelArgs;
+  if (passengers) {
+    try { if(String(passengers).length>100000)throw Error("Revise los pasajeros.");const travel=validateTravel({...emptyTravel(),passengers:JSON.parse(String(passengers))});travelArgs={...args,p_public:publicTravel(travel),p_encrypted:sealTravel(travel,quotationId)}; }
+    catch { return {error:"No se pudieron validar o cifrar los pasajeros. Revise sus datos y la configuración de cifrado."}; }
   }
-  if (!lines.length) return { error: "La cotización no tiene ítems para convertir." };
-  const reservation = await client.from("reservations").insert({
-    codigo: code("RES"), quotation_id: quotationId, customer_id: source.customer_id,
-    cliente_nombre: source.cliente_nombre, cliente_email: source.cliente_email, cliente_telefono: source.cliente_telefono,
-    destino: source.destino, moneda: source.moneda, total: totalAmount(lines), estado: "pendiente",
-    fecha_inicio: null, fecha_fin: null, notas: source.notas, agente_id: quotationResult.data.agente_id ?? user.id,
-  }).select("id").single();
-  if (reservation.error?.code === "23505") {
-    const created = await client.from("reservations").select("id").eq("quotation_id", quotationId).limit(1).maybeSingle();
-    if (created.data?.id) redirect(`/admin/reservas/${created.data.id}`);
-  }
-  if (reservation.error || !reservation.data) return { error: "No se pudo crear la reserva." };
-  const reservationId = String(reservation.data.id);
-  const items = await client.from("reservation_items").insert(lines.map(item => ({ ...item, reservation_id: reservationId })));
-  if (items.error) {
-    await client.from("reservations").delete().eq("id", reservationId);
-    return { error: "La reserva se creó, pero no se pudieron copiar sus ítems." };
-  }
-  refreshReservationPaths(reservationId);
-  redirect(`/admin/reservas/${reservationId}`);
+  const result = travelArgs ? await client.rpc("convert_quotation_with_passengers",travelArgs) : await client.rpc("convert_accepted_quotation", args);
+  if (result.error || !result.data) return { error: commercialError(result.error) };
+  refreshReservationPaths(String(result.data));
+  revalidatePath(`/admin/cotizaciones/${quotationId}`);
+  redirect(`/admin/reservas/${result.data}`);
+}
+
+export async function promoteReservation(_: ReservationActionState, form: FormData): Promise<ReservationActionState> {
+  const { client } = await requireAdmin();
+  const id = clean(form.get("id"));
+  if (!validUuid(id)) return { error: "Reserva inválida." };
+  const result = await client.from("reservations").update({ prerreserva: false }).eq("id", id).eq("prerreserva", true).eq("estado", "pendiente").select("id").single();
+  if (result.error) return { error: commercialError(result.error) };
+  refreshReservationPaths(id);
+  return { success: "Prerreservación convertida en reserva. La confirmación del proveedor se registra por separado." };
 }
 
 export async function saveReservation(_: ReservationActionState, form: FormData): Promise<ReservationActionState> {
@@ -113,25 +91,20 @@ export async function saveReservation(_: ReservationActionState, form: FormData)
   const notas = clean(form.get("notas"));
   if (!validUuid(id) || !reservationStatuses.includes(estado as never) || notas.length > 5000 || (fecha_inicio && !datePattern.test(fecha_inicio)) || (fecha_fin && !datePattern.test(fecha_fin))) return { error: "Revise el estado, las fechas y las notas de la reserva." };
   if (fecha_inicio && fecha_fin && fecha_fin < fecha_inicio) return { error: "La fecha final no puede ser anterior a la fecha inicial." };
-  const parsed = parseItems(form);
-  if (parsed.error) return parsed;
-  const total = totalAmount(parsed.items);
-  const updated = await client.from("reservations").update({ estado, fecha_inicio: fecha_inicio || null, fecha_fin: fecha_fin || null, notas: notas || null, total: Number(total.toFixed(2)) }).eq("id", id).select("id").single();
-  if (updated.error || !updated.data) return { error: "No se pudo actualizar la reserva." };
-  const removed = await client.from("reservation_items").delete().eq("reservation_id", id);
-  if (removed.error) return { error: "La reserva se actualizó, pero no se pudieron actualizar sus ítems." };
-  const inserted = await client.from("reservation_items").insert(parsed.items.map(item => ({ ...item, reservation_id: id })));
-  if (inserted.error) return { error: "La reserva se actualizó, pero no se pudieron guardar sus ítems." };
-  // Net income and segment are stored separately so the reservation saves even before the SQL runs.
+  const current = await getAdminReservation(client, id);
+  if (!current) return { error: "Reserva no encontrada." };
   const comision = clean(form.get("comision")), segmento = clean(form.get("segmento"));
-  if (comision && (!/^\d+(\.\d{1,2})?$/.test(comision) || Number(comision) > 10000000)) return { error: "La reserva se guardó, pero revise la comisión: use un monto positivo con hasta dos decimales.", reservationId: id };
-  if (segmento && !leadSegments.includes(segmento as never)) return { error: "La reserva se guardó, pero el segmento no es válido.", reservationId: id };
+  if (comision && (!amountPattern.test(comision) || Number(comision) > 10000000)) return { error: "Revise la comisión." };
+  if (segmento && !leadSegments.includes(segmento as never)) return { error: "Segmento inválido." };
+  const supplier = clean(form.get("supplier_status")) || current.reservation.supplier_status || "pendiente";
+  const reference = clean(form.get("supplier_reference"));
+  if (!["pendiente", "parcial", "confirmada", "emitida"].includes(supplier) || reference.length > 500) return { error: "Revise la confirmación del proveedor." };
+  const parsed = current.reservation.accepted_version_id ? { items: [] } : parseItems(form);
+  if ("error" in parsed && parsed.error) return { error: parsed.error };
+  const result = await client.rpc("save_reservation_record", { p_id: id, p_values: { estado, fecha_inicio, fecha_fin, notas, comision, segmento, supplier_status: supplier, supplier_reference: reference }, p_items: parsed.items });
+  if (result.error) return { error: commercialError(result.error) };
   refreshReservationPaths(id);
-  if (form.has("comision") || form.has("segmento")) {
-    const income = await client.from("reservations").update({ comision: comision ? Number(comision) : null, segmento: segmento || null }).eq("id", id).select("id").single();
-    if (income.error) return { success: income.error.code === "PGRST204" || income.error.code === "42703" ? "Reserva guardada. Para registrar la comisión y el segmento, ejecute docs/sql/reservations_income.sql en Supabase." : "Reserva guardada, pero no se pudo registrar la comisión.", reservationId: id };
-  }
-  return { success: "Reserva guardada.", reservationId: id };
+  return { success: "Reserva guardada. Los importes aceptados se conservaron.", reservationId: id };
 }
 
 export async function recordPayment(_: ReservationActionState, form: FormData): Promise<ReservationActionState> {
@@ -144,11 +117,15 @@ export async function recordPayment(_: ReservationActionState, form: FormData): 
   const fecha_pago = clean(form.get("fecha_pago"));
   const notas = clean(form.get("notas"));
   if (!validUuid(reservationId) || !amountPattern.test(monto) || Number(monto) <= 0 || !["USD", "HNL"].includes(moneda) || !paymentMethods.includes(metodo as never) || !datePattern.test(fecha_pago) || referencia.length > 200 || notas.length > 5000) return { error: "Revise los datos del pago." };
+  const paymentDay = new Date(`${fecha_pago}T00:00:00Z`);
+  if (!Number.isFinite(paymentDay.getTime()) || paymentDay.toISOString().slice(0, 10) !== fecha_pago || fecha_pago > hondurasToday()) return { error: "Registre una fecha válida de un pago ya recibido; no se permiten fechas futuras." };
   const reservation = await client.from("reservations").select("id,moneda").eq("id", reservationId).maybeSingle();
   if (reservation.error || !reservation.data) return { error: "No se encontró la reserva." };
   if (reservation.data.moneda !== moneda) return { error: "La moneda del pago debe coincidir con la moneda de la reserva." };
-  const result = await client.from("payments").insert({ reservation_id: reservationId, monto: Number(monto), moneda, metodo, referencia: referencia || null, fecha_pago, notas: notas || null }).select("id").single();
-  if (result.error || !result.data) return { error: "No se pudo registrar el pago." };
+  const requestId = clean(form.get("request_id"));
+  if (!validUuid(requestId)) return { error: "Recargue el formulario para iniciar un registro de pago seguro." };
+  const result = await client.rpc("record_reservation_payment", { p_request: requestId, p_reservation: reservationId, p_amount: Number(monto), p_currency: moneda, p_method: metodo, p_date: fecha_pago, p_reference: referencia || null, p_notes: notas || null });
+  if (result.error || !result.data) return { error: "No se confirmó el pago. Reintente con los mismos datos; si cambió el contenido de un intento ya registrado, revise el historial antes de iniciar otro pago." };
   refreshReservationPaths(reservationId);
   return { success: "Pago registrado." };
 }
@@ -158,18 +135,10 @@ export async function createInvoice(_: InvoiceActionState, form: FormData): Prom
   const reservationId = clean(form.get("reservation_id"));
   const fecha_vencimiento = clean(form.get("fecha_vencimiento"));
   if (!validUuid(reservationId) || !datePattern.test(fecha_vencimiento)) return { error: "Ingrese una fecha de vencimiento válida." };
-  const record = await getAdminReservation(client, reservationId);
-  if (!record || !record.items.length) return { error: "No se encontró la reserva o no tiene ítems." };
-  const result = await client.from("invoices").insert({
-    reservation_id: reservationId, numero: code("FAC"), cliente_nombre: record.reservation.cliente_nombre,
-    cliente_email: record.reservation.cliente_email, cliente_telefono: record.reservation.cliente_telefono,
-    items: record.items, total: record.reservation.total, moneda: record.reservation.moneda,
-    fecha_emision: new Date().toISOString().slice(0, 10), fecha_vencimiento, estado: "borrador", notas: record.reservation.notas,
-  }).select("id").single();
-  if (isMissingInvoiceColumn(result.error)) return { error: "La facturación necesita las columnas de docs/sql/invoices_v5.sql en Supabase. No se creó ninguna factura." };
-  if (result.error || !result.data) return { error: "No se pudo crear la factura." };
+  const result = await client.rpc("create_reservation_invoice", { p_id: reservationId, p_due: fecha_vencimiento });
+  if (result.error || !result.data) return { error: commercialError(result.error) };
   refreshReservationPaths(reservationId);
-  return { success: "Factura creada.", invoiceId: String(result.data.id) };
+  return { success: "Factura disponible.", invoiceId: String(result.data) };
 }
 
 export async function updateInvoiceStatus(_: InvoiceActionState, form: FormData): Promise<InvoiceActionState> {
@@ -178,7 +147,7 @@ export async function updateInvoiceStatus(_: InvoiceActionState, form: FormData)
   const estado = clean(form.get("estado"));
   if (!validUuid(id) || !invoiceStatuses.includes(estado as never)) return { error: "Seleccione un estado válido." };
   const result = await client.from("invoices").update({ estado }).eq("id", id).select("id,reservation_id").single();
-  if (result.error || !result.data) return { error: "No se pudo actualizar el estado de la factura." };
+  if (result.error || !result.data) return { error: commercialError(result.error) };
   refreshReservationPaths(String(result.data.reservation_id));
   revalidatePath(`/admin/facturacion/${id}`);
   return { success: "Estado actualizado." };
@@ -190,6 +159,7 @@ export async function sendInvoice(_: InvoiceActionState, form: FormData): Promis
   if (!validUuid(id)) return { error: "Factura inválida." };
   const record = await getAdminInvoice(client, id);
   if (!record) return { error: "No se encontró la factura." };
+  if (record.invoice.estado === "anulada") return { error: "No se puede enviar una factura anulada." };
   if (!record.invoice.cliente_email || !record.invoice.cliente_email.includes("@")) return { error: "La factura no tiene un correo electrónico válido." };
   if (!process.env.RESEND_API_KEY) return { error: "El envío de correo no está configurado." };
   try {
@@ -204,7 +174,7 @@ export async function sendInvoice(_: InvoiceActionState, form: FormData): Promis
     captureNotificationFailure("invoice", id, error);
     return { error: "No se pudo enviar el correo. La factura se conservó sin cambios." };
   }
-  const updated = await client.from("invoices").update({ estado: "emitida" }).eq("id", id).select("id,reservation_id").single();
+  const updated = await client.from("invoices").update({ estado: record.invoice.estado === "pagada" ? "pagada" : "emitida" }).eq("id", id).select("id,reservation_id").single();
   if (updated.error || !updated.data) return { error: "El correo se envió, pero no se pudo actualizar el estado de la factura." };
   refreshReservationPaths(String(updated.data.reservation_id));
   const message = `Hola, le comparto la factura ${record.invoice.numero} de viatour. Total: ${record.invoice.total} ${record.invoice.moneda}.`;

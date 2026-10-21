@@ -19,8 +19,8 @@ test('invoice reads retry without the columns production does not have', async (
     asked.push(fields);
     return fields.includes('items') ? { data: null, error: { code: '42703' } } : { data: [{ id: 'i1', total: 10 }], error: null };
   });
-  assert.equal(asked.length, 2);
-  assert.ok(!asked[1].includes('items') && !asked[1].includes('cliente_email'));
+  assert.equal(asked.length, 3);
+  assert.ok(!asked[2].includes('items') && !asked[2].includes('cliente_email'));
   assert.deepEqual(plain(result), { data: [{ cliente_email: '', cliente_telefono: null, items: [], id: 'i1', total: 10 }], error: null });
 });
 

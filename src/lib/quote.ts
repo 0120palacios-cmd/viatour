@@ -12,7 +12,7 @@ const privateFields = new Set(["Teléfono", "Email"]);
 export function composeQuote(payload: QuotePayload, referencia?: string) {
   const entries = Object.entries(payload.fields).filter(([label, value]) => value.trim() && !privateFields.has(label));
   if (payload.locale === "en" && payload.servicio === "Paquete") {
-    const labels: Record<string, string> = { Paquete: "Package", Origen: "Origin", Destino: "Destination", Fechas: "Dates", Adultos: "Adults", Niños: "Children", Notas: "Notes", Nombre: "Name" };
+    const labels: Record<string, string> = { Paquete: "Package", Origen: "Origin", Destino: "Destination", Fechas: "Dates", Adultos: "Adults", Niños: "Children", Notas: "Notes", Nombre: "Name", Opción: "Option", Resort: "Resort", Hotel: "Hotel", Habitación: "Room", Adicionales: "Add-ons" };
     return ["I would like to request a quote. Please advise me on these options.", "Service: Package", ...entries.map(([label, value]) => `${labels[label] ?? label}: ${value}`), ...(referencia ? [`Reference: ${referencia}`] : [])].join("\n");
   }
   return ["Me gustaría solicitar una cotización. Por favor, asesóreme con estas opciones.", `Servicio: ${payload.service}`,

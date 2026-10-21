@@ -1,0 +1,5 @@
+"use client";
+import {useActionState} from "react";
+import {sendItinerary} from "@/app/admin/reservas/send-itinerary";
+import {Button} from "@/components/ui/button";
+export function SendItinerary({id,email,enabled}:{id:string;email:string;enabled:boolean}){const [state,action,pending]=useActionState(sendItinerary,{});return <form action={action} className="mt-6 space-y-4"><input name="id" type="hidden" value={id}/><input name="recipient" type="hidden" value={email}/><p className="t-small">Destinatario: {email}</p><label className="flex items-start gap-3"><input required type="checkbox" name="approved" value="si" disabled={!enabled}/>He revisado el PDF, el calendario y el destinatario; autorizo este envío.</label><Button disabled={!enabled||pending}>{pending?"Enviando":"Enviar itinerario al cliente"}</Button>{!enabled?<p className="t-small text-ink-soft">Envío deshabilitado hasta la autorización y configuración del propietario.</p>:null}{state.error?<p role="alert">{state.error}</p>:null}{state.success?<p role="status">{state.success}</p>:null}</form>;}

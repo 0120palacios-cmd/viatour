@@ -25,6 +25,11 @@ test('quotation prefill carries lead data and caps lengths', () => {
   const prefill = leadAdmin.leadQuotationPrefill({ id, nombre: 'Ana', destino: 'Cartagena', servicio: 'Paquete', fechas: 'Julio', pasajeros: '2', notas: 'x'.repeat(6000), telefono: '+50499998888', referencia: 'VT-AAAAA' });
   assert.equal(prefill.leadId, id); assert.equal(prefill.telefono, '+50499998888'); assert.equal(prefill.destino, 'Cartagena');
   assert.ok(prefill.notas.length <= 5000); assert.match(prefill.notas, /Servicio: Paquete/);
+  // Package choices (option, hotel, resort, room, extras) come from payload.fields, in a fixed order.
+  const choices = { payload: { fields: { Destino: 'Panamá', Hotel: 'Hilton Panamá', Paquete: 'Panamá Doble Paraíso', Resort: ' Grand Decameron Panamá ', Habitación: '', Adicionales: 'Noche adicional' } } };
+  assert.deepEqual(JSON.parse(JSON.stringify(leadAdmin.leadPackageChoices(choices))), [['Paquete', 'Panamá Doble Paraíso'], ['Resort', 'Grand Decameron Panamá'], ['Hotel', 'Hilton Panamá'], ['Adicionales', 'Noche adicional']]);
+  assert.equal(leadAdmin.leadPackageChoices({}).length, 0);
+  assert.match(leadAdmin.leadQuotationPrefill({ id, ...choices }).notas, /Resort: Grand Decameron Panamá\nHotel: Hilton Panamá/);
   assert.equal(leadAdmin.leadAge(new Date(Date.now() - 30 * 60000).toISOString()), 'hace 30 min');
   assert.equal(leadAdmin.leadAge(new Date(Date.now() - 3 * 86400000).toISOString()), 'hace 3 días');
 });

@@ -46,6 +46,10 @@ next-env.d.ts
 # Private review imports must never be committed.
 /data/*
 !/data/reviews-import.sample.csv
+# Panama packages: content source, photo manifest and photo credits (public data, needed by the scripts).
+!/data/panama-packages.mjs
+!/data/panama-photos.json
+!/data/panama-photo-credits.json
 
 # Supabase CLI link metadata (local only)
 supabase/.temp/

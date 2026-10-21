@@ -16,8 +16,9 @@ export async function getAdminReservation(client: SupabaseClient, id: string) {
   if (itemsResult.error || paymentsResult.error || invoicesResult.error) throw new Error("No se pudieron cargar los datos de la reserva.");
   // Income columns are optional (docs/sql/reservations_income.sql); a missing column must not break the page.
   const income = await client.from("reservations").select("comision,segmento").eq("id", id).maybeSingle();
+  const commercial = await client.from("reservations").select("prerreserva,accepted_version_id,accepted_snapshot,supplier_status,supplier_reference,cliente_apellido").eq("id", id).maybeSingle();
   return {
-    reservation: { ...(reservationResult.data as Reservation), ...(income.error || !income.data ? {} : income.data) },
+    reservation: { ...(reservationResult.data as Reservation), ...(commercial.error ? {} : commercial.data), ...(income.error || !income.data ? {} : income.data) },
     items: (itemsResult.data ?? []) as ReservationItem[],
     payments: (paymentsResult.data ?? []) as Payment[],
     invoices: (invoicesResult.data ?? []) as unknown as Invoice[],
@@ -29,7 +30,11 @@ export async function getAdminInvoice(client: SupabaseClient, id: string) {
   if (invoiceResult.error || !invoiceResult.data) return null;
   const reservationResult = await client.from("reservations").select(reservationFields).eq("id", (invoiceResult.data as unknown as { reservation_id: string }).reservation_id).maybeSingle();
   if (reservationResult.error || !reservationResult.data) return null;
-  return { invoice: invoiceResult.data as unknown as Invoice, reservation: reservationResult.data as Reservation };
+  const payments = await client.from("payments").select("monto,moneda").eq("reservation_id", reservationResult.data.id);
+  if (payments.error) throw new Error("No se pudieron verificar los pagos.");
+  const currency = reservationResult.data.moneda;
+  const received = (payments.data ?? []).filter(p => p.moneda === currency).reduce((sum, p) => sum + Math.round(Number(p.monto) * 100), 0) / 100;
+  return { invoice: { ...(invoiceResult.data as unknown as Invoice), payments_received: received }, reservation: reservationResult.data as Reservation };
 }
 
 export { reservationFields, invoiceFields };

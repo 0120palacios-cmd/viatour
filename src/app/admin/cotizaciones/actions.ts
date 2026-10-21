@@ -4,7 +4,7 @@ import { randomBytes } from "node:crypto";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { adminSession, requireAdmin } from "@/lib/admin";
-import { getAdminQuotation, isMissingColumn, toRecord } from "@/lib/quotation-data";
+import { getAdminQuotation, getQuotationVersion, isMissingColumn, toRecord } from "@/lib/quotation-data";
 import { isMissingTable } from "@/lib/catalog";
 import { renderQuotationPdf, quotationPdfFilename } from "@/lib/quotation-pdf";
 import { loadQuotationPhotos, quotationMediaBucket } from "@/lib/quotation-media";
@@ -17,6 +17,7 @@ import { captureNotificationFailure } from "@/lib/notifications";
 import { siteConfig } from "@/lib/site-config";
 import { customerWhatsappHref } from "@/lib/lead-admin";
 import { normalizePhone } from "@/lib/lead-validation";
+import { commercialError } from "@/lib/commercial-errors";
 import { convertQuotationToReservation } from "@/app/admin/reservas/actions";
 
 export { convertQuotationToReservation };
@@ -171,8 +172,14 @@ export async function saveQuotation(payloadText: string): Promise<QuotationActio
 export async function duplicateQuotation(id: string, mode: "copia" | "enmienda" = "copia"): Promise<QuotationActionState> {
   const { client, user } = await requireAdmin();
   if (!validUuid(id)) return { error: "Cotización inválida." };
-  const record = await getAdminQuotation(client, id);
+  let record = await getAdminQuotation(client, id);
   if (!record) return { error: "No se encontró la cotización." };
+  if (mode === "enmienda" && record.quotation.estado === "aceptada") {
+    const accepted = await client.from("quotations").select("version_aceptada").eq("id", id).single();
+    if (!accepted.data?.version_aceptada) return { error: "Revise la versión aceptada antes de crear una enmienda." };
+    record = await getQuotationVersion(client, id, Number(accepted.data.version_aceptada));
+    if (!record) return { error: "No se encontró la versión aceptada." };
+  }
   // A package's flights must be confirmed again too, as in a flight quotation.
   const paquete = { ...record.details.paquete, componentes: record.details.paquete.componentes.map(component => component.vuelo ? { ...component, vuelo: { ...component.vuelo, vuelos: { ...component.vuelo.vuelos, confirmado: false }, equipajeConfirmado: false } } : component) };
   const details = { ...record.details, vuelos: { ...record.details.vuelos, confirmado: false }, equipajeConfirmado: false, validez: { ...record.details.validez, venceEn: "", limitePago: "", limiteEmision: "" }, refCreacion: "", aprobacionCondiciones: null, enmiendaDe: mode === "enmienda" ? record.quotation.codigo : "", paquete };
@@ -210,39 +217,22 @@ export async function assignQuotationToMe(_: QuotationActionState, form: FormDat
 // Marking a quotation accepted records which sent version the customer accepted: the reservation is
 // later created from that frozen copy, and the content stays locked while it is accepted.
 export async function updateQuotationStatus(_: QuotationActionState, form: FormData): Promise<QuotationActionState> {
-  const { client, user } = await requireAdmin();
-  const id = clean(form.get("id"));
-  const status = clean(form.get("estado"));
-  if (!validUuid(id) || !isQuotationStatus(status) || !["aceptada", "rechazada", "expirada"].includes(status)) return { error: "Seleccione un estado válido." };
-  if (status !== "aceptada") {
-    const reservation = await client.from("reservations").select("id").eq("quotation_id", id).limit(1).maybeSingle();
-    if (reservation.data) return { error: "Esta cotización ya se convirtió en reserva; su estado no se puede cambiar." };
-  }
-  let accepted: number | null = null;
-  let frozenNow = false;
+  const { client } = await requireAdmin();
+  const id = clean(form.get("id")), status = clean(form.get("estado"));
+  if (!validUuid(id) || !isQuotationStatus(status)) return { error: "Seleccione un estado válido." };
   if (status === "aceptada") {
-    const latest = await client.from("quotation_versions").select("version").eq("quotation_id", id).order("version", { ascending: false }).limit(1).maybeSingle();
-    accepted = latest.error || !latest.data ? null : Number(latest.data.version);
-    // Never sent from the panel: freeze what is being accepted now, before the quotation locks.
-    // Without the V5 versions table (latest.error) the old behaviour stays.
-    if (!latest.error && !latest.data) {
-      const record = await getAdminQuotation(client, id);
-      if (!record) return { error: "No se encontró la cotización." };
-      if (record.quotation.estado === "aceptada") return { error: "Esta cotización ya está aceptada." };
-      if (record.schemaReady) {
-        if (!record.items.length) return { error: "Agregue al menos un concepto de precio antes de marcarla como aceptada." };
-        const frozen = await freezeVersion(client, user.id, record, "aceptacion");
-        if ("error" in frozen) return { error: frozen.error };
-        accepted = frozen.versionNumber;
-        frozenNow = true;
-      }
-    }
+    const versionId = clean(form.get("version_id"));
+    if (!validUuid(versionId) || form.get("confirmado") !== "si") return { error: "Confirme la versión y la aceptación comunicada por el cliente." };
+    const result = await client.rpc("accept_quotation", { p_id: id, p_version_id: versionId, p_notes: clean(form.get("notas")) });
+    if (result.error) return { error: commercialError(result.error) };
+    refreshQuotationPaths(id);
+    return { success: "Cotización aceptada. Puede crear una prerreservación o una reserva." };
   }
-  let result = await client.from("quotations").update({ estado: status, version_aceptada: accepted }).eq("id", id).select("id").single();
-  if (isMissingColumn(result.error)) result = await client.from("quotations").update({ estado: status }).eq("id", id).select("id").single();
-  if (result.error || !result.data) return { error: "No se pudo actualizar el estado." };
+  if (!["rechazada", "expirada"].includes(status)) return { error: "Estado inválido." };
+  const result = await client.from("quotations").update({ estado: status }).eq("id", id).in("estado", ["borrador", "enviada"]).select("id").single();
+  if (result.error) return { error: "No se pudo cambiar el estado. Una cotización aceptada requiere una enmienda." };
   refreshQuotationPaths(id);
-  return { success: accepted ? frozenNow ? `Aceptada: como no se había enviado desde el panel, se guardó la versión ${accepted} con lo aceptado.` : `Aceptada: se registró la versión ${accepted} enviada al cliente.` : "Estado actualizado." };
+  return { success: "Estado actualizado." };
 }
 
 type AdminClient = Awaited<ReturnType<typeof requireAdmin>>["client"];
@@ -305,7 +295,10 @@ export async function sendQuotation(_: QuotationActionState, form: FormData): Pr
     captureNotificationFailure("quotation", id, error);
     return { error: `No se pudo enviar el correo.${versionNumber ? ` La versión ${versionNumber} quedó registrada; puede reenviarla.` : " La cotización se conservó sin cambios."}` };
   }
-  const updated = await client.from("quotations").update({ estado: "enviada" }).eq("id", id).select("id").single();
+  const delivered = versionNumber ? await client.from("quotation_versions").select("id").eq("quotation_id", id).eq("version", versionNumber).single() : null;
+  const frozenVersionId = delivered?.data?.id;
+  if (versionNumber && !frozenVersionId) return { error: "El correo se envió, pero no se pudo registrar la versión enviada. Revise el historial." };
+  const updated = await client.from("quotations").update({ estado: "enviada", ...(versionNumber ? { sent_version_id: frozenVersionId } : {}) }).eq("id", id).select("id").single();
   if (updated.error || !updated.data) return { error: "El correo se envió, pero no se pudo actualizar el estado. Revise la cotización antes de reenviar." };
   refreshQuotationPaths(id);
   const message = `Hola, le comparto la cotización ${quotation.codigo} de viatour para ${quotation.destino}. Total referencial: ${formatQuotationAmount(Number(quotation.total), quotation.moneda)}.`;
