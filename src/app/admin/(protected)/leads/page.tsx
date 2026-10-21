@@ -5,7 +5,7 @@ import { requireAdmin } from "@/lib/admin";
 import { pageMetadata } from "@/lib/seo";
 import { Button } from "@/components/ui/button";
 import { LeadStatusForm } from "@/components/admin/lead-status-form";
-import { customerWhatsappHref, leadAge, leadContact, leadGreeting, leadServices, leadStateLabels, leadStates, type LeadState } from "@/lib/lead-admin";
+import { customerWhatsappHref, leadAge, leadContact, leadGreeting, leadPackageChoices, leadServices, leadStateLabels, leadStates, type LeadState } from "@/lib/lead-admin";
 
 export const metadata = pageMetadata("/admin/leads", "viatour | Leads", "Bandeja privada de solicitudes de cotización de viatour.");
 
@@ -66,6 +66,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
         <dl className="mt-4 grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
           {[[MapPin, "Destino", row.destino], [CalendarDays, "Fechas", row.fechas], [Users, "Pasajeros", row.pasajeros], [Phone, "Teléfono", contact.telefono], [Mail, "Correo", contact.email], [MapPin, "Origen del viaje", row.origen], [null, "Clase", row.clase], [null, "Presupuesto", row.presupuesto != null ? `${row.presupuesto} ${row.moneda ?? "USD"}` : ""]].filter(([, , value]) => value).map(([Icon, label, value]) => { const I = Icon as typeof MapPin | null; return <div key={String(label)} className="min-w-0"><dt className="t-small flex items-center gap-1 text-ink-soft">{I && <I size={14} strokeWidth={1.75} aria-hidden="true" />}{String(label)}</dt><dd className="break-words">{String(value)}</dd></div>; })}
         </dl>
+        {(() => { const choices = leadPackageChoices(row); return choices.length > 0 && <dl className="t-small mt-4 grid gap-x-6 gap-y-2 border-t border-line pt-4 sm:grid-cols-2">{choices.map(([label, value]) => <div key={label} className="min-w-0"><dt className="text-ink-soft">{label}</dt><dd className="break-words text-ink">{value}</dd></div>)}</dl>; })()}
         {row.notas ? <p className="mt-4 whitespace-pre-wrap border-t border-line pt-4 text-ink-soft">{String(row.notas)}</p> : null}
         {origin && <p className="t-small mt-3 text-ink-soft">{origin}</p>}
         {row.motivo_perdida ? <p className="t-small mt-3 text-error">Motivo de pérdida: {String(row.motivo_perdida)}</p> : null}

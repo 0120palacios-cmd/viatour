@@ -471,13 +471,13 @@ function Conditions({ record, validUntil, styles }: { record: QuotationRecord; v
   </View>;
 }
 
-export type PdfOptions = { photos?: Map<string, PdfPhoto>; preview?: boolean; now?: Date; issuedAt?: string; versionNumber?: number };
+export type PdfOptions = { photos?: Map<string, PdfPhoto>; preview?: boolean; now?: Date; issuedAt?: string; versionNumber?: number; reservation?: { code: string; status: string; supplier: string; paid: number; deposit: string; portalUrl: string } };
 
 function QuotationDocument({ record, options, compact }: { record: QuotationRecord; options: PdfOptions; compact: boolean }) {
   const styles = makeStyles(compact);
   const { quotation, details, kind, expiry } = record;
   const photos = options.photos ?? new Map<string, PdfPhoto>();
-  const expired = isExpired(expiry, options.now ?? new Date());
+  const expired = !options.reservation && isExpired(expiry, options.now ?? new Date());
   const zone = details.validez.zona;
   const validUntil = formatInstant(expiry, zone);
   const logo = `data:image/png;base64,${readFileSync(join(process.cwd(), "public", "logo-white.png")).toString("base64")}`;
@@ -498,15 +498,16 @@ function QuotationDocument({ record, options, compact }: { record: QuotationReco
   const itemizedPrices = !combined || details.paquete.mostrarPrecios;
   const whatsapp = `+504 ${siteConfig.whatsappNumber.slice(3, 7)}-${siteConfig.whatsappNumber.slice(7)}`;
   const whatsappHref = `https://wa.me/${siteConfig.whatsappNumber}?text=${encodeURIComponent(`Hola, quisiera confirmar la cotización ${quotation.codigo}.`)}`;
-  return <Document title={`Cotización ${quotation.codigo}`} author="viatour" subject={`Cotización de viaje: ${quotation.destino}`} language="es-HN">
+  const documentName = options.reservation ? `${options.reservation.status} ${options.reservation.code}` : `Cotización ${quotation.codigo}`;
+  return <Document title={documentName} author="viatour" subject={`Cotización de viaje: ${quotation.destino}`} language="es-HN">
     <Page size="LETTER" style={styles.page}>
-      <Text style={styles.running} fixed render={({ pageNumber }) => pageNumber > 1 ? `Cotización ${quotation.codigo} · ${quotation.cliente_nombre} (continuación)` : ""} />
+      <Text style={styles.running} fixed render={({ pageNumber }) => pageNumber > 1 ? `${documentName} · ${quotation.cliente_nombre} (continuación)` : ""} />
       <View style={styles.meta}>
         {/* eslint-disable-next-line jsx-a11y/alt-text -- react-pdf images have no alt attribute */}
         <Image src={logo} style={styles.logo} />
-        <View style={styles.metaCell}><Text style={styles.metaLabel}>Cotización de viaje</Text><Text style={styles.metaValue}>{quotation.codigo}</Text>{options.versionNumber ? <Text style={styles.metaNote}>Versión {options.versionNumber}</Text> : null}</View>
+        <View style={styles.metaCell}><Text style={styles.metaLabel}>{options.reservation?.status ?? "Cotización de viaje"}</Text><Text style={styles.metaValue}>{options.reservation?.code ?? quotation.codigo}</Text>{options.versionNumber ? <Text style={styles.metaNote}>Versión {options.versionNumber}</Text> : null}</View>
         <View style={styles.metaCell}><Text style={styles.metaLabel}>Fecha de emisión</Text><Text style={styles.metaValue}>{issued}</Text></View>
-        <View style={[styles.metaCell, { flex: 1.5 }]}><Text style={styles.metaLabel}>Cotización válida hasta</Text><Text style={styles.metaAccent}>{expiry ? expiryDate(expiry, zone) : "Por confirmar"}</Text>{expiry ? <Text style={styles.metaNote}>{expiryTime(expiry, zone)} ({zoneLabel(zone)})</Text> : null}</View>
+        <View style={[styles.metaCell, { flex: 1.5 }]}><Text style={styles.metaLabel}>{options.reservation ? "Proveedor" : "Cotización válida hasta"}</Text><Text style={styles.metaAccent}>{options.reservation ? options.reservation.supplier : expiry ? expiryDate(expiry, zone) : "Por confirmar"}</Text>{expiry && !options.reservation ? <Text style={styles.metaNote}>{expiryTime(expiry, zone)} ({zoneLabel(zone)})</Text> : null}</View>
       </View>
       {options.preview ? <Text style={styles.preview}>Vista previa del borrador. Revise la información antes de enviarla al cliente.</Text> : null}
       {expired ? <Text style={styles.expired}>Esta cotización venció el {validUntil}. Solicite a su asesor una cotización actualizada.</Text> : null}
@@ -565,11 +566,12 @@ function QuotationDocument({ record, options, compact }: { record: QuotationReco
         <Text style={styles.sectionTitle}>{itemizedPrices ? "Detalle de precio" : "Precio del paquete"}</Text>
         {itemizedPrices ? <Pricing record={record} styles={styles} /> : <Totals record={record} styles={styles} note={components.length ? `Precio total por ${components.length === 1 ? "el servicio detallado" : `los ${components.length} servicios detallados`} en esta cotización.` : undefined} />}
       </View>
+      {options.reservation ? <View style={styles.section} wrap={false}><Text style={styles.sectionTitle}>Estado de cuenta</Text><Text style={styles.body}>Pagos registrados: {formatQuotationAmount(options.reservation.paid, quotation.moneda)}</Text><Text style={styles.body}>Saldo pendiente: {formatQuotationAmount(Math.max(0, summary.total - options.reservation.paid), quotation.moneda)}</Text>{options.reservation.deposit ? <Text style={styles.body}>Anticipo solicitado: {options.reservation.deposit} {quotation.moneda}. No representa un pago recibido.</Text> : null}<Text style={styles.small}>Cotización de origen: {quotation.codigo}. La aceptación y el pago no sustituyen la confirmación del proveedor.</Text></View> : null}
       <Conditions record={record} validUntil={validUntil} styles={styles} />
       {quotation.notas ? <View style={styles.section} wrap={false}><Text style={styles.sectionTitle}>Observaciones</Text><Text style={styles.remarks}>{quotation.notas}</Text></View> : null}
       <View style={styles.cta} wrap={false}>
         <Icon name="message" size={12} stroke={color.deep} />
-        <Link src={whatsappHref} style={styles.ctaText}>Para confirmar esta cotización, escríbanos por WhatsApp al {whatsapp} e indique el código {quotation.codigo}.</Link>
+        <Link src={options.reservation?.portalUrl ?? whatsappHref} style={styles.ctaText}>{options.reservation ? "Consulte su reservación en el portal de viatour: " + options.reservation.portalUrl + ". Acceda con la referencia, el apellido registrado y el código de verificación enviado a su correo." : `Para confirmar esta cotización, escríbanos por WhatsApp al ${whatsapp} e indique el código ${quotation.codigo}.`}</Link>
       </View>
       {/* A fixed, absolutely positioned View is dropped by react-pdf here; fixed Text elements are kept. */}
       <Text style={styles.footerLeft} fixed>viatour | asesores de viaje · WhatsApp {whatsapp} · {siteConfig.supportEmail} · {siteConfig.domain}</Text>

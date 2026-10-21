@@ -8,7 +8,7 @@ import { quotationStatusLabel, quotationStatuses, type QuotationStatus } from "@
 
 export function QuotationStatusForm({ id, status }: { id: string; status: QuotationStatus }) {
   const [state, action, pending] = useActionState<QuotationActionState, FormData>(updateQuotationStatus, {});
-  const manualStatuses = quotationStatuses.filter(value => ["aceptada", "rechazada", "expirada"].includes(value));
+  const manualStatuses = quotationStatuses.filter(value => ["rechazada", "expirada"].includes(value));
   // No preselection for drafts or sent quotations: recording the customer's answer must be a deliberate choice.
   const defaultStatus = manualStatuses.includes(status as "aceptada" | "rechazada" | "expirada") ? status : "";
   return <form action={action} className="flex flex-wrap items-center gap-3"><input type="hidden" name="id" value={id} /><label className="sr-only" htmlFor={`status-${id}`}>Estado manual de la cotización</label><select id={`status-${id}`} name="estado" defaultValue={defaultStatus} required className="h-12 rounded-btn border border-line bg-canvas px-3 text-ink"><option value="" disabled>Elegir respuesta del cliente</option>{manualStatuses.map(value => <option key={value} value={value}>{quotationStatusLabel(value)}</option>)}</select><Button type="submit" variant="ghost" disabled={pending}>Guardar estado</Button>{state.error && <span role="alert" className="w-full text-error t-small">{state.error}</span>}{state.success && <span aria-live="polite" className="w-full text-success t-small">{state.success}</span>}</form>;

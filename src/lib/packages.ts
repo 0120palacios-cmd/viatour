@@ -9,6 +9,8 @@ export type Package = {
   precio_desde: number | null; moneda: string | null; imagen_url: string | null;
   galeria: string[] | null; categoria: string | null; etiquetas: string[];
   destacado: boolean; publicado: boolean; orden: number; updated_at?: string | null;
+  // Optional rich content (docs/sql/packages_ficha.sql); absent until that column exists. Read it with readPackageSheet().
+  ficha?: unknown;
 };
 import { PACKAGE_DISPLAY_RULES } from "@/lib/display-rules";
 export { PACKAGE_DISPLAY_RULES };

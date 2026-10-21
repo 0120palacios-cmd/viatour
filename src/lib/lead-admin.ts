@@ -43,9 +43,17 @@ export function leadAge(createdAt: string, now = Date.now()) {
   return `hace ${Math.round(hours / 24)} días`;
 }
 
+// What a package quote chose (package, option, hotel, resort, room, extras); only in payload.fields.
+const packageChoiceLabels = ["Paquete", "Opción", "Resort", "Hotel", "Habitación", "Adicionales"] as const;
+export function leadPackageChoices(row: Row): [string, string][] {
+  const fields = payloadOf(row).fields;
+  if (typeof fields !== "object" || fields === null) return [];
+  return packageChoiceLabels.flatMap(label => { const value = text((fields as Row)[label]); return value ? [[label, value] as [string, string]] : []; });
+}
+
 export function leadQuotationPrefill(row: Row) {
   const contact = leadContact(row);
-  const notes = [text(row.servicio) && `Servicio: ${text(row.servicio)}`, text(row.fechas) && `Fechas: ${text(row.fechas)}`, text(row.pasajeros) && `Pasajeros: ${text(row.pasajeros)}`, text(row.origen) && `Origen: ${text(row.origen)}`, text(row.notas) && `Notas del cliente: ${text(row.notas)}`, contact.referencia && `Referencia del lead: ${contact.referencia}`].filter(Boolean).join("\n");
+  const notes = [text(row.servicio) && `Servicio: ${text(row.servicio)}`, ...leadPackageChoices(row).map(([label, value]) => `${label}: ${value}`), text(row.fechas) && `Fechas: ${text(row.fechas)}`, text(row.pasajeros) && `Pasajeros: ${text(row.pasajeros)}`, text(row.origen) && `Origen: ${text(row.origen)}`, text(row.notas) && `Notas del cliente: ${text(row.notas)}`, contact.referencia && `Referencia del lead: ${contact.referencia}`].filter(Boolean).join("\n");
   return { leadId: String(row.id), nombre: text(row.nombre), email: contact.email, telefono: contact.telefono, destino: text(row.destino).slice(0, 200), notas: notes.slice(0, 5000) };
 }
 export type LeadPrefill = ReturnType<typeof leadQuotationPrefill>;

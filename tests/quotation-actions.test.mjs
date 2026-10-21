@@ -67,6 +67,23 @@ function fakeDb(seed = {}, options = {}) {
   // refused for accepted quotations, like the database trigger.
   async function rpc(name, args) {
     if (options.noRpc || options.legacy) return { data: null, error: { code: 'PGRST202' } };
+    // RPC stand-in checks action wiring; scripts/test-commercial-recovery.mjs executes the real SQL.
+    if (name === 'accept_quotation') {
+      const q=tables.quotations.find(r=>r.id===args.p_id), v=tables.quotation_versions.find(r=>r.id===args.p_version_id && r.quotation_id===args.p_id);
+      if(!q || !v || q.estado!=='enviada') return {data:null,error:{code:'23514',message:'Solo puede aceptar una cotización enviada.'}};
+      q.estado='aceptada';q.version_aceptada=v.version;q.accepted_version_id=v.id;
+      return {data:v.id,error:null};
+    }
+    if (name === 'convert_accepted_quotation') {
+      const existing=tables.reservations.find(r=>r.quotation_id===args.p_id);if(existing)return {data:existing.id,error:null};
+      const q=tables.quotations.find(r=>r.id===args.p_id),v=tables.quotation_versions.find(r=>r.id===args.p_version_id);
+      if(!q || q.estado!=='aceptada' || q.accepted_version_id!==v?.id)return {data:null,error:{code:'23514'}};
+      const r={...v.snapshot.quotation,id:uuid(),quotation_id:q.id,agente_id:q.agente_id,estado:'pendiente',prerreserva:args.p_prereservation,accepted_snapshot:v.snapshot};tables.reservations.push(r);
+      tables.reservation_items.push(...v.snapshot.items.map(x=>({...x,id:uuid(),reservation_id:r.id})));return {data:r.id,error:null};
+    }
+    if(name==='create_reservation_invoice') {
+      const r=tables.reservations.find(r=>r.id===args.p_id);const i={id:uuid(),reservation_id:r.id,total:r.total,items:tables.reservation_items.filter(x=>x.reservation_id===r.id)};tables.invoices.push(i);return {data:i.id,error:null};
+    }
     assert.equal(name, 'replace_quotation_items');
     const quotation = tables.quotations.find(row => row.id === args.p_quotation_id);
     if (!quotation) return { data: null, error: { code: 'P0002' } };
@@ -98,7 +115,7 @@ function actions(db, { admin = true, user = 'agent-1', fetch = async () => ({ ok
   const data = load('src/lib/quotation-data.ts', { 'server-only': {}, '@/lib/quotation-details': detailsModule });
   return load('src/app/admin/cotizaciones/actions.ts', {
     'node:crypto': crypto, 'next/navigation': { redirect }, 'next/cache': { revalidatePath() {} },
-    '@/lib/admin': { requireAdmin: async () => { if (!admin) throw new Error('denied'); return { client: db.client, user: { id: user } }; }, adminSession: async () => admin ? { client: db.client, user: { id: user } } : null },
+    '@/lib/commercial-errors': load('src/lib/commercial-errors.ts'), '@/lib/admin': { requireAdmin: async () => { if (!admin) throw new Error('denied'); return { client: db.client, user: { id: user } }; }, adminSession: async () => admin ? { client: db.client, user: { id: user } } : null },
     '@/lib/catalog': load('src/lib/catalog.ts', { '@/lib/quotation-details': detailsModule }, { crypto }), '@/lib/quotation-data': data, '@/lib/quotation-pdf': { renderQuotationPdf: async (record, options) => { rendered.push({ record, options }); return Buffer.from('%PDF-test'); }, quotationPdfFilename: () => 'cotizacion.pdf' },
     '@/lib/quotation-media': { loadQuotationPhotos: async () => new Map(), quotationMediaBucket: 'quotation-media' }, '@/lib/quotation-details': detailsModule, '@/lib/quotation-payload': payloadModule,
     '@/lib/quotation-validation': validation, '@/lib/quotation-types': types, '@/lib/money': money, '@/lib/notifications': { captureNotificationFailure() {} },
@@ -302,17 +319,18 @@ test('a discounted quotation keeps the same total through reservation and invoic
   ];
   const created = await api.saveQuotation(JSON.stringify(payload({ items })));
   assert.equal(db.tables.quotations[0].total, 1212.6);
-  db.tables.quotations[0].estado = 'aceptada';
+  await api.sendQuotation({}, form({ id: created.quotationId }));
+  await api.updateQuotationStatus({}, form({ id: created.quotationId, estado: 'aceptada', version_id: db.tables.quotation_versions[0].id, confirmado: 'si' }));
   const reservationTypes = load('src/lib/reservation-types.ts');
   const reservationData = load('src/lib/reservation-data.ts', { 'server-only': {}, '@/lib/invoice-query': load('src/lib/invoice-query.ts') });
   const reservations = load('src/app/admin/reservas/actions.ts', {
     'node:crypto': crypto, 'next/navigation': { redirect }, 'next/cache': { revalidatePath() {} },
-    '@/lib/admin': { requireAdmin: async () => ({ client: db.client, user: { id: 'agent-1' } }) }, '@/lib/reservation-data': reservationData,
+    '@/lib/commercial-errors': load('src/lib/commercial-errors.ts'), '@/lib/admin': { requireAdmin: async () => ({ client: db.client, user: { id: 'agent-1' } }) }, '@/lib/reservation-data': reservationData,
     '@/lib/reservation-types': reservationTypes, '@/lib/quotation-validation': validation, '@/lib/invoice-pdf': { renderInvoicePdf: async () => Buffer.from('') },
     '@/lib/site-config': { siteConfig: {} }, '@/lib/notifications': { captureNotificationFailure() {} }, '@/lib/lead-admin': { customerWhatsappHref: () => '' },
     '@/lib/lead-validation': { leadSegments: [], normalizePhone: value => value }, '@/lib/money': money, '@/lib/invoice-query': load('src/lib/invoice-query.ts'),
   });
-  const convert = new FormData(); convert.set('quotation_id', created.quotationId);
+  const convert = form({ quotation_id: created.quotationId, version_id: db.tables.quotations[0].accepted_version_id, confirmado: 'si', modo: 'reserva', apellido: 'Pérez' });
   await assert.rejects(reservations.convertQuotationToReservation({}, convert), /redirect:\/admin\/reservas\//);
   const [reservation] = db.tables.reservations;
   assert.equal(reservation.total, 1212.6);
@@ -330,7 +348,7 @@ test('a discounted quotation keeps the same total through reservation and invoic
 function reservationActions(db, user = 'agent-1') {
   return load('src/app/admin/reservas/actions.ts', {
     'node:crypto': crypto, 'next/navigation': { redirect }, 'next/cache': { revalidatePath() {} },
-    '@/lib/admin': { requireAdmin: async () => ({ client: db.client, user: { id: user } }) }, '@/lib/reservation-data': load('src/lib/reservation-data.ts', { 'server-only': {}, '@/lib/invoice-query': load('src/lib/invoice-query.ts') }),
+    '@/lib/commercial-errors': load('src/lib/commercial-errors.ts'), '@/lib/admin': { requireAdmin: async () => ({ client: db.client, user: { id: user } }) }, '@/lib/reservation-data': load('src/lib/reservation-data.ts', { 'server-only': {}, '@/lib/invoice-query': load('src/lib/invoice-query.ts') }),
     '@/lib/reservation-types': load('src/lib/reservation-types.ts'), '@/lib/quotation-validation': validation, '@/lib/invoice-pdf': { renderInvoicePdf: async () => Buffer.from('') },
     '@/lib/site-config': { siteConfig: {} }, '@/lib/notifications': { captureNotificationFailure() {} }, '@/lib/lead-admin': { customerWhatsappHref: () => '' },
     '@/lib/lead-validation': { leadSegments: [], normalizePhone: value => value }, '@/lib/money': money, '@/lib/invoice-query': load('src/lib/invoice-query.ts'),
@@ -341,14 +359,14 @@ async function sentAndAccepted(db) {
   const api = actions(db);
   const created = await api.saveQuotation(JSON.stringify(payload()));
   await api.sendQuotation({}, form({ id: created.quotationId }));
-  const accepted = await api.updateQuotationStatus({}, form({ id: created.quotationId, estado: 'aceptada' }));
+  const accepted = await api.updateQuotationStatus({}, form({ id: created.quotationId, estado: 'aceptada', version_id: db.tables.quotation_versions.at(-1)?.id ?? '', confirmado: 'si' }));
   return { api, id: created.quotationId, accepted };
 }
 
 test('accepting records the sent version; the accepted quotation can no longer be edited or re-sent', async () => {
   const db = fakeDb({ reservation_items: [], payments: [], invoices: [] });
   const { api, id, accepted } = await sentAndAccepted(db);
-  assert.equal(accepted.success, 'Aceptada: se registró la versión 1 enviada al cliente.');
+  assert.match(accepted.success, /Cotización aceptada/);
   assert.equal(db.tables.quotations[0].version_aceptada, 1);
   const before = JSON.stringify(db.tables.quotation_items);
   const edit = await api.saveQuotation(JSON.stringify(payload({ id, items: [{ descripcion: 'Otra tarifa', tipo: 'Tarifa aérea', cantidad: '1', precio_unitario: '1' }] })));
@@ -376,8 +394,8 @@ test('the reservation is created from the accepted version, once, with the origi
   // Even if live rows were altered behind the application, the accepted snapshot is what gets converted.
   db.tables.quotation_items.push({ id: 'stray', quotation_id: id, descripcion: 'Duplicado', tipo: 'Tarifa aérea', cantidad: 2, precio_unitario: 312, orden: 9 });
   const reservations = reservationActions(db, 'agent-2');
-  await assert.rejects(reservations.convertQuotationToReservation({}, form({ quotation_id: id })), /redirect:\/admin\/reservas\//);
-  await assert.rejects(reservations.convertQuotationToReservation({}, form({ quotation_id: id })), /redirect:\/admin\/reservas\//);
+  await assert.rejects(reservations.convertQuotationToReservation({}, form({ quotation_id: id, version_id: db.tables.quotations[0].accepted_version_id, confirmado: 'si', modo: 'reserva', apellido: 'Pérez' })), /redirect:\/admin\/reservas\//);
+  await assert.rejects(reservations.convertQuotationToReservation({}, form({ quotation_id: id, version_id: db.tables.quotations[0].accepted_version_id, confirmado: 'si', modo: 'reserva', apellido: 'Pérez' })), /redirect:\/admin\/reservas\//);
   assert.equal(db.tables.reservations.length, 1);
   assert.equal(db.tables.reservations[0].total, 604);
   assert.equal(db.tables.reservations[0].agente_id, 'agent-1');
@@ -387,8 +405,8 @@ test('the reservation is created from the accepted version, once, with the origi
 test('a converted quotation cannot be moved out of "aceptada"', async () => {
   const db = fakeDb({ reservation_items: [], payments: [], invoices: [] });
   const { api, id } = await sentAndAccepted(db);
-  await assert.rejects(reservationActions(db).convertQuotationToReservation({}, form({ quotation_id: id })), /redirect/);
-  assert.match((await api.updateQuotationStatus({}, form({ id, estado: 'rechazada' }))).error, /ya se convirtió en reserva/);
+  await assert.rejects(reservationActions(db).convertQuotationToReservation({}, form({ quotation_id: id, version_id: db.tables.quotations[0].accepted_version_id, confirmado: 'si', modo: 'reserva', apellido: 'Pérez' })), /redirect/);
+  assert.match((await api.updateQuotationStatus({}, form({ id, estado: 'rechazada' }))).error, /requiere una enmienda/);
   assert.equal(db.tables.quotations[0].estado, 'aceptada');
 });
 
@@ -588,10 +606,10 @@ test('an accepted package converts into a reservation from exactly the accepted 
   const api = actions(db);
   const created = await api.saveQuotation(JSON.stringify(packagePayload()));
   await api.sendQuotation({}, form({ id: created.quotationId }));
-  assert.match((await api.updateQuotationStatus({}, form({ id: created.quotationId, estado: 'aceptada' }))).success, /versión 1/);
+  assert.match((await api.updateQuotationStatus({}, form({ id: created.quotationId, estado: 'aceptada', version_id: db.tables.quotation_versions.at(-1)?.id ?? '', confirmado: 'si' }))).success, /Cotización aceptada/);
   const locked = await api.saveQuotation(JSON.stringify(packagePayload({ id: created.quotationId })));
   assert.equal(locked.locked, true);
-  await assert.rejects(reservationActions(db).convertQuotationToReservation({}, form({ quotation_id: created.quotationId })), /redirect:\/admin\/reservas\//);
+  await assert.rejects(reservationActions(db).convertQuotationToReservation({}, form({ quotation_id: created.quotationId, version_id: db.tables.quotations[0].accepted_version_id, confirmado: 'si', modo: 'reserva', apellido: 'Pérez' })), /redirect:\/admin\/reservas\//);
   assert.equal(db.tables.reservations.length, 1);
   assert.equal(db.tables.reservations[0].total, 4029.5);
   assert.deepEqual(json(db.tables.reservation_items.map(item => item.descripcion)), json(db.tables.quotation_versions[0].snapshot.items.map(item => item.descripcion)));
@@ -616,34 +634,24 @@ test('a package without flights (hotel + ferry) keeps its exact services in the 
   assert.deepEqual(json(db.tables.quotation_versions[0].snapshot), issued, 'the issued version is unchanged');
   // Sent again, accepted, amended: the amendment starts from the accepted combination.
   await api.sendQuotation({}, form({ id: created.quotationId }));
-  await api.updateQuotationStatus({}, form({ id: created.quotationId, estado: 'aceptada' }));
+  await api.updateQuotationStatus({}, form({ id: created.quotationId, estado: 'aceptada', version_id: db.tables.quotation_versions.at(-1)?.id ?? '', confirmado: 'si' }));
   await assert.rejects(api.duplicateQuotation(created.quotationId, 'enmienda'), /redirect/);
   const amendment = db.tables.quotations.at(-1);
   assert.deepEqual(json(amendment.detalles.paquete.componentes.map(component => component.tipo)), ['hotel', 'traslado']);
   assert.equal(json(db.tables.quotation_versions.map(version => version.snapshot.quotation.detalles.paquete.componentes.length)).join(), '2,2');
 });
 
-test('accepting a quotation never sent from the panel freezes what was accepted, and the reservation uses it', async () => {
+test('accepting an unsent quotation is rejected without creating a version', async () => {
   const db = fakeDb({ reservation_items: [], payments: [], invoices: [] });
-  const api = actions(db);
-  const created = await api.saveQuotation(JSON.stringify(payload()));
-  assert.equal(db.tables.quotation_versions.length, 0);
-  const accepted = await api.updateQuotationStatus({}, form({ id: created.quotationId, estado: 'aceptada' }));
-  assert.match(accepted.success, /se guardó la versión 1/);
-  assert.equal(db.tables.quotation_versions.length, 1);
-  assert.equal(db.tables.quotation_versions[0].snapshot.origen, 'aceptacion');
-  assert.equal(db.tables.quotations[0].estado, 'aceptada');
-  assert.equal(db.tables.quotations[0].version_aceptada, 1);
-  // A later change to the live rows does not reach the reservation: it is built from the frozen version.
-  db.tables.quotation_items.push({ id: 'stray', quotation_id: created.quotationId, descripcion: 'Agregado después', tipo: 'Hotel', cantidad: 1, precio_unitario: 999, orden: 9 });
-  await assert.rejects(reservationActions(db).convertQuotationToReservation({}, form({ quotation_id: created.quotationId })), /redirect:\/admin\/reservas\//);
-  assert.equal(db.tables.reservations[0].total, 604);
+  const api = actions(db); const created = await api.saveQuotation(JSON.stringify(payload()));
+  const result = await api.updateQuotationStatus({}, form({ id: created.quotationId, estado: 'aceptada', version_id: '11111111-1111-4111-8111-111111111111', confirmado: 'si' }));
+  assert.match(result.error, /enviada/); assert.equal(db.tables.quotation_versions.length,0); assert.equal(db.tables.quotations[0].estado,'borrador');
 });
 
 test('accepting after a send records the sent version and freezes nothing new', async () => {
   const db = fakeDb({ reservation_items: [], payments: [], invoices: [] });
   const { accepted } = await sentAndAccepted(db);
-  assert.match(accepted.success, /versión 1 enviada/);
+  assert.match(accepted.success, /Cotización aceptada/);
   assert.equal(db.tables.quotation_versions.length, 1);
   assert.equal(db.tables.quotation_versions[0].snapshot.origen, undefined);
 });

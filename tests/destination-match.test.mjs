@@ -10,7 +10,7 @@ const linked = slug => packages.filter(item => packageMatchesDestination(item, d
 
 test('every published destination with real packages links them, regions included', () => {
   assert.deepEqual(linked('punta-cana'), ['punta-cana-luna-de-miel', 'punta-cana-todo-incluido']);
-  assert.deepEqual(linked('panama'), ['cartagena-y-panama']);
+  assert.deepEqual(linked('panama'), ['cartagena-y-panama', 'escapada-fin-de-semana-panama', 'panama-ciudad-canal-casco-historico', 'panama-ciudad-playa-blanca-todo-incluido']);
   assert.deepEqual(linked('cartagena'), ['cartagena-all-inclusive', 'cartagena-y-panama']);
   assert.deepEqual(linked('rio-de-janeiro'), ['carnaval-de-rio', 'rio-de-janeiro-clasico']);
   assert.deepEqual(linked('cruceros'), ['crucero-caribe', 'crucero-mediterraneo']);

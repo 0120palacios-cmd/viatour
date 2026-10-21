@@ -30,6 +30,9 @@ export type Quotation = {
   created_at: string;
   updated_at?: string;
   // Added by docs/sql/quotations_v5.sql; absent on databases where it has not been applied yet.
+  accepted_version_id?: string | null;
+  sent_version_id?: string | null;
+  version_aceptada?: number | null;
   tipo?: string | null;
   detalles?: unknown;
   vence_en?: string | null;

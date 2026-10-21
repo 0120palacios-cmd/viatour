@@ -2,10 +2,12 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Maximize2 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { PhotoLightbox } from "@/components/packages/photo-lightbox";
 
-export type GalleryImage = { src: string; unoptimized: boolean };
+// alt: a description of this photo when the package provides one; otherwise a generic numbered label.
+export type GalleryImage = { src: string; unoptimized: boolean; alt?: string };
 
 const mainSizes = "(max-width: 639px) calc(100vw - 32px), (max-width: 1023px) calc(100vw - 48px), (max-width: 1199px) calc((100vw - 88px) * 2 / 3), 747px";
 
@@ -14,6 +16,7 @@ export function PackageGallery({ images, name, destination }: { images: GalleryI
   const t = useTranslations("packagePage");
   const track = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
+  const [viewer, setViewer] = useState<number | null>(null);
   const total = images.length;
 
   useEffect(() => {
@@ -40,7 +43,7 @@ export function PackageGallery({ images, name, destination }: { images: GalleryI
     if (event.key === "ArrowLeft") { event.preventDefault(); go(active - 1); }
   }
 
-  const alt = (index: number) => t("galleryAlt", { name, destination, number: index + 1, total });
+  const alt = (index: number) => images[index]?.alt || t("galleryAlt", { name, destination, number: index + 1, total });
   const arrow = "absolute top-1/2 inline-flex size-11 -translate-y-1/2 items-center justify-center rounded-btn border border-line bg-canvas text-ink shadow-sm transition-opacity duration-(--duration-fast) ease-out hover:bg-surface disabled:pointer-events-none disabled:opacity-0";
 
   return <section aria-label={t("galleryLabel", { name })} className="space-y-3">
@@ -50,6 +53,7 @@ export function PackageGallery({ images, name, destination }: { images: GalleryI
           <Image src={image.src} alt={alt(index)} fill preload={index === 0} unoptimized={image.unoptimized} sizes={mainSizes} className="object-cover" />
         </div>)}
       </div>
+      <button type="button" onClick={() => setViewer(active)} aria-label={t("viewerOpen")} className="absolute right-3 top-3 inline-flex size-11 items-center justify-center rounded-btn border border-line bg-canvas text-ink shadow-sm transition-colors duration-(--duration-fast) ease-out hover:bg-surface"><Maximize2 size={20} strokeWidth={1.75} aria-hidden="true" /></button>
       {total > 1 && <>
         <button type="button" onClick={() => go(active - 1)} disabled={active === 0} aria-label={t("galleryPrevious")} className={`${arrow} left-3`}><ChevronLeft size={24} strokeWidth={1.75} aria-hidden="true" /></button>
         <button type="button" onClick={() => go(active + 1)} disabled={active === total - 1} aria-label={t("galleryNext")} className={`${arrow} right-3`}><ChevronRight size={24} strokeWidth={1.75} aria-hidden="true" /></button>
@@ -62,5 +66,6 @@ export function PackageGallery({ images, name, destination }: { images: GalleryI
         <Image src={image.src} alt="" fill unoptimized={image.unoptimized} sizes="96px" className="object-cover" />
       </button>)}</div>
     </>}
+    <PhotoLightbox images={images.map((image, index) => ({ src: image.src, alt: alt(index), unoptimized: image.unoptimized }))} index={viewer} onClose={() => setViewer(null)} label={t("galleryLabel", { name })} />
   </section>;
 }

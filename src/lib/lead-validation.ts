@@ -53,6 +53,12 @@ export function validateLead(input: unknown) {
       fields.Adultos = adults;
       fields.Niños = children;
       fields.Notas = get("notes", 3000);
+      // Packages with quote options (e.g. city hotel or with an all-inclusive night) and requestable extras.
+      // Both are optional: most packages have neither.
+      if (Object.hasOwn(raw, "option")) { const option = get("option", 160); if (option) fields.Opción = option; }
+      // Preferred resort and city hotel (by name), and a room preference.
+      for (const [key, label, max] of [["resort", "Resort", 160], ["hotel", "Hotel", 160], ["room", "Habitación", 120]] as const) if (Object.hasOwn(raw, key)) { const value = get(key, max); if (value) fields[label] = value; }
+      if (Object.hasOwn(raw, "extras")) { const extras = get("extras", 1000); if (extras) fields.Adicionales = extras; }
     }
   } else if (servicio === "descubrimiento") {
     const travelerType = get("travelerType", 32, true), experiences = get("experiences", 300, true), budget = get("budget", 32, true), climate = get("climate", 32, true), duration = get("duration", 32, true), interests = get("interests", 300, true), travelers = count("travelers", 1, 20), recommendations = get("recommendations", 500, true);
