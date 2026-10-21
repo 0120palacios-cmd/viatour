@@ -1,0 +1,36 @@
+"use client";
+
+import { useActionState, useState } from "react";
+import { ConversionPassengers } from "@/components/admin/conversion-passengers";
+import { Dialog } from "radix-ui";
+import { Button } from "@/components/ui/button";
+import { updateQuotationStatus, type QuotationActionState } from "@/app/admin/cotizaciones/actions";
+import { convertQuotationToReservation, promoteReservation, type ReservationActionState } from "@/app/admin/reservas/actions";
+
+type Version = { id: string; number: number; customer: string; total: string; email: string; legacy?: boolean };
+const control = "w-full rounded-btn border border-line bg-canvas p-3 text-ink";
+
+function Confirmation({ title, children }: { title: string; children: React.ReactNode }) {
+  return <Dialog.Portal><Dialog.Overlay className="fixed inset-0 z-50 bg-ink/50" /><Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-[calc(100%-32px)] max-w-xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-panel border border-line bg-canvas p-6 shadow-md"><Dialog.Title className="t-h3">{title}</Dialog.Title><Dialog.Description className="mt-2 text-ink-soft">Revise los datos antes de confirmar esta operación administrativa.</Dialog.Description><div className="mt-6">{children}</div><Dialog.Close asChild><Button variant="ghost" className="mt-4">Cerrar</Button></Dialog.Close></Dialog.Content></Dialog.Portal>;
+}
+
+export function CommercialLifecycle({ id, code, status, version, reservation, ready, needsReview = false }: { id: string; code: string; status: string; version: Version | null; reservation?: { id: string; codigo: string } | null; ready: boolean; needsReview?: boolean }) {
+  const [accept, acceptAction, accepting] = useActionState<QuotationActionState, FormData>(updateQuotationStatus, {});
+  const [convert, convertAction, converting] = useActionState<ReservationActionState, FormData>(convertQuotationToReservation, {});
+  const [mode, setMode] = useState("prerreserva");
+  const accepted = (status === "aceptada" && !needsReview) || Boolean(accept.success);
+  const summary = version ? <dl className="space-y-2 rounded-card bg-surface p-4"><div><dt className="t-small text-ink-soft">Cliente</dt><dd>{version.customer} · {version.email}</dd></div><div><dt className="t-small text-ink-soft">Documento</dt><dd>{code} · Versión {version.number}</dd></div><div><dt className="t-small text-ink-soft">Total aceptado</dt><dd className="font-semibold">{version.total}</dd></div></dl> : null;
+  return <section aria-labelledby="commercial-heading" className="space-y-4 rounded-panel border border-line bg-canvas p-4 sm:p-6">
+    <h2 id="commercial-heading" className="t-h3">{accepted ? "Cotización aceptada" : "Aceptación y reserva"}</h2>
+    <p className="t-small text-ink-soft">Cotización → Aceptación → Prerreservación o reserva → Factura</p>
+    {reservation ? <a className="inline-flex min-h-12 items-center font-semibold text-brand underline" href={`/admin/reservas/${reservation.id}`}>Abrir reserva {reservation.codigo}</a> : <div className="flex flex-wrap gap-3">
+      {!accepted ? <Dialog.Root><Dialog.Trigger asChild><Button disabled={!ready || (status !== "enviada" && !needsReview) || !version}>{needsReview ? "Verificar versión aceptada" : "Marcar como aceptada"}</Button></Dialog.Trigger><Confirmation title="Marcar como aceptada"><form action={acceptAction} className="space-y-4">{summary}{version?.legacy ? <p className="t-small text-ink-soft">Documento anterior a la actualización: verifique el PDF enviado y registre la referencia del correo o conversación. El sistema registra su declaración ahora, sin fecharla retroactivamente.</p> : null}<input type="hidden" name="id" value={id} /><input type="hidden" name="estado" value="aceptada" /><input type="hidden" name="version_id" value={version?.id ?? ""} /><label className="block t-small">Referencia o notas de aceptación<textarea className={control} name="notas" maxLength={2000} required={version?.legacy} minLength={version?.legacy ? 5 : undefined} /></label><label className="flex items-start gap-3"><input className="mt-1" type="checkbox" name="confirmado" value="si" required />Confirmo que esta versión fue enviada al cliente y que el cliente comunicó su aceptación. Este registro administrativo no es una firma digital del cliente.</label>{accept.error && <p role="alert" className="text-error">{accept.error}</p>}{accept.success ? <p role="status">{accept.success}</p> : <Button disabled={accepting} type="submit">{accepting ? "Registrando" : "Confirmar aceptación"}</Button>}</form></Confirmation></Dialog.Root> : <Dialog.Root><Dialog.Trigger asChild><Button disabled={!version || !ready} onClick={() => setMode("prerreserva")}>Crear prerreservación</Button></Dialog.Trigger><Dialog.Trigger asChild><Button variant="ghost" disabled={!version || !ready} onClick={() => setMode("reserva")}>Convertir en reserva</Button></Dialog.Trigger><Confirmation title={mode === "prerreserva" ? "Crear prerreservación" : "Convertir en reserva"}><form action={convertAction} className="space-y-4">{summary}<input type="hidden" name="quotation_id" value={id} /><input type="hidden" name="version_id" value={version?.id ?? ""} /><input type="hidden" name="modo" value={mode} /><label className="block t-small">Apellido del titular para acceder al portal<input required className={control} name="apellido" maxLength={120} autoComplete="off" /></label><p className="t-small text-ink-soft">Se copiarán todos los servicios y condiciones de la versión aceptada. El acceso requiere referencia, apellido y código enviado al correo registrado. No se enviará una invitación al crear este registro.</p><label className="flex items-start gap-3"><input className="mt-1" type="checkbox" name="confirmado" value="si" required />He revisado el cliente, los servicios y el total. La confirmación de los proveedores queda pendiente.</label><ConversionPassengers />{convert.error && <p role="alert" className="text-error">{convert.error}</p>}<Button type="submit" disabled={converting}>{converting ? "Creando" : "Confirmar creación"}</Button></form></Confirmation></Dialog.Root>}
+    </div>}
+    {!ready ? <p role="alert" className="text-error">Falta la actualización comercial de la base de datos.</p> : !version ? <p className="text-ink-soft">No hay una versión con envío registrado. Envíe la cotización desde el panel antes de aceptar. Los documentos anteriores requieren revisión del historial.</p> : <a className="inline-flex min-h-11 items-center text-brand underline" href={`/api/admin/cotizaciones/${id}/pdf?version=${version.number}&inline=1`} target="_blank" rel="noreferrer">{accepted ? "Ver versión aceptada" : "Revisar versión enviada"}</a>}
+  </section>;
+}
+
+export function PromoteReservationForm({ id }: { id: string }) {
+  const [state, action, pending] = useActionState<ReservationActionState, FormData>(promoteReservation, {});
+  return <form action={action} className="space-y-3"><input type="hidden" name="id" value={id} /><Button disabled={pending}>Convertir prerreservación en reserva</Button><p className="t-small text-ink-soft">La confirmación del proveedor se registra por separado.</p>{state.error && <p role="alert" className="text-error">{state.error}</p>}{state.success && <p role="status">{state.success}</p>}</form>;
+}

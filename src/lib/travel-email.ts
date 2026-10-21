@@ -1,0 +1,10 @@
+import { travelServices } from "@/lib/travel-services";
+import { legalName,ticketingLabels,type PublicTravel } from "@/lib/travel-operations";
+import { reservationStatusLabel } from "@/lib/reservation-types";
+import type {Reservation} from "@/lib/reservation-types";
+export function escapeHtml(value:string){return value.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));}
+export function itineraryEmail(r:Reservation,travel:PublicTravel){
+ const d=travelServices(r.accepted_snapshot?.quotation?.detalles);
+ const lines=[`Estimado/a ${r.cliente_nombre}`,`Referencia de agencia: ${r.codigo}`,`Destino: ${r.destino}`,`${r.fecha_inicio??'Por confirmar'} — ${r.fecha_fin??'Por confirmar'}`,r.estado==='cancelada'?'Reservación cancelada':d.vuelos.journeys.some(j=>j.segmentos.length)?ticketingLabels[travel.status]:reservationStatusLabel(r.estado),...travel.passengers.map(p=>legalName(p)),...d.vuelos.journeys.flatMap(j=>j.segmentos.map(f=>`${f.aerolinea} ${f.vuelo} · ${f.origen} ${f.salidaFecha} ${f.salidaHora} → ${f.destino} ${f.llegadaFecha} ${f.llegadaHora} · Horarios locales`)),...d.hoteles.map(h=>`${h.nombre} · ${h.destino} · ${h.checkIn} — ${h.checkOut}`),...d.ferry.legs.map(f=>`Ferry ${f.operador} · ${f.origenPuerto} → ${f.destinoPuerto} · ${f.salidaFecha} ${f.salidaHora}`),...d.servicios.map(s=>`${s.tipo}: ${s.descripcion}`)];
+ return {text:lines.join('\n')+'\nConsulte sus documentos en https://www.miviatour.com/mi-reserva\nWhatsApp +504 8866-8704',html:`<!doctype html><html lang="es"><body style="font-family:Arial,sans-serif;color:#12161C"><main style="max-width:640px;margin:auto;padding:24px"><img src="https://www.miviatour.com/logo-black.png" width="150" alt="viatour"><h1 style="color:#1656D6">Su itinerario de viaje</h1>${lines.map(line=>`<p>${escapeHtml(line)}</p>`).join('')}<p>Adjuntamos su itinerario. Consulte el estado actualizado y sus documentos mediante el acceso seguro al portal.</p><p><a href="https://www.miviatour.com/mi-reserva">Consultar reservación</a></p><p><a href="https://wa.me/50488668704">Contactar a viatour</a></p></main></body></html>`};
+}
