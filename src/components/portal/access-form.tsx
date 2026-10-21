@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { trackEvent } from "@/lib/analytics";
 const initialState: PortalAccessState = {};
 
-export function PortalAccessForm({ showOtp = false }: { showOtp?: boolean }) {
+export function PortalAccessForm({ showOtp = false, reference = "" }: { showOtp?: boolean; reference?: string }) {
   const t = useTranslations("portal");
   const v4 = useTranslations("v4.portal");
   const [state, formAction, pending] = useActionState(accessReservation, initialState);
@@ -19,8 +19,8 @@ export function PortalAccessForm({ showOtp = false }: { showOtp?: boolean }) {
   const otpVisible = restartedAt !== state && (showOtp || state.step === "otp" || otpState.step === "otp");
   return <div className="space-y-8">
     {!otpVisible ? <form action={formAction} onSubmit={() => trackEvent("portal_code_requested", { placement: "mi-reserva" })} className="space-y-6" aria-describedby="portal-access-help portal-access-error">
-      <div className="space-y-2"><label className="t-small font-semibold" htmlFor="portal-codigo">{t("bookingCode")}</label><Input id="portal-codigo" name="codigo" autoComplete="off" autoCapitalize="characters" spellCheck={false} required maxLength={100} /></div>
-      <div className="space-y-2"><label className="t-small font-semibold" htmlFor="portal-apellido">{t("lastName")}</label><Input id="portal-apellido" name="apellido" autoComplete="family-name" required maxLength={120} /></div>
+      <div className="space-y-2"><label className="t-small font-semibold" htmlFor="portal-codigo">{t("bookingCode")}</label><Input id="portal-codigo" name="codigo" defaultValue={reference} autoComplete="off" autoCapitalize="characters" spellCheck={false} required maxLength={100} /></div>
+      <div className="space-y-2"><label className="t-small font-semibold" htmlFor="portal-apellido">{t("lastName")}</label><Input id="portal-apellido" name="apellido" autoComplete="family-name" required maxLength={120} autoFocus={Boolean(reference)} /></div>
       <p id="portal-access-help" className="t-small text-ink-soft">{t("accessHelp")}</p>
       <Button type="submit" disabled={pending}>{t("continue")}</Button>
       {state.error ? <p id="portal-access-error" className="t-small text-error" role="alert">{state.error}</p> : null}

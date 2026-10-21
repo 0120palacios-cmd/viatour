@@ -1,33 +1,263 @@
 /* eslint-disable jsx-a11y/alt-text -- react-pdf Image is not an HTML image and has no alt prop. */
 import "server-only";
-import {readFileSync} from "node:fs";
-import { join } from "node:path";
-import { Document,Font,Image,Link,Page,StyleSheet,Text,View,renderToBuffer } from "@react-pdf/renderer";
-import { travelServices } from "@/lib/travel-services";
-import { legalName,ticketingLabels,type PublicTravel } from "@/lib/travel-operations";
-import { reservationStatusLabel,type Reservation } from "@/lib/reservation-types";
-import { airportInfo } from "@/lib/flight-reference";
-import { layoverMinutes,formatDuration,isOvernightConnection } from "@/lib/flight-itinerary";
-const s=StyleSheet.create({page:{padding:40,paddingBottom:65,fontFamily:"TravelManrope",fontSize:10,color:"#12161C"},header:{borderBottomWidth:2,borderBottomColor:"#1656D6",paddingBottom:16,marginBottom:20},logo:{width:130,height:40,objectFit:"contain"},title:{fontSize:24,fontWeight:700,marginTop:16},muted:{fontSize:9,color:"#5A6672",marginTop:4},section:{fontSize:13,fontWeight:700,color:"#103FAE",marginTop:20,marginBottom:10},card:{borderWidth:1,borderColor:"#E4E8EB",borderRadius:10,padding:14,marginBottom:10},row:{flexDirection:"row",gap:20},column:{flex:1},airport:{fontSize:20,fontWeight:700},line:{marginTop:5},footer:{position:"absolute",bottom:24,left:40,right:40,fontSize:8,color:"#5A6672",borderTopWidth:1,borderTopColor:"#E4E8EB",paddingTop:8},status:{backgroundColor:"#E9F0FE",padding:12,borderRadius:8,marginBottom:12},bold:{fontWeight:700}});
-let registered=false;
-export async function renderItineraryPdf(r:Reservation,travel:PublicTravel,revision:number){
- if(!r.accepted_snapshot?.quotation?.detalles) throw Error("Falta el itinerario aceptado.");
- if(!registered){Font.register({family:"TravelManrope",fonts:[400,700].map(weight=>({src:join(process.cwd(),"src/assets/fonts",`manrope-${weight}.woff`),fontWeight:weight}))});registered=true;}
- const d=travelServices(r.accepted_snapshot.quotation.detalles);
- const flights=d.vuelos.journeys.flatMap(j=>j.segmentos.map((f,i)=>({...f,connection:i>0?`${formatDuration(layoverMinutes(j.segmentos[i-1],f))}${isOvernightConnection(j.segmentos[i-1],f)?" · Cambio de día":""}`:""})));
- return renderToBuffer(<Document title={`Itinerario ${r.codigo}`} author="viatour"><Page size="LETTER" style={s.page}>
- <View style={s.header}><Image src={readFileSync(join(process.cwd(),"public/logo-black.png"))} style={s.logo}/><Text style={s.title}>Su itinerario de viaje</Text><Text style={s.muted}>Referencia de agencia {r.codigo} · Revisión {revision}</Text><Text style={s.section}>{r.destino}</Text><Text>{r.fecha_inicio||"Fecha por confirmar"} — {r.fecha_fin||"Fecha por confirmar"}</Text></View>
- <View style={s.status} wrap={false}><Text style={s.bold}>Estado de agencia: {r.prerreserva?"Prerreservación · ":""}{reservationStatusLabel(r.estado)}</Text><Text style={s.line}>Proveedor: {({pendiente:"Pendiente de confirmación",parcial:"Confirmación parcial",confirmada:"Confirmado",emitida:"Confirmado"} as Record<string,string>)[r.supplier_status??""]||"Sin confirmación registrada"}</Text>{flights.length?<Text style={s.line}>{ticketingLabels[travel.status]}</Text>:null}<Text style={s.muted}>Documento informativo de viatour. Solo los boletos y referencias registrados por el proveedor acreditan su emisión.</Text></View>
- <Text style={s.section}>Pasajeros</Text>{travel.passengers.length?travel.passengers.map(p=><View key={p.id} style={s.card} wrap={false}><Text style={s.bold}>{legalName(p)}</Text><Text style={s.muted}>{({adulto:"Adulto",nino:"Niño",infante:"Infante"})[p.category]}</Text>{travel.tickets.filter(t=>t.passengerId===p.id).map((t,i)=><Text key={i} style={s.line}>{t.airline} · Localizador {t.pnr||"pendiente"}{travel.status==="emitida"?` · Boleto ${t.number} · Emitido ${t.issueDate}`:""} · {t.segments}</Text>)}</View>):<Text>Información de pasajeros pendiente de revisión.</Text>}
- {flights.length?<Text style={s.section}>Vuelos · horarios locales de cada aeropuerto</Text>:null}
- {r.supplier_reference?<Text style={s.muted}>Referencia del proveedor: {r.supplier_reference}</Text>:null}
- {travel.confirmedAt?<Text style={s.muted}>Confirmación registrada: {travel.confirmedAt}</Text>:null}
- {flights.map((f,i)=><View key={`${f.id}-${i}`} style={s.card} wrap={false}>{f.connection?<Text style={s.muted}>Conexión: {f.connection}</Text>:null}<Text style={s.bold}>{i+1}. {f.aerolinea} · {f.vuelo}</Text>{f.operadoPor?<Text style={s.muted}>Operado por {f.operadoPor}</Text>:null}<View style={{...s.row,marginTop:12}}><View style={s.column}><Text style={s.airport}>{f.origen}</Text><Text>{f.origenNombre||airportInfo(f.origen)?.nombre||""}</Text><Text style={s.line}>{f.salidaFecha} · {f.salidaHora}</Text><Text style={s.muted}>{airportInfo(f.origen)?.zona||"Zona horaria por verificar"}</Text></View><View style={s.column}><Text style={s.airport}>{f.destino}</Text><Text>{f.destinoNombre||airportInfo(f.destino)?.nombre||""}</Text><Text style={s.line}>{f.llegadaFecha} · {f.llegadaHora}</Text><Text style={s.muted}>{airportInfo(f.destino)?.zona||"Zona horaria por verificar"}</Text></View></View><Text style={s.muted}>Cabina: {f.cabina||"Por confirmar"}</Text></View>)}
- {d.equipaje.map((b,i)=><View key={i} style={s.card} wrap={false}><Text style={s.bold}>Equipaje · {b.alcance}</Text>{([['personal','Artículo personal'],['mano','Equipaje de mano'],['documentado','Equipaje documentado']] as const).map(([key,label])=><Text key={key} style={s.line}>{label}: {({incluido:'Incluido',no_incluido:'No incluido',con_cargo:'Con cargo','':'Por confirmar'})[b[key].estado]}{[b[key].piezas!==null?`${b[key].piezas} pieza(s)`:'',b[key].peso,b[key].medidas].filter(Boolean).map(v=>` · ${v}`).join('')}</Text>)}<Text style={s.muted}>{b.adicional} {b.notas}</Text></View>)}
- {d.hoteles.length?<Text style={s.section}>Alojamiento</Text>:null}{d.hoteles.map(h=><View key={h.id} style={s.card} wrap={false}><Text style={s.bold}>{h.nombre} · {h.destino}</Text><Text style={s.line}>Entrada {h.checkIn} · Salida {h.checkOut}</Text><Text style={s.line}>{h.planComidas}</Text>{h.habitaciones.map(room=><Text key={room.id} style={s.line}>{room.cantidad} × {room.categoria} · {room.adultos} adultos · {room.ninos} niños</Text>)}</View>)}
- {d.ferry.legs.length?<Text style={s.section}>Ferry</Text>:null}{d.ferry.legs.map(f=><View key={f.id} style={s.card} wrap={false}><Text style={s.bold}>{f.operador} · {f.origenPuerto} a {f.destinoPuerto}</Text><Text style={s.line}>{f.salidaFecha} {f.salidaHora} — {f.llegadaFecha} {f.llegadaHora}</Text><Text style={s.muted}>{d.ferry.equipajeIncluido}</Text></View>)}
- {d.servicios.length?<Text style={s.section}>Traslados y otros servicios</Text>:null}{d.servicios.map(x=><View key={x.id} style={s.card}><Text style={s.bold}>{x.tipo}</Text><Text>{x.descripcion}</Text></View>)}
- <View style={s.card} wrap={false}><Text style={s.section}>Acompañamiento durante su viaje</Text><Text>Consulte sus documentos mediante referencia, apellido y código de verificación en el portal seguro.</Text><Link src="https://www.miviatour.com/mi-reserva" style={s.line}>www.miviatour.com/mi-reserva</Link><Text style={s.line}>WhatsApp +504 8866-8704 · soporte@miviatour.com</Text></View>
- <Text style={s.footer} fixed render={({pageNumber,totalPages})=>`viatour · ${r.codigo} · Horarios locales · Página ${pageNumber} de ${totalPages}`}/>
- </Page></Document>);
+
+import { Document, Image, Link, Page, Path, StyleSheet, Svg, Text, View, renderToBuffer } from "@react-pdf/renderer";
+import type { PublicTravel } from "@/lib/travel-operations";
+import type { Reservation } from "@/lib/reservation-types";
+import { hondurasToday } from "@/lib/portal-summary";
+import { reservationTripView, type HotelView, type JourneyView, type ServiceView, type TripEvent, type TripView } from "@/lib/trip-view";
+import { formatClock, formatDateRange, formatMinutes, formatTripDate } from "@/lib/trip-format";
+import { tripCopy } from "@/lib/trip-copy";
+import { agencyContact, pdfColors as c, pdfFont, pdfLogo, registerPdfFont } from "@/lib/pdf-kit";
+
+// The travel itinerary: an operational document to use during the trip. It carries no prices, no
+// sales copy and no private traveller data (only names and categories from the public projection).
+// Its identity: a deep-blue cover band, a day-by-day timeline and e-ticket style flight rows.
+
+const s = StyleSheet.create({
+  page: { fontFamily: pdfFont, fontSize: 9.5, color: c.ink, paddingTop: 40, paddingBottom: 56, paddingHorizontal: 40 },
+  body: {},
+  cover: { marginTop: -40, marginHorizontal: -40, backgroundColor: c.brandDeep, color: c.canvas, paddingHorizontal: 40, paddingTop: 30, paddingBottom: 26 },
+  coverTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  logo: { width: 104, height: 32, objectFit: "contain" },
+  coverLabel: { fontSize: 8.5, fontWeight: 700, letterSpacing: 1.6, color: "#C9D8FB" },
+  destination: { fontSize: 30, fontWeight: 800, marginTop: 26, letterSpacing: -0.5, lineHeight: 1.2 },
+  coverDates: { fontSize: 13, marginTop: 6, color: "#E3EBFD" },
+  coverMeta: { flexDirection: "row", marginTop: 18, gap: 28 },
+  coverMetaLabel: { fontSize: 7.5, color: "#C9D8FB", letterSpacing: 0.8, fontWeight: 600 },
+  coverMetaValue: { fontSize: 10.5, fontWeight: 700, marginTop: 2 },
+  overview: { flexDirection: "row", marginTop: 18, borderWidth: 1, borderColor: c.line, borderRadius: 10 },
+  overviewCell: { flex: 1, paddingVertical: 10, paddingHorizontal: 12, borderRightWidth: 1, borderRightColor: c.line },
+  label: { fontSize: 7.5, fontWeight: 700, color: c.inkSoft, letterSpacing: 0.8 },
+  value: { fontSize: 10.5, fontWeight: 700, marginTop: 3 },
+  status: { marginTop: 12, padding: 12, borderRadius: 10, backgroundColor: c.brandTint },
+  statusTitle: { fontSize: 11, fontWeight: 700, color: c.brandDeep },
+  sectionTitle: { fontSize: 14, fontWeight: 800, marginTop: 22, marginBottom: 8, letterSpacing: -0.2, lineHeight: 1.3 },
+  muted: { color: c.inkSoft },
+  small: { fontSize: 8.5 },
+  travelerRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 7, borderBottomWidth: 1, borderBottomColor: c.line },
+  dayHeader: { flexDirection: "row", alignItems: "center", marginTop: 16, marginBottom: 8, gap: 8 },
+  dayBadge: { backgroundColor: c.ink, color: c.canvas, fontSize: 8.5, fontWeight: 700, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  dayDate: { fontSize: 11, fontWeight: 700 },
+  card: { borderWidth: 1, borderColor: c.line, borderRadius: 10, marginBottom: 8 },
+  cardHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: c.line, backgroundColor: c.surface, borderTopLeftRadius: 10, borderTopRightRadius: 10 },
+  kicker: { fontSize: 7.5, fontWeight: 700, color: c.brand, letterSpacing: 0.8 },
+  cardTitle: { fontSize: 11.5, fontWeight: 700, marginTop: 1, lineHeight: 1.3 },
+  leg: { flexDirection: "row", paddingHorizontal: 12, paddingVertical: 10, alignItems: "flex-start" },
+  legSide: { width: 150 },
+  legSideRight: { width: 150, alignItems: "flex-end", textAlign: "right" },
+  time: { fontSize: 15, fontWeight: 800, letterSpacing: -0.3, lineHeight: 1.25, marginBottom: 2 },
+  code: { fontSize: 10.5, fontWeight: 700, marginTop: 1 },
+  legMiddle: { flex: 1, alignItems: "center", paddingHorizontal: 8, paddingTop: 4 },
+  rule: { flexDirection: "row", alignItems: "center", width: "100%", marginVertical: 4 },
+  ruleLine: { flex: 1, height: 1, backgroundColor: "#B9CCF6" },
+  connection: { marginHorizontal: 12, marginBottom: 2, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: c.line, borderStyle: "dashed", borderRadius: 6, flexDirection: "row", justifyContent: "space-between" },
+  free: { flexDirection: "row", paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: c.line, borderStyle: "dashed", borderRadius: 8, marginTop: 4 },
+  row: { flexDirection: "row", gap: 16 },
+  infoItem: { flexDirection: "row", marginBottom: 5 },
+  bullet: { width: 10, color: c.brand, fontWeight: 700 },
+  contact: { marginTop: 20, padding: 14, borderRadius: 10, backgroundColor: c.ink, color: c.canvas, flexDirection: "row", justifyContent: "space-between" },
+  header: { position: "absolute", top: 18, left: 40, right: 40, flexDirection: "row", justifyContent: "space-between", fontSize: 7.5, color: c.inkSoft },
+  footerRule: { position: "absolute", bottom: 36, left: 40, right: 40, height: 1, backgroundColor: c.line },
+  footer: { position: "absolute", bottom: 22, left: 40, right: 40, fontSize: 7.5, color: c.inkSoft },
+});
+
+function PlaneIcon({ color = c.brand, size = 10 }: { color?: string; size?: number }) {
+  return <Svg viewBox="0 0 24 24" width={size} height={size}><Path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" stroke={color} strokeWidth={2} fill="none" /></Svg>;
+}
+
+const upper = (text: string) => text.toLocaleUpperCase("es");
+const capital = (text: string) => text ? text[0].toLocaleUpperCase("es") + text.slice(1) : text;
+
+function Journey({ journey, t }: { journey: JourneyView; t: ReturnType<typeof tripCopy> }) {
+  const title = journey.kind === "tramo" ? t("flight.tramo", { number: journey.index + 1 }) : t(`flight.${journey.kind}`);
+  const summary = [journey.stops ? t("flight.stops", { count: journey.stops }) : t("flight.direct"), journey.durationMin !== null ? t("flight.totalDuration", { duration: formatMinutes(journey.durationMin) }) : ""].filter(Boolean).join(" · ");
+  const header = <View style={s.cardHead}>
+      <View><Text style={s.kicker}>{upper(title)}</Text><Text style={s.cardTitle}>{journey.from.city} – {journey.to.city}</Text></View>
+      <Text style={{ ...s.small, fontWeight: 600, color: c.brandDeep }}>{summary}</Text>
+    </View>;
+  return <View style={s.card}>
+    {journey.legs.map((leg, index) => {
+      const connection = journey.connections[index];
+      const arrivesLater = leg.dayShift > 0;
+      return <View key={leg.id} wrap={false}>
+        {index === 0 ? header : null}
+        <View style={s.leg}>
+          <View style={s.legSide}>
+            <Text style={s.time}>{formatClock(leg.from.time) || "—"}</Text>
+            <Text style={s.code}>{leg.from.code} · {leg.from.city}</Text>
+            <Text style={{ ...s.small, ...s.muted }}>{leg.from.airport}</Text>
+            <Text style={{ ...s.small, ...s.muted }}>{capital(formatTripDate(leg.from.date, "es", "weekday"))}</Text>
+          </View>
+          <View style={s.legMiddle}>
+            <Text style={{ fontWeight: 700 }}>{[leg.airline, leg.flight].filter(Boolean).join(" · ")}</Text>
+            <View style={s.rule}><View style={s.ruleLine} /><View style={{ paddingHorizontal: 4 }}><PlaneIcon /></View><View style={s.ruleLine} /></View>
+            <Text style={{ ...s.small, ...s.muted, textAlign: "center" }}>{[leg.durationMin !== null ? formatMinutes(leg.durationMin) : "", leg.cabin, leg.bookingClass ? t("flight.class", { value: leg.bookingClass }) : ""].filter(Boolean).join(" · ")}</Text>
+            {leg.operatedBy ? <Text style={{ ...s.small, ...s.muted, textAlign: "center" }}>{t("flight.operatedBy", { airline: leg.operatedBy })}</Text> : null}
+          </View>
+          <View style={s.legSideRight}>
+            <Text style={s.time}>{formatClock(leg.to.time) || "—"}{arrivesLater ? <Text style={{ fontSize: 9, color: c.brand }}>  +{leg.dayShift}</Text> : null}</Text>
+            <Text style={s.code}>{leg.to.city} · {leg.to.code}</Text>
+            <Text style={{ ...s.small, ...s.muted, textAlign: "right" }}>{leg.to.airport}</Text>
+            <Text style={{ ...s.small, ...s.muted }}>{capital(formatTripDate(leg.to.date, "es", "weekday"))}</Text>
+          </View>
+        </View>
+        {connection ? <View style={{ ...s.connection, ...(connection.airportChange ? { borderColor: c.error } : {}) }}>
+          <Text style={{ ...s.small, fontWeight: 700 }}>{t("flight.connection", { city: connection.city })}{connection.overnight ? ` · ${t("flight.overnight")}` : ""}</Text>
+          <Text style={{ ...s.small, ...s.muted }}>{connection.airportChange ? t("flight.airportChange", { from: connection.code, to: connection.nextCode }) : connection.minutes !== null ? t("flight.wait", { duration: formatMinutes(connection.minutes) }) : ""}</Text>
+        </View> : null}
+      </View>;
+    })}
+  </View>;
+}
+
+function Hotel({ hotel, checkout, t }: { hotel: HotelView; checkout: boolean; t: ReturnType<typeof tripCopy> }) {
+  if (checkout) return <View style={{ ...s.card, padding: 10 }} wrap={false}><Text style={s.kicker}>{upper(t("hotel.checkout"))}</Text><Text style={{ fontWeight: 700, marginTop: 2 }}>{hotel.name}</Text></View>;
+  return <View style={s.card} wrap={false}>
+    <View style={s.cardHead}><View><Text style={s.kicker}>{upper(t("hotel.checkin"))}</Text><Text style={s.cardTitle}>{hotel.name}</Text></View><Text style={{ ...s.small, fontWeight: 600, color: c.brandDeep }}>{t("nights", { count: hotel.nights })}</Text></View>
+    <View style={{ padding: 12 }}>
+      <View style={s.row}>
+        <View style={{ flex: 1 }}><Text style={s.label}>{upper(t("hotel.checkin"))}</Text><Text style={{ fontWeight: 700, marginTop: 2 }}>{capital(formatTripDate(hotel.checkIn, "es", "weekday"))}</Text></View>
+        <View style={{ flex: 1 }}><Text style={s.label}>{upper(t("hotel.checkout"))}</Text><Text style={{ fontWeight: 700, marginTop: 2 }}>{capital(formatTripDate(hotel.checkOut, "es", "weekday"))}</Text></View>
+        <View style={{ flex: 1 }}><Text style={s.label}>{upper(t("hotel.meals"))}</Text><Text style={{ fontWeight: 700, marginTop: 2 }}>{hotel.mealPlan || "Por confirmar"}</Text></View>
+      </View>
+      {hotel.rooms.filter(room => room.category || room.adults).map((room, index) => <Text key={index} style={{ marginTop: 8 }}>{room.count > 1 ? `${room.count} × ` : ""}{room.category || t("hotel.room")}{room.beds ? ` · ${room.beds}` : ""} · {t("hotel.guests", { adults: room.adults, children: room.children })}</Text>)}
+      {hotel.included.length ? <Text style={{ ...s.small, marginTop: 4 }}><Text style={{ fontWeight: 700 }}>{t("hotel.included")}: </Text>{hotel.included.join(" · ")}</Text> : null}
+      {hotel.address || hotel.city ? <Text style={{ ...s.small, ...s.muted, marginTop: 4 }}>{[hotel.address, hotel.city].filter(Boolean).join(", ")}</Text> : null}
+    </View>
+  </View>;
+}
+
+function Service({ service, t }: { service: ServiceView; t: ReturnType<typeof tripCopy> }) {
+  const facts = [service.time ? formatClock(service.time) : "", service.place ? `${t("service.place")}: ${service.place}` : "", service.duration ? `${t("service.duration")}: ${service.duration}` : "", service.mode ? t(`service.${service.mode as "compartido" | "privado"}`) : "", service.operator ? `${t("service.provider")}: ${service.operator}` : "", service.endDate && service.endDate !== service.date ? t("service.until", { date: formatTripDate(service.endDate, "es", "dayMonth") }) : ""].filter(Boolean);
+  return <View style={{ ...s.card, padding: 12 }} wrap={false}>
+    <Text style={s.kicker}>{upper(t(`service.${service.kind}`))}</Text>
+    <Text style={{ fontWeight: 700, fontSize: 10.5, marginTop: 2 }}>{service.title}</Text>
+    {service.description ? <Text style={{ marginTop: 2 }}>{service.description}</Text> : null}
+    {facts.length ? <Text style={{ ...s.small, ...s.muted, marginTop: 3 }}>{facts.join(" · ")}</Text> : null}
+    {service.included.length ? <Text style={{ ...s.small, marginTop: 3 }}><Text style={{ fontWeight: 700 }}>{t("hotel.included")}: </Text>{service.included.join(" · ")}</Text> : null}
+  </View>;
+}
+
+// Rough printed height of an event in points, to keep a whole day on one page when it fits.
+function eventHeight(event: TripEvent) {
+  if (event.kind === "flight") return 60 + event.journey.legs.length * 120 + event.journey.connections.length * 35;
+  return event.kind === "checkin" ? 170 : event.kind === "checkout" ? 55 : 95;
+}
+
+function Event({ event, t }: { event: TripEvent; t: ReturnType<typeof tripCopy> }) {
+  if (event.kind === "flight") return <Journey journey={event.journey} t={t} />;
+  if (event.kind === "checkin" || event.kind === "checkout") return <Hotel hotel={event.hotel} checkout={event.kind === "checkout"} t={t} />;
+  if (event.kind === "ferry") return <View style={{ ...s.card, padding: 12 }} wrap={false}><Text style={s.kicker}>FERRY</Text><Text style={{ fontWeight: 700, fontSize: 10.5, marginTop: 2 }}>{event.ferry.fromPort} – {event.ferry.toPort}</Text><Text style={{ ...s.small, ...s.muted, marginTop: 3 }}>{[formatClock(event.ferry.time), event.ferry.arriveTime ? `llegada ${formatClock(event.ferry.arriveTime)}` : "", event.ferry.operator, event.ferry.vessel, event.ferry.className].filter(Boolean).join(" · ")}</Text></View>;
+  return event.kind === "service" ? <Service service={event.service} t={t} /> : null;
+}
+
+const pieceState = (state: string, t: ReturnType<typeof tripCopy>) => state ? t(`baggage.${state as "incluido" | "no_incluido" | "con_cargo"}`) : t("baggage.unknown");
+
+export function itineraryView(r: Reservation, travel: PublicTravel, today = hondurasToday()): TripView {
+  return reservationTripView(r, travel, today);
+}
+
+export function ItineraryDocument({ view, customerName, revision }: { view: TripView; customerName: string; revision: number }) {
+  const t = tripCopy();
+  const ticketNote = view.hasFlights ? view.ticketing === "issued" ? "Boletos emitidos" : view.ticketing === "processing" ? "En proceso de emisión" : "Pendiente de emisión" : "";
+  const status = view.stage === "cancelled" ? t("stage.cancelled") : t(`stage.${view.stage}`);
+  const info = [
+    t("itinerary.beforeDocuments"),
+    "Verifique los requisitos de entrada, visas y permisos de su destino y de los países de conexión antes de viajar. La información de requisitos puede cambiar; confirme siempre con la autoridad oficial.",
+    ...(view.hasFlights ? [t("itinerary.beforeCheckin"), t("itinerary.beforeAirport"), "Los horarios pueden cambiar por decisión de la aerolínea. Revise el estado de su vuelo antes de salir al aeropuerto."] : []),
+    "Este itinerario es informativo. Sus boletos electrónicos y las confirmaciones de los proveedores son los documentos que acreditan cada servicio.",
+  ];
+  return <Document title={`Itinerario ${view.reference} · ${view.destination}`} author="viatour" subject="Itinerario de viaje" language="es">
+    <Page size="LETTER" style={s.page}>
+      <View fixed style={s.header} render={({ pageNumber }) => pageNumber > 1 ? <><Text>viatour · Itinerario de viaje · {view.destination}</Text><Text>Reserva {view.reference}</Text></> : null} />
+
+      <View style={s.body}>
+      <View style={s.cover}>
+        <View style={s.coverTop}><Image src={pdfLogo("white")} style={s.logo} /><Text style={s.coverLabel}>ITINERARIO DE VIAJE</Text></View>
+        <Text style={{ fontSize: 10, color: "#C9D8FB", marginTop: 22 }}>Su itinerario de viaje a</Text>
+        <Text style={{ ...s.destination, marginTop: 2 }}>{view.destination}</Text>
+        <Text style={s.coverDates}>{formatDateRange(view.start, view.end) || t("datesToConfirm")}</Text>
+        <View style={s.coverMeta}>
+          <View><Text style={s.coverMetaLabel}>PREPARADO PARA</Text><Text style={s.coverMetaValue}>{customerName}</Text></View>
+          <View><Text style={s.coverMetaLabel}>RESERVA</Text><Text style={s.coverMetaValue}>{view.reference}</Text></View>
+          {view.origin ? <View><Text style={s.coverMetaLabel}>SALIDA DESDE</Text><Text style={s.coverMetaValue}>{view.origin.city}</Text></View> : null}
+        </View>
+      </View>
+
+      <View style={s.overview} wrap={false}>
+        <View style={s.overviewCell}><Text style={s.label}>VIAJEROS</Text><Text style={s.value}>{view.travelerCount || "—"}</Text></View>
+        <View style={s.overviewCell}><Text style={s.label}>DURACIÓN</Text><Text style={s.value}>{view.tripDays ? t("days", { count: view.tripDays }) : "—"}</Text></View>
+        <View style={s.overviewCell}><Text style={s.label}>ESTADO DE LA RESERVA</Text><Text style={s.value}>{status}</Text></View>
+        <View style={{ ...s.overviewCell, borderRightWidth: 0 }}><Text style={s.label}>BOLETOS</Text><Text style={s.value}>{ticketNote || "No aplica"}</Text></View>
+      </View>
+      <View style={s.status} wrap={false}>
+        <Text style={s.statusTitle}>{t("next.title")}</Text>
+        <Text style={{ marginTop: 2 }}>{view.nextStep === "balance" ? "Su asesor le confirmará los detalles de pago pendientes." : t(`next.${view.nextStep}`)}</Text>
+        {view.estimate ? <Text style={{ ...s.small, ...s.muted, marginTop: 2 }}>{t("next.ticketingEstimate", view.estimate)}</Text> : null}
+      </View>
+
+      <Text style={s.sectionTitle}>Viajeros</Text>
+      {view.travelers.length ? view.travelers.map(traveler => <View key={traveler.id} style={s.travelerRow} wrap={false}>
+        <View style={{ flex: 1 }}><Text style={{ fontWeight: 700 }}>{upper(traveler.name)}</Text><Text style={{ ...s.small, ...s.muted }}>{t(`travelers.${traveler.category}`)}</Text></View>
+        <View style={{ alignItems: "flex-end" }}>
+          {traveler.pnr ? <Text style={s.small}>{t("travelers.pnr")}{traveler.airline ? ` (${traveler.airline})` : ""}: <Text style={{ fontWeight: 700 }}>{traveler.pnr}</Text></Text> : null}
+          {traveler.ticketNumber ? <Text style={s.small}>Boleto {traveler.ticketNumber}</Text> : <Text style={{ ...s.small, ...s.muted }}>{ticketNote}</Text>}
+        </View>
+      </View>) : <Text style={s.muted}>{t("travelers.pendingReview")}</Text>}
+      <Text style={{ ...s.small, ...s.muted, marginTop: 4 }}>Los nombres deben coincidir con el documento de viaje de cada persona. Si encuentra una diferencia, avísenos de inmediato.</Text>
+
+      <Text style={s.sectionTitle} break={view.travelers.length > 6} minPresenceAhead={260}>Itinerario día a día</Text>
+      {view.hasFlights ? <Text style={{ ...s.small, ...s.muted, marginTop: -4, marginBottom: 2 }}>{t("itinerary.localTimes")}</Text> : null}
+      {view.timeline.map(entry => entry.type === "free"
+        ? <View key={`free-${entry.from}`} style={s.free} wrap={false}><Text style={{ ...s.small, fontWeight: 700 }}>{capital(t("itinerary.freeTime", { days: entry.days }))}</Text><Text style={{ ...s.small, ...s.muted }}>  ·  {formatDateRange(entry.from, entry.to)}. {t("itinerary.freeTimeNote")}</Text></View>
+        : <View key={entry.date} wrap={entry.events.reduce((sum, event) => sum + eventHeight(event), 40) > 640}>
+          <View style={s.dayHeader} wrap={false} minPresenceAhead={300}><Text style={s.dayBadge}>{upper(t("itinerary.day", { number: entry.dayNumber }))}</Text><Text style={s.dayDate}>{capital(formatTripDate(entry.date, "es", "full"))}</Text></View>
+          {entry.events.map((event, index) => <Event key={index} event={event} t={t} />)}
+        </View>)}
+      {view.undated.length ? <><Text style={{ ...s.sectionTitle, fontSize: 12 }}>{t("itinerary.undated")}</Text>{view.undated.map((event, index) => <Event key={index} event={event} t={t} />)}</> : null}
+
+      {view.baggage.length ? <View wrap={false}>
+        <Text style={s.sectionTitle}>Equipaje</Text>
+        {view.baggage.map((bag, index) => <View key={index} style={{ ...s.card, padding: 12 }}>
+          {bag.scope ? <Text style={s.kicker}>{upper(bag.scope)}</Text> : null}
+          {bag.pieces.map(piece => <View key={piece.kind} style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: c.line }}>
+            <Text style={{ fontWeight: 600 }}>{t(`baggage.${piece.kind}`)}</Text>
+            <Text style={{ color: piece.state === "incluido" ? c.success : c.ink }}>{pieceState(piece.state, t)}{piece.state === "incluido" ? [piece.pieces ? t("baggage.pieces", { count: piece.pieces }) : "", piece.weight, piece.size].filter(Boolean).map(value => ` · ${value}`).join("") : ""}</Text>
+          </View>)}
+          {bag.notes ? <Text style={{ ...s.small, ...s.muted, marginTop: 4 }}>{bag.notes}</Text> : null}
+        </View>)}
+        {view.separateTickets ? <Text style={{ ...s.small, ...s.muted }}>{t("flight.separateTickets")}</Text> : null}
+      </View> : null}
+
+      <View wrap={false}>
+        <Text style={s.sectionTitle}>Información importante</Text>
+        {info.map(item => <View key={item} style={s.infoItem}><Text style={s.bullet}>•</Text><Text style={{ flex: 1 }}>{item}</Text></View>)}
+      </View>
+
+      <View style={s.contact} wrap={false}>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 11, fontWeight: 700 }}>¿Necesita ayuda con su viaje?</Text>
+          <Text style={{ ...s.small, color: "#C9D3DD", marginTop: 3 }}>Escríbanos e indique su reserva {view.reference}. Consulte sus documentos en Mi viaje con su código de reserva, su apellido y el código de verificación que recibe por correo.</Text>
+          <Link src={agencyContact.portal} style={{ ...s.small, color: "#9DBBF8", marginTop: 4 }}>{agencyContact.portal}</Link>
+        </View>
+        <View style={{ width: 150, alignItems: "flex-end" }}>
+          <Text style={{ ...s.small, color: "#C9D3DD" }}>WhatsApp</Text><Text style={{ fontWeight: 700 }}>{agencyContact.whatsapp}</Text>
+          <Text style={{ ...s.small, color: "#C9D3DD", marginTop: 4 }}>Correo</Text><Text style={{ fontWeight: 700 }}>{agencyContact.email}</Text>
+        </View>
+      </View>
+
+      </View>
+      <View fixed style={s.footerRule} />
+      <Text fixed style={s.footer} render={({ pageNumber, totalPages }) => `viatour · ${agencyContact.web} · Reserva ${view.reference} · Horarios locales de cada ciudad · Revisión ${revision} · Página ${pageNumber} de ${totalPages}`} />
+    </Page>
+  </Document>;
+}
+
+export async function renderItineraryPdf(r: Reservation, travel: PublicTravel, revision: number, today?: string) {
+  if (!r.accepted_snapshot?.quotation?.detalles) throw Error("Falta el itinerario aceptado.");
+  registerPdfFont();
+  const view = itineraryView(r, travel, today);
+  if (!view.timeline.length && !view.undated.length) throw Error("El itinerario no tiene servicios con datos suficientes.");
+  return renderToBuffer(<ItineraryDocument view={view} customerName={r.cliente_nombre} revision={revision} />);
 }

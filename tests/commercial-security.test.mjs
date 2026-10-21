@@ -2,11 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { load } from './security-support.mjs';
 const A='11111111-1111-4111-8111-111111111111',B='22222222-2222-4222-8222-222222222222';
-test('prerreservation PDF preserves cancellation status',async()=>{
- let displayed;
- const pdf=load('src/lib/reservation-pdf.ts',{'server-only':{},'@/lib/quotation-data':{toRecord:()=>({details:{pago:{deposito:''}}})},'@/lib/quotation-pdf':{renderQuotationPdf:async(_,options)=>{displayed=options.reservation.status;}},'@/lib/reservation-types':{reservationStatusLabel:()=> 'Cancelada'},'@/lib/money':{totalAmount:()=>100}});
- await pdf.renderReservationPdf({accepted_snapshot:{quotation:{},items:[{}]},total:100,prerreserva:true,estado:'cancelada'},[{}],[]);
- assert.equal(displayed,'Prerreservación · Cancelada');
+test('reservation confirmation renders only a consistent accepted version and passes payments through',async()=>{
+ let rendered;
+ const pdf=load('src/lib/reservation-pdf.ts',{'server-only':{},'@/lib/reservation-confirmation-pdf':{renderReservationConfirmationPdf:async(reservation,items,payments)=>{rendered={reservation,items,payments};return Buffer.from('%PDF');}},'@/lib/money':{totalAmount:items=>items.reduce((sum,item)=>sum+item.precio_unitario,0)}});
+ const reservation={accepted_snapshot:{quotation:{},items:[{precio_unitario:100}]},total:100,prerreserva:true,estado:'cancelada'};
+ await pdf.renderReservationPdf(reservation,[{precio_unitario:100}],[{monto:50}]);
+ assert.equal(rendered.reservation,reservation);assert.equal(rendered.payments[0].monto,50);
+ await assert.rejects(()=>pdf.renderReservationPdf({...reservation,total:90},[{precio_unitario:100}],[]),/no coincide/);
+ await assert.rejects(()=>pdf.renderReservationPdf({...reservation,accepted_snapshot:null},[],[]),/aceptada/);
 });
 test('reservation PDF rejects unauthenticated and forged sessions before reading data', async()=>{
  let reads=0;
