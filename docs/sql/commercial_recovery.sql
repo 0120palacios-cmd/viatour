@@ -135,24 +135,69 @@ end; $$;
 drop trigger if exists reservation_commercial_guard on public.reservations;
 create trigger reservation_commercial_guard before update on public.reservations for each row execute function public.reservation_commercial_guard();
 
-create or replace function public.reservation_items_commercial_guard() returns trigger
-language plpgsql set search_path = '' as $$
-declare frozen jsonb;
+create or replace function public.reservation_items_commercial_guard()
+returns trigger language plpgsql set search_path = '' as $$
+declare
+  frozen jsonb;
+  target_id uuid;
 begin
-  if tg_op='INSERT' then
-    select accepted_snapshot->'items'->new.orden into frozen from public.reservations where id=new.reservation_id and accepted_version_id is not null;
-    if exists(select 1 from public.reservations where id=new.reservation_id and accepted_version_id is not null) then
-      if frozen is null or new.descripcion is distinct from frozen->>'descripcion' or new.tipo is distinct from frozen->>'tipo'
-        or new.cantidad is distinct from (frozen->>'cantidad')::numeric or new.precio_unitario is distinct from (frozen->>'precio_unitario')::numeric
-        or exists(select 1 from public.reservation_items where reservation_id=new.reservation_id and orden=new.orden) then
-        raise exception 'Los servicios deben coincidir con la versión aceptada.' using errcode='23514';
+  if tg_op = 'INSERT' then
+    select accepted_snapshot->'items'->new.orden
+      into frozen
+    from public.reservations
+    where id = new.reservation_id
+      and accepted_version_id is not null;
+
+    if exists (
+      select 1 from public.reservations
+      where id = new.reservation_id
+        and accepted_version_id is not null
+    ) then
+      if frozen is null
+        or new.descripcion is distinct from frozen->>'descripcion'
+        or new.tipo is distinct from frozen->>'tipo'
+        or new.cantidad is distinct from (frozen->>'cantidad')::numeric
+        or new.precio_unitario is distinct from (frozen->>'precio_unitario')::numeric
+        or exists (
+          select 1 from public.reservation_items
+          where reservation_id = new.reservation_id
+            and orden = new.orden
+        )
+      then
+        raise exception 'Los servicios deben coincidir con la versión aceptada.'
+          using errcode = '23514';
       end if;
     end if;
     return new;
   end if;
-  if exists(select 1 from public.reservations where id in (old.reservation_id,new.reservation_id) and accepted_version_id is not null) then
-    raise exception 'Los servicios aceptados están bloqueados.' using errcode = '23514'; end if;
-  return coalesce(new,old);
+
+  if tg_op = 'DELETE' then
+    target_id := old.reservation_id;
+  else
+    target_id := new.reservation_id;
+  end if;
+
+  if exists (
+    select 1 from public.reservations
+    where id = target_id and accepted_version_id is not null
+  )
+  or (
+    tg_op = 'UPDATE'
+    and exists (
+      select 1 from public.reservations
+      where id = old.reservation_id
+        and accepted_version_id is not null
+    )
+  ) then
+    raise exception 'Los servicios aceptados están bloqueados.'
+      using errcode = '23514';
+  end if;
+
+  if tg_op = 'DELETE' then
+    return old;
+  end if;
+
+  return new;
 end; $$;
 drop trigger if exists reservation_items_commercial_guard on public.reservation_items;
 create trigger reservation_items_commercial_guard before insert or update or delete on public.reservation_items for each row execute function public.reservation_items_commercial_guard();
