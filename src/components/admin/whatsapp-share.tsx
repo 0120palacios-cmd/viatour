@@ -89,3 +89,14 @@ export function RevokeShareButton({ id, shareId }: { id: string; shareId: string
   if (state.success) return <span className="t-small text-success">{state.success}</span>;
   return <form action={action} className="inline"><input type="hidden" name="id" value={id} /><input type="hidden" name="share_id" value={shareId} /><button type="submit" disabled={pending} className="t-small text-brand underline underline-offset-4 disabled:opacity-50">{pending ? "Desactivando" : "Desactivar enlace"}</button>{state.error ? <span role="alert" className="ml-2 t-small text-error">{state.error}</span> : null}</form>;
 }
+
+// A share prepared earlier (the page was reloaded after opening WhatsApp) can still be confirmed or cancelled.
+export function PendingShareActions({ id, shareId }: { id: string; shareId: string }) {
+  const [state, action, pending] = useActionState<ShareState, FormData>(confirmWhatsappShare, {});
+  if (state.done) return <span className="t-small text-success">{state.success}</span>;
+  return <form action={action} className="flex flex-wrap items-center gap-3"><input type="hidden" name="id" value={id} /><input type="hidden" name="share_id" value={shareId} />
+    <Button type="submit" name="resultado" value="si" disabled={pending} className="min-h-10 px-3">{pending ? "Registrando" : "Lo envié"}</Button>
+    <button type="submit" name="resultado" value="no" disabled={pending} className="t-small text-brand underline underline-offset-4 disabled:opacity-50">No lo envié</button>
+    {state.error ? <span role="alert" className="w-full t-small text-error">{state.error}</span> : null}
+  </form>;
+}

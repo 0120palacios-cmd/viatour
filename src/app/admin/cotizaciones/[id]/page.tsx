@@ -14,7 +14,7 @@ import { isExpired } from "@/lib/quotation-details";
 import { validUuid } from "@/lib/quotation-validation";
 import { defaultShareMessage } from "@/lib/quotation-share";
 import { normalizePhone } from "@/lib/lead-validation";
-import { RevokeShareButton } from "@/components/admin/whatsapp-share";
+import { PendingShareActions, RevokeShareButton } from "@/components/admin/whatsapp-share";
 import { type Customer } from "@/lib/quotation-types";
 import { adminQuotationStatusLabel as quotationStatusLabel, type AdminQuotationStatus } from "@/lib/admin-quotation-status";
 
@@ -81,6 +81,7 @@ export default async function EditQuotationPage({ params, searchParams }: { para
         <p className="font-semibold">{shareLabels[share.estado] ?? share.estado}{version ? ` · versión ${version.version}` : ""}</p>
         <p className="text-ink-soft">{share.telefono} · {dateTime.format(new Date(share.confirmado_en ?? share.created_at))}</p>
         <p className="text-ink-soft">{share.aperturas ? `Enlace abierto ${share.aperturas} ${share.aperturas === 1 ? "vez" : "veces"}, la última el ${dateTime.format(new Date(share.abierto_en))}` : "Enlace aún no abierto"}{share.estado === "revocado" ? "" : expired ? " · vencido" : ` · vence ${dateTime.format(new Date(share.expira_en))}`}</p>
+        {share.estado === "preparado" && !expired && ["borrador", "enviada"].includes(estado) ? <PendingShareActions id={id} shareId={share.id} /> : null}
         {["confirmado", "enviado", "entregado", "leido"].includes(share.estado) && !expired ? <RevokeShareButton id={id} shareId={share.id} /> : null}
       </li>; })}</ul>
       <p className="mt-2 t-small text-ink-soft">Una apertura indica que alguien abrió el enlace, no necesariamente el cliente.</p>
