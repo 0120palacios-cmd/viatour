@@ -1,5 +1,5 @@
 -- Mi viaje premium: chat attachments, additional-service requests and private trip feedback.
--- Additive and idempotent. NOT applied to production. Order and process (docs/mi-viaje-premium.md):
+-- Additive and idempotent. Applied to production and verified on 2026-10-23. Order and process (docs/mi-viaje-premium.md):
 --   1. Owner approval and a fresh backup (see the production DB release process).
 --   2. docs/sql/reservation_messages.sql (this file requires its table).
 --   3. docs/sql/mi_viaje_premium_checks.sql, PRE block (read-only).

@@ -12,8 +12,8 @@ Se ejecutó `docs/sql/mi_viaje_release_preflight.sql` (transacción `read only`,
 |---|---|---|
 | `reservations`, `is_admin()`, `hit_rate_limit`, `support_tickets`, rol `service_role`, `gen_random_uuid` | Existen | DONE |
 | `reservation_messages` (paso 1) | **Ya aplicada**: 9 columnas, 6 restricciones, 3 índices y 3 políticas, como en el archivo. RLS activo. 0 mensajes | DONE |
-| Permisos de `reservation_messages` | **Desviación**: `authenticated` conserva DELETE, UPDATE de `body` e INSERT de `created_at` (privilegios por defecto de Supabase). RLS lo niega a quien no es admin y no hay política DELETE; un admin podría editar o fechar mensajes. Se repara en el paso 0 de `mi_viaje_premium.sql` | NEEDS-PRODUCTION |
-| `reservation_message_attachments`, `trip_service_requests`, `trip_feedback`, `post_customer_message` (paso 2) | No existen | NEEDS-PRODUCTION |
+| Permisos de `reservation_messages` | **Desviación**: `authenticated` conserva DELETE, UPDATE de `body` e INSERT de `created_at` (privilegios por defecto de Supabase). RLS lo niega a quien no es admin y no hay política DELETE; un admin podría editar o fechar mensajes. Se repara en el paso 0 de `mi_viaje_premium.sql` | DONE (reparado el 23-oct-2026) |
+| `reservation_message_attachments`, `trip_service_requests`, `trip_feedback`, `post_customer_message` (paso 2) | Creados el 23-oct-2026; checks POST correctos | DONE |
 | Bucket `portal-docs` | Privado, 8 MB, PDF/JPEG/PNG/WebP; políticas admin select/insert/delete | DONE (sin cambios) |
 | Archivos de chat en storage | 0 | — |
 | Reservas | 2 (ambas de clientes reales) | — |
@@ -38,7 +38,7 @@ No toca datos existentes (0 mensajes), ni storage, ni otras tablas. Ensayado sin
 
 ## 3. Respaldo
 
-**NEEDS-PRODUCTION (dueño).** Respaldo nuevo antes del paso 2, según el proceso habitual (el plan no tiene PITR). Lo toma el dueño (pg_dump con su contraseña o desde el panel). Basta con el esquema `public`; las tablas afectadas están vacías o son nuevas.
+**DONE (dueño, 23-oct-2026).** Respaldo nuevo antes del paso 2, según el proceso habitual (el plan no tiene PITR). Lo toma el dueño (pg_dump con su contraseña o desde el panel). Basta con el esquema `public`; las tablas afectadas están vacías o son nuevas.
 
 ## 4. Verificación después de la migración
 
@@ -191,8 +191,8 @@ Lista detallada: `docs/mi-viaje-premium.md` §13.
 | Corrección del path de la cookie OTP pendiente (portal en inglés) | LOCAL-TESTED |
 | Redirección en inglés tras verificar el código y al salir (`/en/mi-reserva`, commit 0097c3f) | LOCAL-TESTED |
 | Paso 1 `reservation_messages.sql` | DONE (ya estaba en producción) |
-| Reparación de permisos y paso 2 `mi_viaje_premium.sql` | NEEDS-PRODUCTION |
-| Respaldo previo | NEEDS-PRODUCTION (dueño) |
+| Reparación de permisos y paso 2 `mi_viaje_premium.sql` | DONE (aplicado y verificado el 23-oct-2026) |
+| Respaldo previo | DONE (dueño, 23-oct-2026) |
 | Reservas de prueba A y B (`VT-PRUEBA01`, `VT-PRUEBA02`) | DONE (creadas el 23-oct-2026) |
 | OTP real con Resend | NEEDS-REAL-PROVIDER |
 | Chat, adjuntos, solicitudes y opinión reales | NEEDS-PRODUCTION |
