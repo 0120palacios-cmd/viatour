@@ -8,7 +8,8 @@ import { EmptyState, FilterNav, formatDay, PageHeader, RecordList, RecordRow, Se
 import { quotationTone } from "@/lib/admin-status";
 import { isMissingColumn, quotationKind } from "@/lib/quotation-data";
 import { effectiveExpiry, formatInstant, isExpired, quotationKindAdminLabels, quotationKinds, type QuotationKind } from "@/lib/quotation-details";
-import { formatQuotationAmount, quotationStatusLabel, quotationStatuses, type QuotationStatus } from "@/lib/quotation-types";
+import { formatQuotationAmount } from "@/lib/quotation-types";
+import { adminQuotationStatusLabel as quotationStatusLabel, adminQuotationStatuses as quotationStatuses, type AdminQuotationStatus as QuotationStatus } from "@/lib/admin-quotation-status";
 
 export const metadata = pageMetadata("/admin/cotizaciones", "viatour | Cotizaciones", "Gestión privada de cotizaciones de viatour.");
 

@@ -86,6 +86,17 @@ function fakeDb(seed = {}, options = {}) {
     if(name==='create_reservation_invoice') {
       const r=tables.reservations.find(r=>r.id===args.p_id);const i={id:uuid(),reservation_id:r.id,total:r.total,items:tables.reservation_items.filter(x=>x.reservation_id===r.id)};tables.invoices.push(i);return {data:i.id,error:null};
     }
+    // create_quotation_copy: the copy and its lines appear together or not at all (scripts/test-quotation-integrity-sql.mjs runs the SQL).
+    if (name === 'create_quotation_copy') {
+      const src = tables.quotations.find(row => row.id === args.p_source);
+      if (args.p_amendment && src?.estado !== 'aceptada') return { data: null, error: { code: '23514', message: 'Solo se enmienda una cotización aceptada; esta todavía se puede editar.' } };
+      if (options.failItems) return { data: null, error: { code: 'X' } };
+      const row = { ...args.p_row, id: uuid(), created_at: '2026-10-12T15:00:00Z', updated_at: '2026-10-12T15:00:00Z', estado: 'borrador', agente_id: options.user ?? null, enmienda_de: args.p_amendment ? src.id : null, total: money.totalAmount(args.p_items) };
+      tables.quotations.push(row);
+      tables.quotation_items.push(...args.p_items.map((item, orden) => ({ id: uuid(), quotation_id: row.id, ...item, orden })));
+      log.push({ table: 'quotations', op: 'copy', values: [row] });
+      return { data: row.id, error: null };
+    }
     assert.equal(name, 'replace_quotation_items');
     const quotation = tables.quotations.find(row => row.id === args.p_quotation_id);
     if (!quotation) return { data: null, error: { code: 'P0002' } };
@@ -311,6 +322,65 @@ test('a failed version counter update never blocks the next send', async () => {
   assert.deepEqual(db.tables.quotation_versions.map(row => row.version), [1, 2]);
 });
 
+test('a failed e-mail leaves version 1 pending; the retry reuses it with the same idempotency key', async () => {
+  const db = fakeDb();
+  const keys = [];
+  let fail = true;
+  const api = actions(db, { fetch: async (_url, init) => { keys.push(init.headers['Idempotency-Key']); return { ok: !fail, status: fail ? 500 : 200 }; } });
+  const created = await api.saveQuotation(JSON.stringify(payload()));
+  const form = new FormData(); form.set('id', created.quotationId);
+  assert.match((await api.sendQuotation({}, form)).error, /La versión 1 quedó registrada; puede reenviarla/);
+  assert.equal(db.tables.quotations[0].estado, 'borrador');
+  fail = false;
+  assert.equal((await api.sendQuotation({}, form)).success, 'Versión 1 enviada al correo del cliente.');
+  assert.deepEqual(db.tables.quotation_versions.map(row => row.version), [1]);
+  assert.deepEqual(keys, [`quotation/${created.quotationId}/v1`, `quotation/${created.quotationId}/v1`]);
+  assert.equal(db.tables.quotations[0].sent_version_id, db.tables.quotation_versions[0].id);
+});
+
+test('after a failed send, a changed quotation or another channel freezes a new version', async () => {
+  const db = fakeDb();
+  let fail = true;
+  const api = actions(db, { fetch: async () => ({ ok: !fail, status: fail ? 500 : 200 }) });
+  const created = await api.saveQuotation(JSON.stringify(payload()));
+  const form = new FormData(); form.set('id', created.quotationId);
+  await api.sendQuotation({}, form);
+  await api.saveQuotation(JSON.stringify(payload({ id: created.quotationId, expectedUpdatedAt: db.tables.quotations[0].updated_at, destino: 'Orlando' })));
+  fail = false;
+  assert.equal((await api.sendQuotation({}, form)).success, 'Versión 2 enviada al correo del cliente.');
+  assert.equal(db.tables.quotation_versions[1].snapshot.quotation.destino, 'Orlando');
+
+  const other = fakeDb();
+  const failing = actions(other, { fetch: async () => ({ ok: false, status: 500 }) });
+  const second = await failing.saveQuotation(JSON.stringify(payload()));
+  const send = new FormData(); send.set('id', second.quotationId);
+  await failing.sendQuotation({}, send);
+  const whatsapp = new FormData(); whatsapp.set('id', second.quotationId); whatsapp.set('canal', 'whatsapp'); whatsapp.set('confirmado', 'si');
+  assert.ok((await failing.registerQuotationSent({}, whatsapp)).success);
+  assert.deepEqual(other.tables.quotation_versions.map(row => [row.version, row.snapshot.canal]), [[1, 'correo'], [2, 'whatsapp']]);
+});
+
+test('rejecting records the reason and the date; without a reason nothing changes', async () => {
+  const db = fakeDb();
+  const api = actions(db);
+  const created = await api.saveQuotation(JSON.stringify(payload()));
+  const form = values => { const data = new FormData(); for (const [key, value] of Object.entries(values)) data.set(key, value); return data; };
+  assert.match((await api.updateQuotationStatus({}, form({ id: created.quotationId, estado: 'rechazada', motivo: '  ' }))).error, /por qué el cliente rechazó/);
+  assert.equal(db.tables.quotations[0].estado, 'borrador');
+  assert.equal((await api.updateQuotationStatus({}, form({ id: created.quotationId, estado: 'rechazada', motivo: ' Eligió   otra fecha ' }))).success, 'Estado actualizado.');
+  assert.equal(db.tables.quotations[0].estado, 'rechazada');
+  assert.equal(db.tables.quotations[0].motivo_rechazo, 'Eligió otra fecha');
+  assert.ok(Date.parse(db.tables.quotations[0].rechazada_en));
+});
+
+test('a quotation that is not accepted cannot be amended; the database explains why and nothing is created', async () => {
+  const db = fakeDb();
+  const api = actions(db);
+  const created = await api.saveQuotation(JSON.stringify(payload()));
+  assert.match((await api.duplicateQuotation(created.quotationId, 'enmienda')).error, /Solo se enmienda una cotización aceptada/);
+  assert.equal(db.tables.quotations.length, 1);
+});
+
 test('a discounted quotation keeps the same total through reservation and invoice', async () => {
   const db = fakeDb({ reservation_items: [], payments: [], invoices: [] });
   const api = actions(db);
@@ -408,7 +478,8 @@ test('a converted quotation cannot be moved out of "aceptada"', async () => {
   const db = fakeDb({ reservation_items: [], payments: [], invoices: [] });
   const { api, id } = await sentAndAccepted(db);
   await assert.rejects(reservationActions(db).convertQuotationToReservation({}, form({ quotation_id: id, version_id: db.tables.quotations[0].accepted_version_id, confirmado: 'si', modo: 'reserva', apellido: 'Pérez' })), /redirect/);
-  assert.match((await api.updateQuotationStatus({}, form({ id, estado: 'rechazada' }))).error, /requiere una enmienda/);
+  assert.match((await api.updateQuotationStatus({}, form({ id, estado: 'rechazada' }))).error, /por qué el cliente rechazó/);
+  assert.match((await api.updateQuotationStatus({}, form({ id, estado: 'rechazada', motivo: 'Eligió otra fecha' }))).error, /requiere una enmienda/);
   assert.equal(db.tables.quotations[0].estado, 'aceptada');
 });
 

@@ -1,10 +1,10 @@
 import type { Tone } from "@/components/admin/ui";
-import type { QuotationStatus } from "@/lib/quotation-types";
+import type { AdminQuotationStatus } from "@/lib/admin-quotation-status";
 import type { InvoiceStatus, ReservationStatus } from "@/lib/reservation-types";
 
 // One place that decides how each record state reads and looks across the admin.
 
-export const quotationTone: Record<QuotationStatus, Tone> = { borrador: "muted", enviada: "info", aceptada: "success", rechazada: "danger", expirada: "muted" };
+export const quotationTone: Record<AdminQuotationStatus, Tone> = { borrador: "muted", enviada: "info", aceptada: "success", rechazada: "danger", expirada: "muted", reemplazada: "muted" };
 export const reservationTone: Record<ReservationStatus, Tone> = { pendiente: "neutral", confirmada: "info", en_curso: "info", completada: "success", cancelada: "danger" };
 export const invoiceTone: Record<InvoiceStatus, Tone> = { borrador: "muted", emitida: "info", pagada: "success", anulada: "danger" };
 

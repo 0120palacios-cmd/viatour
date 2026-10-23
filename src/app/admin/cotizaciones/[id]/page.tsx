@@ -12,7 +12,8 @@ import { CommercialLifecycle } from "@/components/admin/commercial-lifecycle";
 import { formatMoney } from "@/lib/reservation-types";
 import { isExpired } from "@/lib/quotation-details";
 import { validUuid } from "@/lib/quotation-validation";
-import { quotationStatusLabel, type Customer } from "@/lib/quotation-types";
+import { type Customer } from "@/lib/quotation-types";
+import { adminQuotationStatusLabel as quotationStatusLabel, type AdminQuotationStatus } from "@/lib/admin-quotation-status";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   return pageMetadata(`/admin/cotizaciones/${(await params).id}`, "viatour | Editar cotización", "Editar una cotización en la administración privada de viatour.");
@@ -36,6 +37,8 @@ export default async function EditQuotationPage({ params, searchParams }: { para
   if (!record) notFound();
   if (customers.error) throw new Error("No se pudieron cargar los clientes.");
   const { quotation } = record;
+  // The shared Quotation type predates "reemplazada" (admin-only state).
+  const estado = quotation.estado as AdminQuotationStatus;
   const draft: EditorDraft = {
     id, updatedAt: quotation.updated_at ?? null, leadId: null, customerId: quotation.customer_id ?? "",
     cliente: { nombre: quotation.cliente_nombre, email: quotation.cliente_email ?? "", telefono: quotation.cliente_telefono ?? "" },
@@ -44,14 +47,21 @@ export default async function EditQuotationPage({ params, searchParams }: { para
   };
   const expired = isExpired(record.expiry) && ["borrador", "enviada"].includes(quotation.estado);
   const lifecycle = await client.from("quotations").select("accepted_version_id,sent_version_id,version_aceptada").eq("id", id).maybeSingle();
+  // Rejection reason and amendment links (docs/sql/quotation_integrity.sql); absent until that SQL is applied.
+  const links = await client.from("quotations").select("motivo_rechazo,rechazada_en,enmienda_de,reemplazada_por,reemplazada_en").eq("id", id).maybeSingle();
+  const related = links.data ? (await client.from("quotations").select("id,codigo,estado").in("id", [links.data.enmienda_de, links.data.reemplazada_por].filter(Boolean) as string[])).data ?? [] : [];
+  const amends = related.find(row => row.id === links.data?.enmienda_de);
+  const replacedBy = related.find(row => row.id === links.data?.reemplazada_por);
   const versionId = quotation.estado === "aceptada" ? lifecycle.data?.accepted_version_id : lifecycle.data?.sent_version_id;
   const selected = versions.find(version => version.id === versionId) ?? (quotation.estado === "aceptada" && !versionId ? versions.find(version => version.version === lifecycle.data?.version_aceptada) : undefined) ?? (quotation.estado === "enviada" && !versionId ? versions.find(version => version.origen !== "aceptacion") : undefined);
   const frozen = selected ? await getQuotationVersion(client, id, selected.version) : null;
   const sidebar = <>
     <section aria-labelledby="status-title" className="rounded-panel border border-line bg-canvas p-4">
-      <h2 id="status-title" className="mb-1 font-semibold text-ink">Estado: {quotationStatusLabel(quotation.estado)}{expired ? " (vencida)" : ""}</h2>
+      <h2 id="status-title" className="mb-1 font-semibold text-ink">Estado: {quotationStatusLabel(estado)}{expired ? " (vencida)" : ""}</h2>
       <p className="mb-3 t-small text-ink-soft">Marque la respuesta del cliente cuando la reciba.</p>
-      {quotation.estado !== "aceptada" ? <QuotationStatusForm id={id} status={quotation.estado} /> : <p className="t-small">El contenido aceptado está bloqueado. Para modificarlo, cree una enmienda.</p>}
+      {quotation.estado === "rechazada" && links.data?.motivo_rechazo ? <p className="mb-3 t-small text-ink">Motivo: {links.data.motivo_rechazo}{links.data.rechazada_en ? ` (${dateTime.format(new Date(links.data.rechazada_en))})` : ""}</p> : null}
+      {estado === "reemplazada" ? <p className="t-small">Reemplazada{links.data?.reemplazada_en ? ` el ${dateTime.format(new Date(links.data.reemplazada_en))}` : ""} por {replacedBy ? <Link className={textLink} href={`/admin/cotizaciones/${replacedBy.id}`}>{replacedBy.codigo}</Link> : "su enmienda"}. Su contenido queda como registro y no se puede modificar.</p>
+        : quotation.estado !== "aceptada" ? <QuotationStatusForm id={id} status={quotation.estado} /> : <p className="t-small">El contenido aceptado está bloqueado. Para modificarlo, cree una enmienda.</p>}
     </section>
     <section aria-labelledby="agent-title" className="rounded-panel border border-line bg-canvas p-4">
       <h2 id="agent-title" className="mb-1 font-semibold text-ink">Asesor asignado</h2>
@@ -67,10 +77,12 @@ export default async function EditQuotationPage({ params, searchParams }: { para
   return <>
     <PageHeader back={{ href: "/admin/cotizaciones", label: "Cotizaciones" }} title={`${quotation.cliente_nombre} · ${quotation.destino}`} description={quotation.customer_id ? <Link className={textLink} href={`/admin/clientes/${quotation.customer_id}`}>Ver ficha del cliente</Link> : undefined} />
     {enmienda ? <p className="rounded-card border border-line bg-brand-tint p-4 text-ink">Enmienda creada en borrador. La cotización aceptada original no cambió. Actualice lo necesario, apruebe las condiciones y envíe esta nueva cotización al cliente.</p> : null}
+    {amends && quotation.estado !== "aceptada" ? <p className="rounded-card border border-line bg-canvas p-4 text-ink">Enmienda de <Link className={textLink} href={`/admin/cotizaciones/${amends.id}`}>{amends.codigo}</Link>. Cuando el cliente la acepte, reemplazará a {amends.codigo}{amends.estado === "aceptada" ? " y, si ya tiene reserva, la reserva pasará a esta versión: nuevo total y servicios. Los pagos, facturas, pasajeros y el acceso a Mi viaje no cambian. No se aplica si la moneda o el cliente son otros, ni si el cliente ya pagó más que el nuevo total." : "."}</p> : null}
+    {amends && quotation.estado === "aceptada" ? <p className="rounded-card border border-line bg-canvas p-4 text-ink">Esta enmienda reemplazó a <Link className={textLink} href={`/admin/cotizaciones/${amends.id}`}>{amends.codigo}</Link>.</p> : null}
     {duplicada ? <p className="rounded-card border border-line bg-brand-tint p-4 text-ink">Esta es una copia nueva en borrador. Actualice fechas, validez y precios, y vuelva a confirmar el itinerario y el equipaje.</p> : null}
     {expired ? <p role="alert" className="rounded-card border border-error/40 bg-canvas p-4 text-error">La validez de esta cotización venció el {dateTime.format(new Date(record.expiry))}. Actualícela antes de volver a enviarla; las versiones ya enviadas no cambian.</p> : null}
-    <CommercialLifecycle id={id} code={quotation.codigo} status={quotation.estado} needsReview={quotation.estado === "aceptada" && !lifecycle.data?.accepted_version_id} ready={!lifecycle.error} reservation={reservation.data} version={selected && frozen ? { id: selected.id, number: selected.version, customer: frozen.quotation.cliente_nombre, email: frozen.quotation.cliente_email, legacy: !versionId, total: formatMoney(Number(frozen.quotation.total), frozen.quotation.moneda) } : null} />
+    {estado === "reemplazada" ? null : <CommercialLifecycle id={id} code={quotation.codigo} status={quotation.estado} needsReview={quotation.estado === "aceptada" && !lifecycle.data?.accepted_version_id} ready={!lifecycle.error} reservation={reservation.data} version={selected && frozen ? { id: selected.id, number: selected.version, customer: frozen.quotation.cliente_nombre, email: frozen.quotation.cliente_email, legacy: !versionId, total: formatMoney(Number(frozen.quotation.total), frozen.quotation.moneda) } : null} />}
     <QuotationEditor initial={draft} customers={(customers.data ?? []) as Customer[]} recentHotels={recentHotels} sidebar={sidebar} catalogs={catalogs}
-      meta={{ codigo: quotation.codigo, estado: quotation.estado, estadoLabel: quotationStatusLabel(quotation.estado), expired, schemaReady: record.schemaReady, sent: versions.length > 0 || quotation.estado !== "borrador", converted: Boolean(reservation.data) }} />
+      meta={{ codigo: quotation.codigo, estado: quotation.estado, estadoLabel: quotationStatusLabel(estado), expired, schemaReady: record.schemaReady, sent: versions.length > 0 || quotation.estado !== "borrador", converted: Boolean(reservation.data) }} />
   </>;
 }

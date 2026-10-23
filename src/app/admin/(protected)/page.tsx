@@ -4,7 +4,7 @@ import { pageMetadata } from "@/lib/seo";
 import { requireAdmin } from "@/lib/admin";
 import { expiringSoon, formatAmount, hondurasDay, monthTotals, outstandingBalances, quotationFunnel, summarizeLeads } from "@/lib/admin-reports";
 import { effectiveExpiry, formatInstant } from "@/lib/quotation-details";
-import { quotationStatusLabel, type QuotationStatus } from "@/lib/quotation-types";
+import { adminQuotationStatusLabel as quotationStatusLabel, type AdminQuotationStatus as QuotationStatus } from "@/lib/admin-quotation-status";
 import { reservationStatusLabel, type ReservationStatus } from "@/lib/reservation-types";
 import { openTicketStatuses, quotationTone, reservationTone } from "@/lib/admin-status";
 import { NewQuotationMenu } from "@/components/admin/new-quotation-menu";

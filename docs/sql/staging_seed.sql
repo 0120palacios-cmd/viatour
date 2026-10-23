@@ -74,7 +74,12 @@ begin
       update public.quotations set estado = 'enviada', version = 1, sent_version_id = v_id where id = quote_id;
       if q.estado = 'enviada' then continue; end if;
       if q.estado = 'rechazada' then
-        update public.quotations set estado = 'rechazada' where id = quote_id;
+        -- After quotation_integrity.sql a rejection needs its reason.
+        if exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'quotations' and column_name = 'motivo_rechazo') then
+          execute 'update public.quotations set estado = ''rechazada'', motivo_rechazo = ''Eligió otra fecha (prueba)'', rechazada_en = now() where id = $1' using quote_id;
+        else
+          update public.quotations set estado = 'rechazada' where id = quote_id;
+        end if;
         continue;
       end if;
 

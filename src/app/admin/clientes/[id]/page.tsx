@@ -7,7 +7,8 @@ import { formatDay, PageHeader, Panel, RecordRow, StatusBadge } from "@/componen
 import { requireAdmin } from "@/lib/admin";
 import { quotationTone, reservationTone } from "@/lib/admin-status";
 import { customerWhatsappHref } from "@/lib/lead-admin";
-import { formatQuotationAmount, quotationStatusLabel, type QuotationStatus } from "@/lib/quotation-types";
+import { formatQuotationAmount } from "@/lib/quotation-types";
+import { adminQuotationStatusLabel as quotationStatusLabel, type AdminQuotationStatus as QuotationStatus } from "@/lib/admin-quotation-status";
 import { formatMoney, reservationStatusLabel, type ReservationStatus } from "@/lib/reservation-types";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {

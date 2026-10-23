@@ -41,7 +41,7 @@ export function QuotationEditor({ initial, customers, recentHotels, meta, sideba
   const [message, setMessage] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<CustomerSuggestion[]>([]);
   // An accepted quotation is read-only (the database enforces it too); changes go through an amendment.
-  const locked = meta.estado === "aceptada";
+  const locked = meta.estado === "aceptada" || meta.estado === "reemplazada";
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewState, setPreviewState] = useState<"idle" | "loading" | "error">("idle");

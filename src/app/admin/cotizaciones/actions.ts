@@ -183,10 +183,11 @@ export async function saveQuotation(payloadText: string): Promise<QuotationActio
 }
 
 // "copia": a new draft to adapt for another customer or date. "enmienda": the way to change an accepted
-// quotation; the original stays accepted and locked, and the amendment records which one it replaces.
-// Either way the itinerary, baggage and conditions must be confirmed and approved again.
+// quotation; the original stays accepted and locked until the amendment is accepted, which replaces it (and
+// moves its reservation) in the database. Either way the itinerary, baggage and conditions must be confirmed
+// and approved again. The copy and its price lines are created in one transaction (create_quotation_copy).
 export async function duplicateQuotation(id: string, mode: "copia" | "enmienda" = "copia"): Promise<QuotationActionState> {
-  const { client, user } = await requireAdmin();
+  const { client } = await requireAdmin();
   if (!validUuid(id)) return { error: "Cotización inválida." };
   let record = await getAdminQuotation(client, id);
   if (!record) return { error: "No se encontró la cotización." };
@@ -199,22 +200,15 @@ export async function duplicateQuotation(id: string, mode: "copia" | "enmienda" 
   // A package's flights must be confirmed again too, as in a flight quotation.
   const paquete = { ...record.details.paquete, componentes: record.details.paquete.componentes.map(component => component.vuelo ? { ...component, vuelo: { ...component.vuelo, vuelos: { ...component.vuelo.vuelos, confirmado: false }, equipajeConfirmado: false } } : component) };
   const details = { ...record.details, vuelos: { ...record.details.vuelos, confirmado: false }, equipajeConfirmado: false, validez: { ...record.details.validez, venceEn: "", limitePago: "", limiteEmision: "" }, refCreacion: "", aprobacionCondiciones: null, enmiendaDe: mode === "enmienda" ? record.quotation.codigo : "", paquete };
-  const copy: Record<string, unknown> = {
+  const row = {
     customer_id: record.quotation.customer_id, cliente_nombre: record.quotation.cliente_nombre, cliente_email: record.quotation.cliente_email, cliente_telefono: record.quotation.cliente_telefono,
     destino: record.quotation.destino, moneda: record.quotation.moneda, validez: legacyValidityDate(zonedToIso(`${new Date(Date.now() + 86400000).toISOString().slice(0, 10)}T23:59`)),
-    notas: record.quotation.notas, total: totalAmount(record.items), agente_id: user.id, codigo: quotationCode(), estado: "borrador",
+    notas: record.quotation.notas, codigo: quotationCode(), tipo: record.kind, detalles: details,
   };
-  let saved = await client.from("quotations").insert(record.schemaReady ? { ...copy, tipo: record.kind, detalles: details, vence_en: null } : copy).select("id").single();
-  if (saved.error && isMissingColumn(saved.error)) saved = await client.from("quotations").insert(copy).select("id").single();
-  if (saved.error || !saved.data) return { error: "No se pudo crear la copia." };
-  const newId = String(saved.data.id);
-  if (record.items.length) {
-    const items = await client.from("quotation_items").insert(record.items.map((item, orden) => ({ quotation_id: newId, descripcion: item.descripcion, tipo: item.tipo, cantidad: item.cantidad, precio_unitario: item.precio_unitario, orden })));
-    if (items.error) {
-      await client.from("quotations").delete().eq("id", newId);
-      return { error: "No se pudo crear la copia." };
-    }
-  }
+  const items = record.items.map(item => ({ descripcion: item.descripcion, tipo: item.tipo, cantidad: item.cantidad, precio_unitario: item.precio_unitario }));
+  const saved = await client.rpc("create_quotation_copy", { p_source: id, p_amendment: mode === "enmienda", p_row: row, p_items: items });
+  if (saved.error || !saved.data) return { error: missingFunction(saved.error) ? "Falta la actualización de la base de datos para copiar cotizaciones (docs/sql/quotation_integrity.sql)." : saved.error?.code === "23514" ? commercialError(saved.error) : "No se pudo crear la copia. No se guardó nada; intente nuevamente." };
+  const newId = String(saved.data);
   refreshQuotationPaths(newId);
   redirect(`/admin/cotizaciones/${newId}?${mode === "enmienda" ? "enmienda" : "duplicada"}=1`);
 }
@@ -242,10 +236,22 @@ export async function updateQuotationStatus(_: QuotationActionState, form: FormD
     const result = await client.rpc("accept_quotation", { p_id: id, p_version_id: versionId, p_notes: clean(form.get("notas")) });
     if (result.error) return { error: commercialError(result.error) };
     refreshQuotationPaths(id);
+    // An accepted amendment replaced its original in the same transaction and may have moved its reservation.
+    const amendment = await client.from("quotations").select("enmienda_de").eq("id", id).maybeSingle();
+    const moved = amendment.data?.enmienda_de ? await client.from("reservations").select("id,codigo").eq("quotation_id", id).maybeSingle() : null;
+    if (moved?.data) {
+      revalidatePath(`/admin/reservas/${moved.data.id}`);
+      return { success: `Enmienda aceptada. La reserva ${moved.data.codigo} pasó a esta versión: revise su nuevo total y saldo.` };
+    }
     return { success: "Cotización aceptada. Puede crear una prerreservación o una reserva." };
   }
   if (!["rechazada", "expirada"].includes(status)) return { error: "Estado inválido." };
-  const result = await client.from("quotations").update({ estado: status }).eq("id", id).in("estado", ["borrador", "enviada"]).select("id").single();
+  // A rejection always records why; the database refuses it without a reason (docs/sql/quotation_integrity.sql).
+  const motivo = clean(form.get("motivo")).replace(/\s+/g, " ");
+  if (status === "rechazada" && (motivo.length < 3 || motivo.length > 500)) return { error: "Indique en pocas palabras por qué el cliente rechazó la cotización." };
+  const changes = status === "rechazada" ? { estado: status, motivo_rechazo: motivo, rechazada_en: new Date().toISOString() } : { estado: status };
+  const result = await client.from("quotations").update(changes).eq("id", id).in("estado", ["borrador", "enviada"]).select("id").single();
+  if (result.error && isMissingColumn(result.error)) return { error: "Falta la actualización de la base de datos para registrar el motivo del rechazo (docs/sql/quotation_integrity.sql)." };
   if (result.error) return { error: "No se pudo cambiar el estado. Una cotización aceptada requiere una enmienda." };
   refreshQuotationPaths(id);
   return { success: "Estado actualizado." };
@@ -257,6 +263,28 @@ export type SendChannel = "correo" | "whatsapp" | "presencial";
 const manualChannels: readonly SendChannel[] = ["whatsapp", "presencial"];
 type FrozenVersion = { versionNumber: number; snapshotRecord: NonNullable<Awaited<ReturnType<typeof getAdminQuotation>>> } | { error: string };
 
+// Key-order independent JSON, so a stored snapshot compares equal to the same content read again.
+function canonical(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
+  if (value && typeof value === "object") return `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${canonical((value as Record<string, unknown>)[key])}`).join(",")}}`;
+  return JSON.stringify(value ?? null);
+}
+const volatileFields = ["version", "estado", "updated_at"];
+const commercialContent = (quotation: Record<string, unknown>, items: { descripcion: string; tipo: string | null; cantidad: number; precio_unitario: number }[]) => canonical({
+  quotation: Object.fromEntries(Object.entries(quotation).filter(([key]) => !volatileFields.includes(key))),
+  items: items.map(item => [item.descripcion, item.tipo ?? null, Number(item.cantidad), Number(item.precio_unitario)]),
+});
+
+// True when the latest version was frozen for a send on this channel, was never recorded as the sent (or
+// accepted) version, and the quotation still has exactly the content it froze.
+async function undelivered(client: AdminClient, id: string, latest: { id: string; version: number; snapshot: unknown }, record: NonNullable<Awaited<ReturnType<typeof getAdminQuotation>>>, canal: SendChannel) {
+  const snapshot = latest.snapshot as { quotation?: Record<string, unknown>; items?: { descripcion: string; tipo: string | null; cantidad: number; precio_unitario: number }[]; canal?: string; origen?: string } | null;
+  if (!snapshot?.quotation || !Array.isArray(snapshot.items) || snapshot.origen || (snapshot.canal ?? "correo") !== canal) return false;
+  const links = await client.from("quotations").select("sent_version_id,accepted_version_id").eq("id", id).maybeSingle();
+  if (links.error || !links.data || [links.data.sent_version_id, links.data.accepted_version_id].includes(latest.id)) return false;
+  return commercialContent(snapshot.quotation, snapshot.items) === commercialContent(record.quotation as unknown as Record<string, unknown>, record.items);
+}
+
 // Freezes the quotation as it stands into an immutable version (quotation_versions). Sending uses it
 // before e-mailing; accepting uses it when nothing was ever sent from the panel (a PDF shared by
 // WhatsApp, for example), so every accepted quotation keeps a fixed copy of what was agreed.
@@ -264,8 +292,14 @@ async function freezeVersion(client: AdminClient, userId: string, record: NonNul
   const { quotation } = record;
   const id = quotation.id;
   // The next number comes from the versions themselves, so a failed counter update can never block later sends.
-  const latest = await client.from("quotation_versions").select("version").eq("quotation_id", id).order("version", { ascending: false }).limit(1).maybeSingle();
+  const latest = await client.from("quotation_versions").select("id,version,snapshot").eq("quotation_id", id).order("version", { ascending: false }).limit(1).maybeSingle();
   if (latest.error && !isMissingColumn(latest.error) && latest.error.code !== "42P01") return { error: "No se pudo preparar la versión de la cotización. Intente nuevamente." };
+  // A send that failed halfway (e-mail not delivered, or delivered but the status not saved) left a frozen
+  // version that was never marked as sent. If nothing changed since, the retry reuses it: same number, same
+  // PDF and same e-mail idempotency key, so the customer never gets two different versions of one send.
+  if (origen === "envio" && latest.data && await undelivered(client, id, latest.data, record, canal)) {
+    return { versionNumber: Number(latest.data.version), snapshotRecord: toRecord({ ...quotation, version: Number(latest.data.version) }, record.items, true) };
+  }
   const versionNumber = Math.max(Number(quotation.version ?? 0), Number(latest.data?.version ?? 0)) + 1;
   const row = { ...quotation, version: versionNumber };
   const snapshot = { quotation: row, items: record.items, emitida_en: new Date().toISOString(), canal, ...(origen === "aceptacion" ? { origen } : {}) };

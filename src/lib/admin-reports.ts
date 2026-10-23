@@ -26,7 +26,7 @@ export function summarizeLeads(rows: Row[], now = Date.now()) {
 
 // Of the quotations that reached the customer, how many were accepted.
 export function quotationFunnel(rows: Row[]) {
-  const sent = rows.filter(row => ["enviada", "aceptada", "rechazada", "expirada"].includes(String(row.estado))).length;
+  const sent = rows.filter(row => ["enviada", "aceptada", "rechazada", "expirada", "reemplazada"].includes(String(row.estado))).length;
   const accepted = rows.filter(row => row.estado === "aceptada").length;
   return { total: rows.length, drafts: rows.filter(row => row.estado === "borrador").length, sent, accepted, rate: sent ? Math.round((accepted / sent) * 100) : 0 };
 }
