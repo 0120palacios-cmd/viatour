@@ -1,10 +1,21 @@
 -- viatour production schema snapshot (public + storage policies). Structure only: no rows, no secrets.
--- Generated from a READ ONLY metadata query at 2026-10-23T17:16:10.81632+00:00 (PostgreSQL 17.6).
+-- Generated from a READ ONLY metadata query at 2026-10-23T17:48:26.158926+00:00 (PostgreSQL 17.6).
 -- Migration history table: none (schema is managed by reviewed files in docs/sql).
 -- Reference only. Do NOT run against production. Order: types, sequences, tables, keys, indexes, views, functions, triggers, RLS, grants, storage.
 
+create sequence public.admin_audit_log_id_seq;
 create sequence public.payment_receipt_number;
 
+create table public.admin_audit_log (
+  id bigint generated always as identity not null,
+  at timestamp with time zone default now() not null,
+  actor uuid,
+  action text not null,
+  entity text not null,
+  entity_id uuid not null,
+  reference text,
+  details jsonb default '{}'::jsonb not null
+);
 create table public.admins (
   user_id uuid not null,
   created_at timestamp with time zone default now() not null,
@@ -479,6 +490,7 @@ create table public.trip_service_requests (
   created_at timestamp with time zone default now() not null
 );
 
+alter table public.admin_audit_log add constraint admin_audit_log_pkey PRIMARY KEY (id);
 alter table public.admins add constraint admins_pkey PRIMARY KEY (user_id);
 alter table public.airline_catalog add constraint airline_catalog_pkey PRIMARY KEY (id);
 alter table public.airline_fare_presets add constraint airline_fare_presets_pkey PRIMARY KEY (id);
@@ -531,6 +543,10 @@ alter table public.review_invitations add constraint review_invitations_token_ke
 alter table public.travel_deliveries add constraint travel_deliveries_receipt_id_key UNIQUE (receipt_id);
 alter table public.travel_deliveries add constraint travel_deliveries_reservation_id_revision_key UNIQUE (reservation_id, revision);
 alter table public.trip_feedback add constraint trip_feedback_reservation_id_key UNIQUE (reservation_id);
+alter table public.admin_audit_log add constraint admin_audit_log_action_check CHECK (((action ~ '^[a-z_]+\.[a-z_]+$'::text) AND (length(action) <= 80)));
+alter table public.admin_audit_log add constraint admin_audit_log_details_check CHECK ((pg_column_size(details) <= 4096));
+alter table public.admin_audit_log add constraint admin_audit_log_entity_check CHECK ((entity = ANY (ARRAY['quotation'::text, 'reservation'::text, 'invoice'::text, 'payment'::text, 'receipt'::text, 'travel'::text, 'admin'::text])));
+alter table public.admin_audit_log add constraint admin_audit_log_reference_check CHECK ((length(reference) <= 80));
 alter table public.admins add constraint admins_role_check CHECK ((role = ANY (ARRAY['admin'::text, 'agent'::text])));
 alter table public.airline_catalog add constraint airline_catalog_iata_check CHECK ((iata ~ '^[A-Z0-9]{2}$'::text));
 alter table public.airline_catalog add constraint airline_catalog_icao_check CHECK ((icao ~ '^[A-Z]{3}$'::text));
@@ -675,6 +691,8 @@ alter table public.travel_deliveries add constraint travel_deliveries_reservatio
 alter table public.trip_feedback add constraint trip_feedback_reservation_id_fkey FOREIGN KEY (reservation_id) REFERENCES reservations(id) ON DELETE RESTRICT;
 alter table public.trip_service_requests add constraint trip_service_requests_reservation_id_fkey FOREIGN KEY (reservation_id) REFERENCES reservations(id) ON DELETE RESTRICT;
 
+CREATE INDEX admin_audit_log_at_idx ON public.admin_audit_log USING btree (at DESC);
+CREATE INDEX admin_audit_log_entity_idx ON public.admin_audit_log USING btree (entity, entity_id, at DESC);
 CREATE UNIQUE INDEX airline_catalog_iata_unique ON public.airline_catalog USING btree (iata) WHERE ((iata IS NOT NULL) AND activo);
 CREATE UNIQUE INDEX airline_catalog_nombre_unique ON public.airline_catalog USING btree (lower(btrim(nombre)));
 CREATE INDEX airline_fare_presets_airline_idx ON public.airline_fare_presets USING btree (airline_id);
@@ -738,32 +756,158 @@ begin
   if q.estado = 'aceptada' and q.accepted_version_id = p_version_id then return p_version_id; end if;
   if q.estado='aceptada' and q.accepted_version_id is null and q.version_aceptada is not null then
     select * into strict v from public.quotation_versions where id=p_version_id and quotation_id=p_id and version=q.version_aceptada;
-    if length(btrim(coalesce(p_notes,''))) < 5 then raise exception 'Registre la referencia de revisiÃ³n de la aceptaciÃ³n anterior.' using errcode='23514'; end if;
-    update public.quotations set accepted_version_id=v.id,aceptada_en=now(),aceptada_por=auth.uid(),aceptacion_notas='RevisiÃ³n de aceptaciÃ³n anterior: ' || p_notes where id=p_id;
+    if length(btrim(coalesce(p_notes,''))) < 5 then raise exception 'Registre la referencia de revisión de la aceptación anterior.' using errcode='23514'; end if;
+    update public.quotations set accepted_version_id=v.id,aceptada_en=now(),aceptada_por=auth.uid(),aceptacion_notas='Revisión de aceptación anterior: ' || p_notes where id=p_id;
     return v.id;
   end if;
-  if q.estado <> 'enviada' then raise exception 'Solo puede aceptar una cotizaciÃ³n enviada.' using errcode = '23514'; end if;
+  if q.estado <> 'enviada' then raise exception 'Solo puede aceptar una cotización enviada.' using errcode = '23514'; end if;
   select * into strict v from public.quotation_versions where id = p_version_id and quotation_id = p_id;
   if (q.sent_version_id is not null and q.sent_version_id is distinct from p_version_id)
     or (q.sent_version_id is null and (length(btrim(coalesce(p_notes,''))) < 5 or v.snapshot->>'origen' = 'aceptacion')) then
-    raise exception 'Revise la versiÃ³n enviada y registre la referencia del envÃ­o anterior.' using errcode = '23514';
+    raise exception 'Revise la versión enviada y registre la referencia del envío anterior.' using errcode = '23514';
   end if;
   if coalesce((v.snapshot->'quotation'->>'vence_en')::timestamptz,
       ((v.snapshot->'quotation'->>'validez')::date + time '23:59:59') at time zone 'America/Tegucigalpa') < now() then
-    raise exception 'La versiÃ³n enviada venciÃ³. Prepare una nueva cotizaciÃ³n.' using errcode = '23514';
+    raise exception 'La versión enviada venció. Prepare una nueva cotización.' using errcode = '23514';
   end if;
   if jsonb_array_length(v.snapshot->'items') < 1 or length(coalesce(p_notes,'')) > 2000 then
-    raise exception 'VersiÃ³n o referencia invÃ¡lida.' using errcode = '23514';
+    raise exception 'Versión o referencia inválida.' using errcode = '23514';
   end if;
   if (v.snapshot#>>'{quotation,total}')::numeric is null or (v.snapshot#>>'{quotation,total}')::numeric < 0
     or (v.snapshot#>>'{quotation,total}')::numeric is distinct from
       (select sum(case when lower(btrim(x->>'tipo'))='descuento' then -1 else 1 end * round((x->>'cantidad')::numeric*(x->>'precio_unitario')::numeric,2)) from jsonb_array_elements(v.snapshot->'items') x)
     or exists(select 1 from jsonb_array_elements(v.snapshot->'items') x where coalesce((x->>'cantidad')::numeric,0)<=0 or coalesce((x->>'precio_unitario')::numeric,-1)<0) then
-    raise exception 'Revise los importes de la versiÃ³n enviada antes de aceptarla.' using errcode='23514';
+    raise exception 'Revise los importes de la versión enviada antes de aceptarla.' using errcode='23514';
   end if;
   update public.quotations set estado = 'aceptada', version_aceptada = v.version,
     accepted_version_id = v.id, aceptada_en = now(), aceptada_por = auth.uid(), aceptacion_notas = nullif(btrim(p_notes),'') where id = p_id;
   return v.id;
+end; $function$;
+
+CREATE OR REPLACE FUNCTION public.admin_audit_log_immutable()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO ''
+AS $function$
+begin
+  raise exception 'El registro de actividad no se puede modificar.' using errcode = '23514';
+end; $function$;
+
+CREATE OR REPLACE FUNCTION public.audit_invoice_change()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+begin
+  if tg_op = 'INSERT' then
+    insert into public.admin_audit_log (actor, action, entity, entity_id, reference, details)
+      values (auth.uid(), 'invoice.created', 'invoice', new.id, new.numero, jsonb_build_object('estado', new.estado, 'total', new.total, 'moneda', new.moneda, 'reservation_id', new.reservation_id));
+  elsif new.estado is distinct from old.estado then
+    insert into public.admin_audit_log (actor, action, entity, entity_id, reference, details)
+      values (auth.uid(), case new.estado when 'anulada' then 'invoice.annulled' when 'pagada' then 'invoice.paid' when 'emitida' then 'invoice.issued' else 'invoice.status_changed' end,
+        'invoice', new.id, new.numero, jsonb_build_object('from', old.estado, 'to', new.estado, 'reservation_id', new.reservation_id));
+  end if;
+  return null;
+end; $function$;
+
+CREATE OR REPLACE FUNCTION public.audit_payment_change()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+begin
+  if tg_op = 'INSERT' then
+    insert into public.admin_audit_log (actor, action, entity, entity_id, details)
+      values (auth.uid(), 'payment.recorded', 'payment', new.id, jsonb_build_object('reservation_id', new.reservation_id, 'monto', new.monto, 'moneda', new.moneda, 'metodo', new.metodo, 'fecha_pago', new.fecha_pago));
+  elsif tg_op = 'UPDATE' then
+    insert into public.admin_audit_log (actor, action, entity, entity_id, details)
+      values (auth.uid(), 'payment.edited', 'payment', new.id, jsonb_build_object('reservation_id', new.reservation_id, 'monto', jsonb_build_array(old.monto, new.monto), 'moneda', jsonb_build_array(old.moneda, new.moneda), 'fecha_pago', jsonb_build_array(old.fecha_pago, new.fecha_pago)));
+  else
+    insert into public.admin_audit_log (actor, action, entity, entity_id, details)
+      values (auth.uid(), 'payment.deleted', 'payment', old.id, jsonb_build_object('reservation_id', old.reservation_id, 'monto', old.monto, 'moneda', old.moneda, 'fecha_pago', old.fecha_pago));
+  end if;
+  return null;
+end; $function$;
+
+CREATE OR REPLACE FUNCTION public.audit_quotation_change()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+begin
+  if tg_op = 'INSERT' then
+    insert into public.admin_audit_log (actor, action, entity, entity_id, reference, details)
+      values (auth.uid(), 'quotation.created', 'quotation', new.id, new.codigo, jsonb_build_object('estado', new.estado, 'moneda', new.moneda));
+  elsif new.estado is distinct from old.estado or new.sent_version_id is distinct from old.sent_version_id or new.accepted_version_id is distinct from old.accepted_version_id or new.agente_id is distinct from old.agente_id then
+    insert into public.admin_audit_log (actor, action, entity, entity_id, reference, details)
+      values (auth.uid(), case when new.estado is distinct from old.estado then 'quotation.status_changed' when new.agente_id is distinct from old.agente_id then 'quotation.reassigned' else 'quotation.version_linked' end,
+        'quotation', new.id, new.codigo,
+        jsonb_strip_nulls(jsonb_build_object('from', old.estado, 'to', new.estado, 'version', new.version,
+          'sent_version_id', new.sent_version_id, 'accepted_version_id', new.accepted_version_id,
+          'agente_from', case when new.agente_id is distinct from old.agente_id then old.agente_id end,
+          'agente_to', case when new.agente_id is distinct from old.agente_id then new.agente_id end)));
+  end if;
+  return null;
+end; $function$;
+
+CREATE OR REPLACE FUNCTION public.audit_receipt_created()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+begin
+  insert into public.admin_audit_log (actor, action, entity, entity_id, reference, details)
+    values (auth.uid(), 'receipt.created', 'receipt', new.id, new.number, jsonb_build_object('payment_id', new.payment_id, 'reservation_id', new.reservation_id));
+  return null;
+end; $function$;
+
+CREATE OR REPLACE FUNCTION public.audit_reservation_change()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare changes jsonb := '{}'::jsonb;
+begin
+  if tg_op = 'INSERT' then
+    insert into public.admin_audit_log (actor, action, entity, entity_id, reference, details)
+      values (auth.uid(), 'reservation.created', 'reservation', new.id, new.codigo,
+        jsonb_strip_nulls(jsonb_build_object('estado', new.estado, 'prerreserva', new.prerreserva, 'total', new.total, 'moneda', new.moneda, 'quotation_id', new.quotation_id)));
+    return null;
+  end if;
+  if new.estado is distinct from old.estado then changes := changes || jsonb_build_object('estado', jsonb_build_array(old.estado, new.estado)); end if;
+  if new.supplier_status is distinct from old.supplier_status then changes := changes || jsonb_build_object('supplier_status', jsonb_build_array(old.supplier_status, new.supplier_status)); end if;
+  if new.supplier_reference is distinct from old.supplier_reference then changes := changes || jsonb_build_object('supplier_reference_changed', true); end if;
+  if new.prerreserva is distinct from old.prerreserva then changes := changes || jsonb_build_object('prerreserva', jsonb_build_array(old.prerreserva, new.prerreserva)); end if;
+  if new.total is distinct from old.total then changes := changes || jsonb_build_object('total', jsonb_build_array(old.total, new.total)); end if;
+  if new.fecha_inicio is distinct from old.fecha_inicio or new.fecha_fin is distinct from old.fecha_fin then changes := changes || jsonb_build_object('fechas', jsonb_build_array(jsonb_build_array(old.fecha_inicio, old.fecha_fin), jsonb_build_array(new.fecha_inicio, new.fecha_fin))); end if;
+  if new.cliente_apellido is distinct from old.cliente_apellido then changes := changes || jsonb_build_object('portal_access_changed', true); end if;
+  if changes <> '{}'::jsonb then
+    insert into public.admin_audit_log (actor, action, entity, entity_id, reference, details)
+      values (auth.uid(), case when new.estado = 'cancelada' and old.estado <> 'cancelada' then 'reservation.cancelled'
+                              when new.estado is distinct from old.estado then 'reservation.status_changed'
+                              when new.prerreserva is distinct from old.prerreserva then 'reservation.promoted'
+                              when new.supplier_status is distinct from old.supplier_status then 'reservation.supplier_changed'
+                              else 'reservation.updated' end,
+        'reservation', new.id, new.codigo, changes);
+  end if;
+  return null;
+end; $function$;
+
+CREATE OR REPLACE FUNCTION public.audit_travel_revision()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+begin
+  insert into public.admin_audit_log (actor, action, entity, entity_id, details)
+    values (auth.uid(), 'travel.revised', 'travel', new.reservation_id, jsonb_build_object('revision', new.revision, 'status', new.public_data->>'status'));
+  return null;
 end; $function$;
 
 CREATE OR REPLACE FUNCTION public.catalog_audit()
@@ -797,22 +941,22 @@ begin
   select id into r from public.reservations where quotation_id = p_id;
   if r is not null then return r; end if;
   if q.estado <> 'aceptada' or q.accepted_version_id is distinct from p_version_id then
-    raise exception 'Revise la versiÃ³n aceptada.' using errcode = '23514'; end if;
+    raise exception 'Revise la versión aceptada.' using errcode = '23514'; end if;
   select * into strict v from public.quotation_versions where id = p_version_id and quotation_id = p_id;
   s := v.snapshot->'quotation';
   if q.customer_id is null or q.customer_id::text is distinct from s->>'customer_id' then
-    raise exception 'La versiÃ³n aceptada debe estar vinculada al cliente correcto.' using errcode = '23514'; end if;
-  if btrim(coalesce(p_lastname,'')) = '' or length(p_lastname) > 120 or coalesce(s->>'cliente_email','') !~ '^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$' then
+    raise exception 'La versión aceptada debe estar vinculada al cliente correcto.' using errcode = '23514'; end if;
+  if btrim(coalesce(p_lastname,'')) = '' or length(p_lastname) > 120 or (nullif(btrim(coalesce(s->>'cliente_email','')),'') is not null and btrim(s->>'cliente_email') !~ '^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$') then
     raise exception 'Revise el apellido de acceso y el correo del cliente.' using errcode = '23514'; end if;
   if jsonb_typeof(v.snapshot->'items') is distinct from 'array' or jsonb_array_length(v.snapshot->'items') not between 1 and 50 then
     raise exception 'Faltan servicios.' using errcode = '23514'; end if;
   if exists (select 1 from jsonb_array_elements(v.snapshot->'items') x where
     coalesce(x->>'descripcion','') = '' or coalesce((x->>'cantidad')::numeric,0) <= 0 or coalesce((x->>'precio_unitario')::numeric,-1) < 0) then
-    raise exception 'Conceptos invÃ¡lidos.' using errcode = '23514'; end if;
+    raise exception 'Conceptos inválidos.' using errcode = '23514'; end if;
   select sum(case when lower(btrim(x->>'tipo')) = 'descuento' then -1 else 1 end * round((x->>'cantidad')::numeric * (x->>'precio_unitario')::numeric,2))
     into amount from jsonb_array_elements(v.snapshot->'items') x;
   if amount < 0 or amount is distinct from (s->>'total')::numeric or s->>'moneda' not in ('USD','HNL') then
-    raise exception 'El total no coincide con la versiÃ³n aceptada.' using errcode = '23514'; end if;
+    raise exception 'El total no coincide con la versión aceptada.' using errcode = '23514'; end if;
   start_date := nullif(s#>>'{detalles,fechaSalida}','')::date;
   end_date := nullif(s#>>'{detalles,fechaRegreso}','')::date;
   if start_date is null or end_date is null then
@@ -821,7 +965,7 @@ begin
     where d ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$';
   end if;
   insert into public.reservations(codigo,quotation_id,customer_id,cliente_nombre,cliente_email,cliente_telefono,cliente_apellido,destino,moneda,total,estado,fecha_inicio,fecha_fin,notas,agente_id,accepted_version_id,accepted_snapshot,prerreserva)
-    values ('RES-' || to_char(current_date,'YYYYMMDD') || '-' || upper(substr(replace(gen_random_uuid()::text,'-',''),1,12)),q.id,q.customer_id,s->>'cliente_nombre',s->>'cliente_email',s->>'cliente_telefono',btrim(p_lastname),s->>'destino',s->>'moneda',amount,'pendiente',start_date,end_date,null,q.agente_id,v.id,v.snapshot,p_prereservation) returning id into r;
+    values ('RES-' || to_char(current_date,'YYYYMMDD') || '-' || upper(substr(replace(gen_random_uuid()::text,'-',''),1,12)),q.id,q.customer_id,s->>'cliente_nombre',nullif(btrim(coalesce(s->>'cliente_email','')),''),s->>'cliente_telefono',btrim(p_lastname),s->>'destino',s->>'moneda',amount,'pendiente',start_date,end_date,null,q.agente_id,v.id,v.snapshot,p_prereservation) returning id into r;
   insert into public.reservation_items(reservation_id,descripcion,tipo,cantidad,precio_unitario,orden)
     select r,x->>'descripcion',x->>'tipo',(x->>'cantidad')::numeric,(x->>'precio_unitario')::numeric,(n-1)::int
     from jsonb_array_elements(v.snapshot->'items') with ordinality as lines(x,n);
@@ -997,6 +1141,21 @@ AS $function$
   select exists (select 1 from public.admins where user_id = auth.uid());
 $function$;
 
+CREATE OR REPLACE FUNCTION public.log_admin_action(p_action text, p_entity text, p_entity_id uuid, p_reference text DEFAULT NULL::text, p_details jsonb DEFAULT '{}'::jsonb)
+ RETURNS bigint
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare entry bigint;
+begin
+  if not public.is_admin() then raise exception 'No autorizado.' using errcode = '42501'; end if;
+  insert into public.admin_audit_log (actor, action, entity, entity_id, reference, details)
+    values (auth.uid(), p_action, p_entity, p_entity_id, p_reference, coalesce(p_details, '{}'::jsonb))
+    returning id into entry;
+  return entry;
+end; $function$;
+
 CREATE OR REPLACE FUNCTION public.post_customer_message(p_reservation_id uuid, p_topic text, p_body text, p_path text, p_name text, p_mime text, p_size integer)
  RETURNS TABLE(message_id uuid, message_created_at timestamp with time zone, attachment_id uuid)
  LANGUAGE plpgsql
@@ -1070,7 +1229,7 @@ begin
       is not distinct from (to_jsonb(old)-array['updated_at','accepted_version_id','aceptada_en','aceptada_por','aceptacion_notas']) then return new; end if;
   if old.estado = 'aceptada' and (to_jsonb(new) - array['updated_at','agente_id'])
     is distinct from (to_jsonb(old) - array['updated_at','agente_id']) then
-    raise exception 'La cotizaciÃ³n aceptada es inmutable. Cree una enmienda.' using errcode = '23514';
+    raise exception 'La cotización aceptada es inmutable. Cree una enmienda.' using errcode = '23514';
   end if;
   return new;
 end; $function$;
@@ -1185,16 +1344,23 @@ begin
       raise exception 'Revise el apellido de acceso del cliente.' using errcode = '23514'; end if;
     editable := array_append(editable, 'cliente_apellido');
   end if;
+  -- The access e-mail may be completed once when the reservation was converted without one (WhatsApp-only
+  -- customers); like the surname, it can never be changed afterwards, so Mi viaje access cannot be moved.
+  if nullif(btrim(old.cliente_email), '') is null and new.cliente_email is distinct from old.cliente_email then
+    if coalesce(btrim(new.cliente_email), '') !~ '^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$' or length(new.cliente_email) > 254 then
+      raise exception 'Revise el correo de acceso del cliente.' using errcode = '23514'; end if;
+    editable := array_append(editable, 'cliente_email');
+  end if;
   if old.accepted_version_id is not null and (to_jsonb(new) - editable) is distinct from (to_jsonb(old) - editable) then
-    raise exception 'Los datos comerciales aceptados estÃ¡n bloqueados.' using errcode = '23514'; end if;
+    raise exception 'Los datos comerciales aceptados están bloqueados.' using errcode = '23514'; end if;
   if old.estado in ('cancelada','completada') and new.estado <> old.estado then raise exception 'Estado final.' using errcode = '23514'; end if;
   if new.estado in ('confirmada','en_curso','completada') and (new.prerreserva or new.supplier_status not in ('confirmada','emitida')) then
-    raise exception 'Registre la confirmaciÃ³n del proveedor antes de confirmar la reserva.' using errcode = '23514'; end if;
+    raise exception 'Registre la confirmación del proveedor antes de confirmar la reserva.' using errcode = '23514'; end if;
   if new.supplier_status in ('confirmada','emitida') and nullif(btrim(new.supplier_reference),'') is null then
     raise exception 'Se requiere la referencia real del proveedor.' using errcode = '23514'; end if;
-  if not old.prerreserva and new.prerreserva then raise exception 'No puede volver a prerreservaciÃ³n.' using errcode = '23514'; end if;
+  if not old.prerreserva and new.prerreserva then raise exception 'No puede volver a prerreservación.' using errcode = '23514'; end if;
   if old.prerreserva and not new.prerreserva then
-    if old.estado <> 'pendiente' then raise exception 'PrerreservaciÃ³n no elegible.' using errcode = '23514'; end if;
+    if old.estado <> 'pendiente' then raise exception 'Prerreservación no elegible.' using errcode = '23514'; end if;
     new.promoted_at := now(); new.promoted_by := auth.uid();
   end if;
   return new;
@@ -1290,11 +1456,11 @@ begin
     insert into public.reservation_items(reservation_id,descripcion,tipo,cantidad,precio_unitario,orden)
       select p_id,x->>'descripcion',x->>'tipo',(x->>'cantidad')::numeric,(x->>'precio_unitario')::numeric,(n-1)::int from jsonb_array_elements(p_items) with ordinality lines(x,n);
     select sum(case when lower(btrim(tipo))='descuento' then -1 else 1 end * round(cantidad*precio_unitario,2)) into amount from public.reservation_items where reservation_id=p_id;
-    if amount < 0 then raise exception 'Total invÃ¡lido.' using errcode='23514'; end if;
+    if amount < 0 then raise exception 'Total inválido.' using errcode='23514'; end if;
     if exists(select 1 from public.invoices where reservation_id=p_id and estado<>'anulada') and amount is distinct from r.total then raise exception 'No cambie los importes de una reserva facturada.' using errcode='23514'; end if;
   else amount:=r.total;
   end if;
-  if p_values->>'estado' not in ('pendiente','confirmada','en_curso','completada','cancelada') then raise exception 'Estado invÃ¡lido.' using errcode='23514'; end if;
+  if p_values->>'estado' not in ('pendiente','confirmada','en_curso','completada','cancelada') then raise exception 'Estado inválido.' using errcode='23514'; end if;
   update public.reservations set estado=p_values->>'estado',fecha_inicio=nullif(p_values->>'fecha_inicio','')::date,fecha_fin=nullif(p_values->>'fecha_fin','')::date,
     notas=nullif(p_values->>'notas',''),total=amount,comision=nullif(p_values->>'comision','')::numeric,segmento=nullif(p_values->>'segmento',''),
     supplier_status=coalesce(p_values->>'supplier_status',supplier_status),supplier_reference=nullif(p_values->>'supplier_reference','') where id=p_id;
@@ -1345,6 +1511,7 @@ CREATE OR REPLACE FUNCTION public.set_updated_at()
 AS $function$
 begin new.updated_at = now(); return new; end; $function$;
 
+CREATE TRIGGER admin_audit_log_immutable BEFORE DELETE OR UPDATE ON public.admin_audit_log FOR EACH ROW EXECUTE FUNCTION admin_audit_log_immutable();
 CREATE TRIGGER airline_catalog_audit BEFORE INSERT OR UPDATE ON public.airline_catalog FOR EACH ROW EXECUTE FUNCTION catalog_audit();
 CREATE TRIGGER airline_fare_presets_audit BEFORE INSERT OR UPDATE ON public.airline_fare_presets FOR EACH ROW EXECUTE FUNCTION catalog_audit();
 CREATE TRIGGER trg_blog_updated_at BEFORE UPDATE ON public.blog_posts FOR EACH ROW EXECUTE FUNCTION set_updated_at();
@@ -1352,16 +1519,22 @@ CREATE TRIGGER trg_customers_updated_at BEFORE UPDATE ON public.customers FOR EA
 CREATE TRIGGER trg_destinations_updated_at BEFORE UPDATE ON public.destinations FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE TRIGGER trg_faqs_updated_at BEFORE UPDATE ON public.faqs FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE TRIGGER hotel_catalog_audit BEFORE INSERT OR UPDATE ON public.hotel_catalog FOR EACH ROW EXECUTE FUNCTION catalog_audit();
+CREATE TRIGGER audit_invoice_change AFTER INSERT OR UPDATE ON public.invoices FOR EACH ROW EXECUTE FUNCTION audit_invoice_change();
 CREATE TRIGGER invoice_integrity_guard BEFORE INSERT OR UPDATE ON public.invoices FOR EACH ROW EXECUTE FUNCTION invoice_integrity_guard();
 CREATE TRIGGER trg_invoices_updated_at BEFORE UPDATE ON public.invoices FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE TRIGGER trg_packages_updated_at BEFORE UPDATE ON public.packages FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+CREATE TRIGGER audit_receipt_created AFTER INSERT ON public.payment_receipts FOR EACH ROW EXECUTE FUNCTION audit_receipt_created();
+CREATE TRIGGER audit_payment_change AFTER INSERT OR DELETE OR UPDATE ON public.payments FOR EACH ROW EXECUTE FUNCTION audit_payment_change();
 CREATE TRIGGER receipted_payment_locked BEFORE DELETE OR UPDATE ON public.payments FOR EACH ROW EXECUTE FUNCTION guard_receipted_payment();
 CREATE TRIGGER quotation_items_lock_accepted BEFORE INSERT OR DELETE OR UPDATE ON public.quotation_items FOR EACH ROW EXECUTE FUNCTION quotation_items_lock_accepted();
 CREATE TRIGGER quotation_versions_no_update BEFORE UPDATE ON public.quotation_versions FOR EACH ROW EXECUTE FUNCTION quotation_versions_immutable();
+CREATE TRIGGER audit_quotation_change AFTER INSERT OR UPDATE ON public.quotations FOR EACH ROW EXECUTE FUNCTION audit_quotation_change();
 CREATE TRIGGER quotations_lock_accepted BEFORE UPDATE ON public.quotations FOR EACH ROW EXECUTE FUNCTION quotations_lock_accepted();
 CREATE TRIGGER trg_quotations_updated_at BEFORE UPDATE ON public.quotations FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE TRIGGER reservation_items_commercial_guard BEFORE INSERT OR DELETE OR UPDATE ON public.reservation_items FOR EACH ROW EXECUTE FUNCTION reservation_items_commercial_guard();
 CREATE TRIGGER travel_passenger_counts BEFORE INSERT OR UPDATE OF public_data ON public.reservation_travel FOR EACH ROW EXECUTE FUNCTION guard_travel_passenger_counts();
+CREATE TRIGGER audit_travel_revision AFTER INSERT ON public.reservation_travel_history FOR EACH ROW EXECUTE FUNCTION audit_travel_revision();
+CREATE TRIGGER audit_reservation_change AFTER INSERT OR UPDATE ON public.reservations FOR EACH ROW EXECUTE FUNCTION audit_reservation_change();
 CREATE TRIGGER reservation_commercial_guard BEFORE UPDATE ON public.reservations FOR EACH ROW EXECUTE FUNCTION reservation_commercial_guard();
 CREATE TRIGGER supplier_ticket_evidence BEFORE UPDATE OF supplier_status ON public.reservations FOR EACH ROW EXECUTE FUNCTION guard_supplier_ticketing();
 CREATE TRIGGER trg_reservations_updated_at BEFORE UPDATE ON public.reservations FOR EACH ROW EXECUTE FUNCTION set_updated_at();
@@ -1369,6 +1542,8 @@ CREATE TRIGGER trg_reviews_updated_at BEFORE UPDATE ON public.reviews FOR EACH R
 CREATE TRIGGER service_catalog_audit BEFORE INSERT OR UPDATE ON public.service_catalog FOR EACH ROW EXECUTE FUNCTION catalog_audit();
 CREATE TRIGGER delivery_snapshot_locked BEFORE INSERT OR UPDATE ON public.travel_deliveries FOR EACH ROW EXECUTE FUNCTION guard_travel_delivery();
 
+alter table public.admin_audit_log enable row level security;
+create policy admin_audit_log_admin_select on public.admin_audit_log as permissive for select to authenticated using (is_admin());
 alter table public.admins enable row level security;
 create policy "admin read admins" on public.admins as permissive for select to authenticated using (is_admin());
 alter table public.airline_catalog enable row level security;
@@ -1463,6 +1638,9 @@ create policy trip_service_requests_admin_select on public.trip_service_requests
 create policy trip_service_requests_admin_update on public.trip_service_requests as permissive for update to authenticated using (is_admin()) with check ((is_admin() AND (handled_by = auth.uid())));
 
 -- Table and view privileges for the API roles, exactly as in production.
+revoke all on public.admin_audit_log from anon, authenticated, service_role;
+grant select on public.admin_audit_log to authenticated;
+grant delete, insert, references, select, trigger, truncate, update on public.admin_audit_log to service_role;
 revoke all on public.admins from anon, authenticated, service_role;
 grant delete, insert, references, select, trigger, truncate, update on public.admins to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.admins to service_role;
@@ -1583,6 +1761,27 @@ grant delete, insert, references, select, trigger, truncate, update on public.re
 revoke all on function public.accept_quotation(p_id uuid, p_version_id uuid, p_notes text) from public, anon, authenticated, service_role;
 grant execute on function public.accept_quotation(p_id uuid, p_version_id uuid, p_notes text) to authenticated;
 grant execute on function public.accept_quotation(p_id uuid, p_version_id uuid, p_notes text) to service_role;
+-- admin_audit_log_immutable()
+revoke all on function public.admin_audit_log_immutable() from public, anon, authenticated, service_role;
+grant execute on function public.admin_audit_log_immutable() to service_role;
+-- audit_invoice_change() · SECURITY DEFINER
+revoke all on function public.audit_invoice_change() from public, anon, authenticated, service_role;
+grant execute on function public.audit_invoice_change() to service_role;
+-- audit_payment_change() · SECURITY DEFINER
+revoke all on function public.audit_payment_change() from public, anon, authenticated, service_role;
+grant execute on function public.audit_payment_change() to service_role;
+-- audit_quotation_change() · SECURITY DEFINER
+revoke all on function public.audit_quotation_change() from public, anon, authenticated, service_role;
+grant execute on function public.audit_quotation_change() to service_role;
+-- audit_receipt_created() · SECURITY DEFINER
+revoke all on function public.audit_receipt_created() from public, anon, authenticated, service_role;
+grant execute on function public.audit_receipt_created() to service_role;
+-- audit_reservation_change() · SECURITY DEFINER
+revoke all on function public.audit_reservation_change() from public, anon, authenticated, service_role;
+grant execute on function public.audit_reservation_change() to service_role;
+-- audit_travel_revision() · SECURITY DEFINER
+revoke all on function public.audit_travel_revision() from public, anon, authenticated, service_role;
+grant execute on function public.audit_travel_revision() to service_role;
 -- catalog_audit()
 revoke all on function public.catalog_audit() from public, anon, authenticated, service_role;
 grant execute on function public.catalog_audit() to public;
@@ -1645,6 +1844,10 @@ grant execute on function public.is_admin() to public;
 grant execute on function public.is_admin() to anon;
 grant execute on function public.is_admin() to authenticated;
 grant execute on function public.is_admin() to service_role;
+-- log_admin_action(p_action text, p_entity text, p_entity_id uuid, p_reference text, p_details jsonb) · SECURITY DEFINER
+revoke all on function public.log_admin_action(p_action text, p_entity text, p_entity_id uuid, p_reference text, p_details jsonb) from public, anon, authenticated, service_role;
+grant execute on function public.log_admin_action(p_action text, p_entity text, p_entity_id uuid, p_reference text, p_details jsonb) to authenticated;
+grant execute on function public.log_admin_action(p_action text, p_entity text, p_entity_id uuid, p_reference text, p_details jsonb) to service_role;
 -- post_customer_message(p_reservation_id uuid, p_topic text, p_body text, p_path text, p_name text, p_mime text, p_size integer)
 revoke all on function public.post_customer_message(p_reservation_id uuid, p_topic text, p_body text, p_path text, p_name text, p_mime text, p_size integer) from public, anon, authenticated, service_role;
 grant execute on function public.post_customer_message(p_reservation_id uuid, p_topic text, p_body text, p_path text, p_name text, p_mime text, p_size integer) to service_role;

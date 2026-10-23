@@ -2,9 +2,10 @@
 // Run: node scripts/test-conversion-without-email-sql.mjs
 import fs from "node:fs";
 import assert from "node:assert/strict";
-import { ADMIN, STAFF, asUser, baselineDb } from "./baseline-db.mjs";
+import { ADMIN, STAFF, asUser, baselineDb, snapshotAt } from "./baseline-db.mjs";
 
-const db = await baselineDb();
+// Applied to production on 2026-10-23: rehearsed on the snapshot from before it (commit fb8a56f).
+const db = await baselineDb({ snapshot: snapshotAt("fb8a56f") });
 const migration = fs.readFileSync(new URL("../docs/sql/conversion_without_email.sql", import.meta.url), "utf8");
 const one = async (sql, params) => (await db.query(sql, params)).rows[0];
 let passed = 0;

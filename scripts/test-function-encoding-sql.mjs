@@ -2,9 +2,10 @@
 // Run: node scripts/test-function-encoding-sql.mjs
 import fs from "node:fs";
 import assert from "node:assert/strict";
-import { ADMIN, asUser, baselineDb } from "./baseline-db.mjs";
+import { ADMIN, asUser, baselineDb, snapshotAt } from "./baseline-db.mjs";
 
-const db = await baselineDb();
+// Applied to production on 2026-10-23: rehearsed on the snapshot from before it (commit fb8a56f).
+const db = await baselineDb({ snapshot: snapshotAt("fb8a56f") });
 const migration = fs.readFileSync(new URL("../docs/sql/fix_function_encoding.sql", import.meta.url), "utf8");
 const garbled = /[Â-ß][\u0080-¿]/;
 const decode = text => text.replace(/[Â-ß][\u0080-¿]/g, match => Buffer.from(match, "latin1").toString("utf8"));
@@ -30,7 +31,8 @@ await check("no function keeps double-encoded text", async () => {
 await check("logic, settings and security are unchanged; only the text is decoded", async () => {
   assert.deepEqual(Object.keys(after).sort(), Object.keys(before).sort());
   for (const key of Object.keys(before)) {
-    assert.equal(after[key].prosrc, decode(before[key].prosrc), key);
+    // Production bodies carry CRLF line breaks that git normalises in the committed snapshot.
+    assert.equal(after[key].prosrc.replace(/\r\n/g, "\n"), decode(before[key].prosrc).replace(/\r\n/g, "\n"), key);
     assert.deepEqual(after[key].proconfig, before[key].proconfig, key);
     assert.equal(after[key].prosecdef, before[key].prosecdef, key);
   }
