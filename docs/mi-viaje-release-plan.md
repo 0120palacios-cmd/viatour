@@ -54,24 +54,31 @@ No toca datos existentes (0 mensajes), ni storage, ni otras tablas. Ensayado sin
 
 Luego, volver a ejecutar el bloque POST de `reservation_messages_checks.sql`; ahora debe dar `auth_delete`, `auth_insert_created_at` y `auth_update_body` en false.
 
-## 5. Reservas de prueba seguras (BLOCKED hasta que el dueño las cree o autorice)
+## 5. Reservas de prueba seguras (DONE, 23-oct-2026, con autorización del dueño)
 
-En producción solo hay 2 reservas de clientes reales; **no se usan para pruebas**. Hace falta crear, desde el panel admin (cotización aceptada, convertida en reserva) o con autorización explícita para un insert revisado:
+En producción solo hay 2 reservas de clientes reales; **no se usan para pruebas**. El 23-oct-2026 se insertaron, en una sola transacción y solo en `public.reservations`, dos reservas QA (sin cliente en `customers`, partidas, pagos, recibos, facturas, expediente de viaje, boletos, PNR, documentos ni mensajes):
 
 | Campo | Reserva A (viaje próximo) | Reserva B (viaje completado) |
 |---|---|---|
-| Código | p. ej. `VT-PRUEBA01` | `VT-PRUEBA02` |
-| Cliente | "Prueba Interna" | "Prueba Interna" |
-| `cliente_apellido` | `PRUEBA` | `PRUEBA` |
-| `cliente_email` | Buzón interno controlado por el dueño (el de `TRAVEL_TEST_RECIPIENTS`) | El mismo u otro buzón interno |
-| Destino | Miami | Orlando |
-| Fechas | Dentro de 20–40 días | Terminadas (p. ej. hace 5 días) |
+| Código | `VT-PRUEBA01` | `VT-PRUEBA02` |
+| id | `16814c51-a087-40e7-958d-c14e0bca7edb` | `911d3d01-40cb-414a-baf8-cc3a12348845` |
+| Cliente / apellido | "Prueba Interna QA" / `PRUEBA` | Igual |
+| `cliente_email` | Buzón interno del dueño (el destinatario de prueba aprobado) | Igual |
+| Destino y fechas | Miami, 27-nov al 2-dic-2026 | Orlando, 13 al 18-oct-2026 |
 | Estado | confirmada | completada |
-| Snapshot aceptado | Un vuelo SAP–MIA–SAP | Vuelo + hotel |
-| Expediente de viaje | Revisado, PNR de prueba, sin emitir o emitido con números ficticios claramente de prueba | Igual |
-| Pagos y recibos | Ninguno, o uno de prueba marcado como tal | — |
+| Proveedor | `confirmada`, referencia `PRUEBA-QA-NO-REAL` | Igual |
+| Total | 0 USD (sin saldo) | 0 USD |
+| Snapshot aceptado | Vuelos ficticios "PRUEBA 1/2" SAP–MIA–SAP, `qa: true` | Vuelos "PRUEBA 3/4" + "Hotel de prueba QA (no es una reserva real)" |
+| `notas` (solo admin) | "REGISTRO DE PRUEBA QA… No emitir, no facturar, no cobrar…" | Igual |
 
-No se deben enviar correos de itinerario ni de recibo (`TRAVEL_EMAIL_ENABLED` sigue en false). El correo OTP sí se envía, al buzón interno. Al terminar: se pueden cancelar (no borrar; las FK son `restrict` a propósito).
+`reservations` no tiene triggers de INSERT y la base no tiene extensiones HTTP ni webhooks. El cron diario solo los lista en el resumen interno a soporte@. B nunca recibe la invitación automática a opinar, porque esta se dispara exactamente 2 días después del regreso (el 20-oct, ya pasado). A recibiría el recordatorio de "viaje en 7 días" el 20-nov solo si se activa `CUSTOMER_REMINDERS=1`, que hoy está apagado, y el correo iría al buzón interno. No se deben enviar correos de itinerario ni de recibo (`TRAVEL_EMAIL_ENABLED` sigue en false). El correo OTP sí se envía, al buzón interno.
+
+**Retiro al terminar:** A se puede pasar a `cancelada`. B no se puede cancelar, porque `completada` es un estado final según el guard. Para borrarlas del todo hace falta un SQL revisado en este orden:
+
+1. Borrar los mensajes y adjuntos QA (las FK son `restrict`).
+2. Borrar las solicitudes y la opinión QA.
+3. Borrar los objetos de Storage `<id>/mensajes/`.
+4. `delete from public.reservations where codigo in ('VT-PRUEBA01','VT-PRUEBA02')`. Los OTP y tickets caen en cascada.
 
 ## 6. Pruebas reales de punta a punta (con las reservas de prueba)
 
@@ -81,7 +88,7 @@ No se deben enviar correos de itinerario ni de recibo (`TRAVEL_EMAIL_ENABLED` si
 2. El correo trae solo el código de 6 dígitos (sin código de reserva ni apellido).
 3. **Código incorrecto:** mensaje genérico. **Cinco intentos:** se bloquea. **Código vencido** (esperar más de 10 minutos): falla. **Código ya usado** (reutilizarlo tras salir): falla.
 4. **Código correcto:** se abre Mi viaje A. Cookie `viatour-portal` HttpOnly, Secure, path `/`.
-5. Repetir el paso 1 en `/en/mi-reserva`: el código también se acepta (corrección del path de la cookie pendiente).
+5. Repetir el paso 1 en `/en/mi-reserva`: el código también se acepta (corrección del path de la cookie pendiente) y, tras verificarlo, el portal se queda en `/en/mi-reserva`; "Sign out" también vuelve a `/en/mi-reserva`.
 6. "Salir": la cookie desaparece y las páginas de sección responden 307 a `/mi-reserva`.
 
 ### B. Mensajes — NEEDS-PRODUCTION
@@ -182,13 +189,14 @@ Lista detallada: `docs/mi-viaje-premium.md` §13.
 | Aislamiento A/B (mensajes, adjuntos, solicitudes, opinión, documentos, recibos, facturas) | LOCAL-TESTED |
 | Rutas `/qa/*` en 404 sin `TRIP_FIXTURES` | LOCAL-TESTED (confirmar la variable en Vercel) |
 | Corrección del path de la cookie OTP pendiente (portal en inglés) | LOCAL-TESTED |
+| Redirección en inglés tras verificar el código y al salir (`/en/mi-reserva`, commit 0097c3f) | LOCAL-TESTED |
 | Paso 1 `reservation_messages.sql` | DONE (ya estaba en producción) |
 | Reparación de permisos y paso 2 `mi_viaje_premium.sql` | NEEDS-PRODUCTION |
 | Respaldo previo | NEEDS-PRODUCTION (dueño) |
-| Reservas de prueba A y B | BLOCKED (falta la autorización o creación del dueño) |
+| Reservas de prueba A y B (`VT-PRUEBA01`, `VT-PRUEBA02`) | DONE (creadas el 23-oct-2026) |
 | OTP real con Resend | NEEDS-REAL-PROVIDER |
 | Chat, adjuntos, solicitudes y opinión reales | NEEDS-PRODUCTION |
 | iPhone físico | NEEDS-PHYSICAL-DEVICE |
 | Push, merge y despliegue | NEEDS-PRODUCTION (autorización del dueño) |
 
-**Observación (no bloquea):** tras verificar el código, el portal redirige a `/mi-reserva` también en inglés (comportamiento anterior).
+**Corregido (0097c3f):** tras verificar el código o al salir, el portal en inglés se queda en `/en/mi-reserva`.
