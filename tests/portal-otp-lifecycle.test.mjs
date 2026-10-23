@@ -55,14 +55,15 @@ function database() {
   return { tables, setLimited: value => { limited = value; }, client: { from, rpc: async () => ({ data: !limited, error: null }) } };
 }
 
-function harness({ emailFails = false } = {}) {
+function harness({ emailFails = false, locale = 'es' } = {}) {
   const db = database();
   const cookies = new Map(), paths = new Map();
   const cookieStore = { get: name => cookies.has(name) ? { value: cookies.get(name) } : undefined, set: ({ name, value, path }) => { cookies.set(name, value); paths.set(name, path); }, delete: name => cookies.delete(name) };
   const outbox = [];
   const portal = load('src/lib/portal.ts', { 'server-only': {}, 'node:crypto': crypto, '@/lib/quotation-validation': { validUuid: value => /^[0-9a-f-]{36}$/i.test(value) } });
   const actions = load('src/app/mi-reserva/actions.ts', {
-    'next/headers': { headers: async () => new Headers({ 'x-forwarded-for': '198.51.100.20' }), cookies: async () => cookieStore },
+    'next/headers': { headers: async () => new Headers({ 'x-forwarded-for': '198.51.100.20', 'x-viatour-locale': locale }), cookies: async () => cookieStore },
+    '@/i18n/config': load('src/i18n/config.ts', { 'next-intl/routing': { defineRouting: config => config } }),
     'next/navigation': { redirect: path => { throw new Error(`REDIRECT:${path}`); } },
     '@/lib/supabase/admin': { createAdminClient: () => db.client },
     '@/lib/notifications': { sendResendEmail: async input => { if (emailFails) throw new Error('provider down'); outbox.push(input); } },
@@ -125,6 +126,16 @@ test('full lifecycle: one hashed OTP, email to the registered address, session o
   assert.equal(await h.redirectOf(h.actions.signOutReservation()), '/mi-reserva');
   assert.equal(h.cookies.has('viatour-portal'), false);
   assert.equal(h.cookies.has('viatour-portal-pending'), false);
+});
+
+test('English travellers stay in /en/mi-reserva after verifying the code and after signing out', async () => {
+  const h = harness({ locale: 'en' });
+  await h.actions.accessReservation({}, h.form({ codigo: 'VT-QA0005IJ', apellido: 'Prueba Borjas' }));
+  const otp = h.outbox.at(-1).text.match(/\b\d{6}\b/)[0];
+  assert.equal(await h.redirectOf(h.actions.verifyPortalOtp({}, h.form({ otp }))), '/en/mi-reserva');
+  assert.equal(h.portal.verifyPortalCookie(h.cookies.get('viatour-portal')), reservationId);
+  assert.equal(await h.redirectOf(h.actions.signOutReservation()), '/en/mi-reserva');
+  assert.equal(h.cookies.has('viatour-portal'), false);
 });
 
 test('an expired code is refused with the generic message', async () => {

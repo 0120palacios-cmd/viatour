@@ -18,6 +18,7 @@ import {
   verifyPortalPendingCookie,
 } from "@/lib/portal";
 import { siteConfig } from "@/lib/site-config";
+import { defaultLocale, localizedPath } from "@/i18n/config";
 
 export type PortalAccessState = { error?: string; notice?: string; step?: "otp" };
 
@@ -54,6 +55,11 @@ async function registeredEmail(client: ReturnType<typeof createAdminClient>, ema
   const customer = await client.from("customers").select("email").eq("id", customerId).maybeSingle();
   const fallback = typeof customer.data?.email === "string" ? customer.data.email.trim().toLowerCase() : "";
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fallback) ? fallback : null;
+}
+
+// The middleware tags /en/* requests (Server Actions included), so English travellers stay in /en/mi-reserva.
+function portalHome(requestHeaders: Headers) {
+  return localizedPath("/mi-reserva", requestHeaders.get("x-viatour-locale") === "en" ? "en" : defaultLocale);
 }
 
 function cookieOptions(maxAge: number, path: string) {
@@ -166,12 +172,12 @@ export async function verifyPortalOtp(_: PortalAccessState, form: FormData): Pro
     return { error: genericOtpError, step: "otp" };
   }
 
-  redirect("/mi-reserva");
+  redirect(portalHome(await headers()));
 }
 
 export async function signOutReservation() {
   const cookieStore = await cookies();
   cookieStore.delete(portalCookieName);
   cookieStore.delete(portalPendingCookieName);
-  redirect("/mi-reserva");
+  redirect(portalHome(await headers()));
 }

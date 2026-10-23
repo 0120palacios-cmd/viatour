@@ -62,6 +62,7 @@ test('mock reservation requires OTP, uses generic errors, and locks after five a
   };
   const actions = load('src/app/mi-reserva/actions.ts', {
     'next/headers': { headers: async () => new Headers({ 'x-forwarded-for': '198.51.100.10' }), cookies: async () => cookieStore },
+    '@/i18n/config': { defaultLocale: 'es', localizedPath: path => path },
     'next/navigation': { redirect: path => { throw new Error(`REDIRECT:${path}`); } },
     '@/lib/supabase/admin': { createAdminClient: () => client },
     '@/lib/notifications': { sendResendEmail: async input => { sentText = input.text; } },
