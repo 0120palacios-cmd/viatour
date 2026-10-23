@@ -8,17 +8,7 @@ import { emptyPassenger } from "@/lib/travel-operations";
 import { travelServices } from "@/lib/travel-services";
 import { revalidatePath } from "next/cache";
 import { validatePassengerCounts } from "@/lib/passenger-counts";
-import { addDays, passportRetentionDays } from "@/lib/passenger-profiles";
 
-// Passengers loaded from a saved profile keep its id: their passport image stays until 30 days after this trip
-// ends (it is only ever extended here, never shortened). Profiles without an image are left as they are.
-async function keepPassportImages(client:Awaited<ReturnType<typeof requireAdmin>>["client"],ids:string[],tripEnd:string|null){
- const profileIds=ids.filter(validUuid);
- if(!profileIds.length||!tripEnd)return;
- const until=addDays(tripEnd,passportRetentionDays);
- const rows=await client.from("passenger_profiles").select("id,pasaporte_borrar_despues").in("id",profileIds).not("pasaporte_path","is",null);
- for(const row of rows.data??[])if(!row.pasaporte_borrar_despues||row.pasaporte_borrar_despues<until)await client.from("passenger_profiles").update({pasaporte_borrar_despues:until}).eq("id",row.id);
-}
 export type TravelState={error?:string;success?:string;revision?:number};
 const issuanceRank={pendiente:0,en_emision:1,emitida:2} as const;
 export async function purgePrivateTravel(_:TravelState,form:FormData):Promise<TravelState>{
@@ -44,7 +34,7 @@ export async function saveTravel(_:TravelState,form:FormData):Promise<TravelStat
  if(!validUuid(id)||!Number.isInteger(revision)||revision<0) return {error:"Expediente inválido."};
  const raw=String(form.get("payload")??"");
  if(raw.length>100000) return {error:"El expediente supera el tamaño permitido."};
- const r=await client.from("reservations").select("fecha_inicio,fecha_fin,estado,accepted_snapshot").eq("id",id).maybeSingle();
+ const r=await client.from("reservations").select("fecha_inicio,estado,accepted_snapshot").eq("id",id).maybeSingle();
  if(r.error||!r.data) return {error:"Reserva no disponible."};
  let data,encrypted;
  try{data=validateTravel(JSON.parse(raw),r.data.fecha_inicio);validatePassengerCounts(data,r.data.accepted_snapshot?.quotation?.detalles);encrypted=sealTravel(data,id);}catch(error){return {error:error instanceof SyntaxError?"Revise el expediente.":error instanceof Error?error.message:"No se pudo proteger el expediente."};}
@@ -56,7 +46,6 @@ export async function saveTravel(_:TravelState,form:FormData):Promise<TravelStat
  if(visible&&visible.tickets.some(t=>t.number&&!data.tickets.some(n=>n.number===t.number)))return {error:"Faltan boletos que el cliente ya ve en Mi viaje. Recargue la página: se cargarán los boletos registrados."};
  const result=await client.rpc("save_reservation_travel",{p_id:id,p_revision:revision,p_public:publicTravel(data),p_encrypted:encrypted});
  if(result.error) return {error:"No se guardó el expediente. Revise la migración, la confirmación del proveedor y el estado de emisión; si otro asesor lo modificó, recargue la página."};
- await keepPassportImages(client,data.passengers.map(p=>p.id),r.data.fecha_fin||r.data.fecha_inicio);
  revalidatePath(`/admin/reservas/${id}`);revalidatePath("/mi-reserva");
  return {success:"Expediente guardado. No se enviaron documentos ni se emitieron boletos automáticamente.",revision:Number(result.data)};
 }

@@ -51,7 +51,7 @@ test('a profile becomes a reservation passenger with the same id and all its dat
 test('images can only be attached to their own profile folder with the expected name', async () => {
   const calls = [];
   const db = {
-    from: () => ({ select() { return this; }, update(values) { calls.push(values); return this; }, eq() { return this; }, async maybeSingle() { return { data: { customer_id: CUSTOMER, foto_path: null, pasaporte_path: null, pasaporte_borrar_despues: null, id: ID }, error: null }; } }),
+    from: () => ({ select() { return this; }, update(values) { calls.push(values); return this; }, eq() { return this; }, async maybeSingle() { return { data: { customer_id: CUSTOMER, foto_path: null, pasaporte_path: null, vence_documento: '2031-05-01', id: ID }, error: null }; } }),
     storage: { from: () => ({ remove: async paths => { calls.push({ removed: paths }); return { error: null }; } }) },
   };
   const actions = load('src/app/admin/clientes/passenger-actions.ts', {
@@ -63,7 +63,13 @@ test('images can only be attached to their own profile folder with the expected 
     assert.equal((await actions.attachPassengerImage(ID, 'pasaporte', bad)).error, 'Imagen inválida.', bad);
   }
   assert.equal(calls.length, 0);
-  assert.match((await actions.attachPassengerImage(ID, 'pasaporte', good)).success, /Se eliminará automáticamente 30 días/);
+  assert.match((await actions.attachPassengerImage(ID, 'pasaporte', good)).success, /Se eliminará automáticamente cuando venza el pasaporte/);
   assert.equal(calls[0].pasaporte_path, good);
-  assert.match(calls[0].pasaporte_borrar_despues, /^\d{4}-\d{2}-\d{2}$/);
+  assert.equal(calls[0].pasaporte_borrar_despues, '2031-05-01', 'kept until the passport expires');
+});
+
+test('a passport image is kept until the passport expires; without an expiry, 10 years', () => {
+  assert.equal(profiles.passportDeleteAfter('2031-05-01', '2026-10-23'), '2031-05-01');
+  assert.equal(profiles.passportDeleteAfter('', '2026-10-23'), '2036-10-23');
+  assert.equal(profiles.passportDeleteAfter('no es fecha', '2026-10-23'), '2036-10-23');
 });

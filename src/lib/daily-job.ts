@@ -112,7 +112,7 @@ export async function runDailyJob(client: SupabaseClient, options: DailyOptions 
     }
   }
 
-  // 8. Passport images of saved passengers, 30 days after their last trip (docs/sql/passenger_profiles.sql).
+  // 8. Passport images of saved passengers, once the passport has expired (docs/sql/passenger_profiles.sql).
   // Only the image is removed; the profile and its encrypted data stay. Missing table: nothing to do.
   if (options.passportRetention) {
     const due = await client.from("passenger_profiles").select("id,pasaporte_path").lt("pasaporte_borrar_despues", today).not("pasaporte_path", "is", null).limit(100);
@@ -123,7 +123,7 @@ export async function runDailyJob(client: SupabaseClient, options: DailyOptions 
       const cleared = await client.from("passenger_profiles").update({ pasaporte_path: null, pasaporte_borrar_despues: null }).eq("id", s(row.id));
       if (cleared.error) problems.push("imágenes de pasaporte"); else removedCount += 1;
     }
-    if (removedCount) actions.push(`${removedCount} imagen(es) de pasaporte eliminadas 30 días después del viaje, por política de conservación.`);
+    if (removedCount) actions.push(`${removedCount} imagen(es) de pasaporte eliminadas porque el pasaporte venció, por política de conservación.`);
   }
 
   const text = [`Resumen diario de viatour — ${today}`, "", ...(actions.length ? ["Acciones automáticas:", ...actions.map(line => `- ${line}`), ""] : []),

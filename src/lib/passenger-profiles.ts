@@ -6,7 +6,13 @@ import { emptyPassenger, validDate, type Passenger } from "@/lib/travel-operatio
 // Reusable passenger profiles (docs/sql/passenger_profiles.sql). Private fields are sealed with the passenger
 // file key and bound to the profile id, so a sealed value cannot be moved to another profile.
 export const passengerDocsBucket = "passenger-docs";
-export const passportRetentionDays = 30;
+// Owner decision (2026-10-23): a passport image is kept until the passport expires. Without a known expiry,
+// 10 years from the upload (the longest validity of a passport).
+export const passportFallbackYears = 10;
+export function passportDeleteAfter(expiry: string, today: string) {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(expiry)) return expiry;
+  return `${Number(today.slice(0, 4)) + passportFallbackYears}${today.slice(4)}`;
+}
 
 export type ProfilePrivate = { birthDate: string; sex: string; documentNumber: string; phone: string; email: string; emergencyContact: string; assistance: string; notes: string };
 export type PassengerProfile = {

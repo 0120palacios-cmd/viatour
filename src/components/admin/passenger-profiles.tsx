@@ -115,7 +115,7 @@ function ProfileForm({ customerId, profile, onDone }: { customerId: string; prof
     </form>
     {profileId ? <div className="grid gap-4 border-t border-line pt-4 sm:grid-cols-2">
       <ImageField profileId={profileId} kind="foto" label="Foto del pasajero" has={profile?.hasPhoto ?? false} icon={<Camera size={18} strokeWidth={1.75} aria-hidden="true" />} />
-      <ImageField profileId={profileId} kind="pasaporte" label="Imagen del pasaporte" has={profile?.hasPassport ?? false} icon={<IdCard size={18} strokeWidth={1.75} aria-hidden="true" />} note="Se guarda en un espacio privado y se elimina 30 días después del último viaje." />
+      <ImageField profileId={profileId} kind="pasaporte" label="Imagen del pasaporte" has={profile?.hasPassport ?? false} icon={<IdCard size={18} strokeWidth={1.75} aria-hidden="true" />} note="Se guarda en un espacio privado y se elimina automáticamente cuando vence el pasaporte." />
     </div> : null}
     {profile ? <DeleteProfile profileId={profile.id} /> : null}
   </div>;

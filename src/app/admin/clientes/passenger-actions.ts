@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin";
 import { validUuid } from "@/lib/quotation-validation";
-import { addDays, passengerDocsBucket, passportRetentionDays, toRow, validateProfile } from "@/lib/passenger-profiles";
+import { passengerDocsBucket, passportDeleteAfter, toRow, validateProfile } from "@/lib/passenger-profiles";
 
 export type ProfileState = { error?: string; success?: string; profileId?: string };
 type ImageKind = "foto" | "pasaporte";
@@ -24,9 +24,12 @@ export async function savePassengerProfile(_: ProfileState, form: FormData): Pro
   if ("error" in checked) return { error: checked.error };
   const id = existing || randomUUID();
   let row;
-  try { row = toRow(id, customerId, checked.value); } catch (error) { return { error: error instanceof Error ? error.message : "No se pudo proteger el documento." }; }
+  try { row = { ...toRow(id, customerId, checked.value) }; } catch (error) { return { error: error instanceof Error ? error.message : "No se pudo proteger el documento." }; }
+  // A stored passport image follows the (possibly corrected) expiry date of the passport.
+  const image = existing ? await client.from("passenger_profiles").select("pasaporte_path").eq("id", id).maybeSingle() : null;
+  const retention = image?.data?.pasaporte_path ? { pasaporte_borrar_despues: passportDeleteAfter(checked.value.expiryDate, today()) } : {};
   const result = existing
-    ? await client.from("passenger_profiles").update(row).eq("id", id).eq("customer_id", customerId).select("id").maybeSingle()
+    ? await client.from("passenger_profiles").update({ ...row, ...retention }).eq("id", id).eq("customer_id", customerId).select("id").maybeSingle()
     : await client.from("passenger_profiles").insert(row).select("id").single();
   if (result.error || !result.data) return { error: tableMissing(result.error) ? profilesMissing : "No se pudo guardar el pasajero. Intente nuevamente." };
   revalidatePath(`/admin/clientes/${customerId}`);
@@ -34,15 +37,14 @@ export async function savePassengerProfile(_: ProfileState, form: FormData): Pro
 }
 
 // Called after the browser uploaded the image straight to the private bucket. Replaces the previous image of the
-// same kind; a passport image gets its deletion date (30 days after the last linked trip, or 30 days from today).
+// same kind; a passport image is kept until the passport expires (owner decision), or 10 years without an expiry.
 export async function attachPassengerImage(profileId: string, kind: ImageKind, path: string): Promise<ProfileState> {
   const { client } = await requireAdmin();
   if (!validUuid(profileId) || !["foto", "pasaporte"].includes(kind) || !pathFor(profileId, kind).test(path)) return { error: "Imagen inválida." };
-  const current = await client.from("passenger_profiles").select("customer_id,foto_path,pasaporte_path,pasaporte_borrar_despues").eq("id", profileId).maybeSingle();
+  const current = await client.from("passenger_profiles").select("customer_id,foto_path,pasaporte_path,vence_documento").eq("id", profileId).maybeSingle();
   if (current.error || !current.data) return { error: "No se encontró el pasajero." };
   const previous = kind === "foto" ? current.data.foto_path : current.data.pasaporte_path;
-  const minimum = addDays(today(), passportRetentionDays);
-  const changes = kind === "foto" ? { foto_path: path } : { pasaporte_path: path, pasaporte_borrar_despues: current.data.pasaporte_borrar_despues && current.data.pasaporte_borrar_despues > minimum ? current.data.pasaporte_borrar_despues : minimum };
+  const changes = kind === "foto" ? { foto_path: path } : { pasaporte_path: path, pasaporte_borrar_despues: passportDeleteAfter(current.data.vence_documento ?? "", today()) };
   const saved = await client.from("passenger_profiles").update(changes).eq("id", profileId).select("id").maybeSingle();
   if (saved.error || !saved.data) {
     await client.storage.from(passengerDocsBucket).remove([path]);
@@ -50,7 +52,7 @@ export async function attachPassengerImage(profileId: string, kind: ImageKind, p
   }
   if (previous && previous !== path) await client.storage.from(passengerDocsBucket).remove([previous]);
   revalidatePath(`/admin/clientes/${current.data.customer_id}`);
-  return { success: kind === "foto" ? "Foto guardada." : `Imagen del pasaporte guardada. Se eliminará automáticamente ${passportRetentionDays} días después del último viaje registrado.` };
+  return { success: kind === "foto" ? "Foto guardada." : current.data.vence_documento ? "Imagen del pasaporte guardada. Se eliminará automáticamente cuando venza el pasaporte." : "Imagen del pasaporte guardada. Registre el vencimiento del pasaporte: la imagen se elimina cuando vence." };
 }
 
 export async function removePassengerImage(profileId: string, kind: ImageKind): Promise<ProfileState> {

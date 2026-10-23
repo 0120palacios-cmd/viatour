@@ -6,8 +6,9 @@
 -- Everything else (birth date, sex, document number, contacts, notes) is AES-256-GCM encrypted by the app with
 -- the same key as the passenger file (TRAVEL_DATA_KEY), in "privado".
 -- Images (profile photo, passport page) live in the private bucket passenger-docs, as re-encoded JPEG (no
--- metadata). The passport image is deleted 30 days after the last linked trip (pasaporte_borrar_despues) by the
--- daily job; the photo stays until the profile is deleted.
+-- metadata). The passport image is kept until the passport expires (owner decision, 2026-10-23; 10 years from the
+-- upload when the expiry is unknown) and then deleted by the daily job (pasaporte_borrar_despues); the photo stays
+-- until the profile is deleted.
 -- Rehearsal: node scripts/test-passenger-profiles-sql.mjs. Apply only with owner approval.
 begin;
 
