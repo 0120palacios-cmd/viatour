@@ -3,7 +3,7 @@
 import { useActionState, useState, useTransition } from "react";
 import { Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { assignQuotationToMe, cleanupUnusedHotelPhotos, duplicateQuotation, sendQuotation, updateQuotationStatus, type PhotoCleanupState, type QuotationActionState } from "@/app/admin/cotizaciones/actions";
+import { assignQuotationToMe, cleanupUnusedHotelPhotos, duplicateQuotation, registerQuotationSent, sendQuotation, updateQuotationStatus, type PhotoCleanupState, type QuotationActionState } from "@/app/admin/cotizaciones/actions";
 import { quotationStatusLabel, quotationStatuses, type QuotationStatus } from "@/lib/quotation-types";
 
 export function QuotationStatusForm({ id, status }: { id: string; status: QuotationStatus }) {
@@ -17,6 +17,32 @@ export function QuotationStatusForm({ id, status }: { id: string; status: Quotat
 export function SendQuotationForm({ id, disabled = false, reason }: { id: string; disabled?: boolean; reason?: string }) {
   const [state, action, pending] = useActionState<QuotationActionState, FormData>(sendQuotation, {});
   return <div className="space-y-3"><form action={action}><input type="hidden" name="id" value={id} /><Button type="submit" disabled={pending || disabled}>{pending ? "Enviando" : "Enviar al cliente"}</Button></form>{reason && !pending ? <p className="t-small text-ink-soft">{reason}</p> : null}{state.error && <p role="alert" className="t-small text-error">{state.error}</p>}{state.success && <p aria-live="polite" className="t-small text-success">{state.success}</p>}{state.whatsappUrl && <a className="inline-flex min-h-12 items-center rounded-btn border border-wa px-4 py-3 font-semibold text-wa-deep underline underline-offset-4" href={state.whatsappUrl} target="_blank" rel="noreferrer">Compartir por WhatsApp</a>}</div>;
+}
+
+// The usual path: the quotation goes to the customer by WhatsApp or in person. Registering it freezes the
+// version the customer receives (so it can be accepted later) and offers that exact PDF and a WhatsApp chat.
+export function RegisterSendForm({ id, disabled = false, reason, hasPhone }: { id: string; disabled?: boolean; reason?: string; hasPhone: boolean }) {
+  const [state, action, pending] = useActionState<QuotationActionState, FormData>(registerQuotationSent, {});
+  return <div className="space-y-3">
+    <form action={action} className="space-y-3">
+      <input type="hidden" name="id" value={id} />
+      <fieldset className="space-y-2">
+        <legend className="t-small font-semibold text-ink">Medio</legend>
+        <label className="flex min-h-11 items-center gap-3"><input type="radio" name="canal" value="whatsapp" defaultChecked className="size-4 accent-brand" />WhatsApp</label>
+        <label className="flex min-h-11 items-center gap-3"><input type="radio" name="canal" value="presencial" className="size-4 accent-brand" />En persona o por otro medio</label>
+      </fieldset>
+      <label className="flex items-start gap-3 t-small"><input type="checkbox" name="confirmado" value="si" required className="mt-0.5 size-4 accent-brand" />El cliente recibirá exactamente el PDF de esta versión.</label>
+      <Button type="submit" variant="ghost" disabled={pending || disabled}>{pending ? "Registrando" : "Registrar envío"}</Button>
+    </form>
+    {reason && !pending ? <p className="t-small text-ink-soft">{reason}</p> : null}
+    {state.error && <p role="alert" className="t-small text-error">{state.error}</p>}
+    {state.success && <div aria-live="polite" className="space-y-2"><p className="t-small text-success">{state.success}</p>
+      <div className="flex flex-wrap gap-2">
+        {state.versionPdf ? <a className="inline-flex min-h-11 items-center rounded-btn border border-line px-4 font-semibold text-ink hover:bg-surface" href={state.versionPdf}>Descargar PDF de la versión</a> : null}
+        {state.whatsappUrl ? <a className="inline-flex min-h-11 items-center rounded-btn border border-wa px-4 font-semibold text-wa-deep" href={state.whatsappUrl} target="_blank" rel="noreferrer">Abrir chat de WhatsApp</a> : hasPhone ? null : <p className="t-small text-ink-soft">Sin teléfono válido: comparta el PDF por su cuenta.</p>}
+      </div>
+    </div>}
+  </div>;
 }
 
 export function AssignQuotationForm({ id }: { id: string }) {

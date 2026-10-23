@@ -23,7 +23,7 @@ import { convertQuotationToReservation } from "@/app/admin/reservas/actions";
 export { convertQuotationToReservation };
 
 export type CustomerSuggestion = { id: string; nombre: string };
-export type QuotationActionState = { error?: string; success?: string; whatsappUrl?: string; quotationId?: string; updatedAt?: string; conflict?: boolean; sessionExpired?: boolean; locked?: boolean; customerSuggestions?: CustomerSuggestion[] };
+export type QuotationActionState = { error?: string; success?: string; whatsappUrl?: string; versionPdf?: string; quotationId?: string; updatedAt?: string; conflict?: boolean; sessionExpired?: boolean; locked?: boolean; customerSuggestions?: CustomerSuggestion[] };
 export type PhotoCleanupState = { error?: string; success?: string; unused?: number; checked?: number };
 
 const schemaMissing = "Para guardar cotizaciones de vuelo, hotel o paquete, ejecute primero docs/sql/quotations_v5.sql en Supabase.";
@@ -90,6 +90,22 @@ export async function saveQuotation(payloadText: string): Promise<QuotationActio
     else if (rows.length) customerSuggestions = rows;
     else {
       const customer = await client.from("customers").insert({ nombre: payload.cliente.nombre, email: payload.cliente.email, telefono: payload.cliente.telefono, notas: null }).select("id").single();
+      if (customer.error || !customer.data) return { error: "No se pudo crear el cliente. Revise los datos e intente nuevamente." };
+      customerId = String(customer.data.id);
+    }
+  } else if (normalizePhone(payload.cliente.telefono ?? "")) {
+    // WhatsApp-only customers: the same rule with the phone number (compared in E.164), so the
+    // quotation has a customer to convert into a reservation.
+    const phone = normalizePhone(payload.cliente.telefono ?? "");
+    const local = phone.slice(-8);
+    const matches = await client.from("customers").select("id,nombre,telefono").ilike("telefono", `%${local.slice(0, 4)}%${local.slice(4)}%`).limit(10);
+    if (matches.error) return { error: "No se pudo verificar el cliente. Intente nuevamente." };
+    const rows = (matches.data ?? []).filter(row => normalizePhone(String(row.telefono ?? "")) === phone).map(row => ({ id: String(row.id), nombre: String(row.nombre) }));
+    const same = rows.filter(row => sameName(row.nombre, payload.cliente.nombre));
+    if (same.length === 1) customerId = same[0].id;
+    else if (rows.length) customerSuggestions = rows;
+    else {
+      const customer = await client.from("customers").insert({ nombre: payload.cliente.nombre, email: null, telefono: phone, notas: null }).select("id").single();
       if (customer.error || !customer.data) return { error: "No se pudo crear el cliente. Revise los datos e intente nuevamente." };
       customerId = String(customer.data.id);
     }
@@ -236,12 +252,15 @@ export async function updateQuotationStatus(_: QuotationActionState, form: FormD
 }
 
 type AdminClient = Awaited<ReturnType<typeof requireAdmin>>["client"];
+// How the customer received the version: e-mailed from the panel, or shared by the advisor outside it.
+export type SendChannel = "correo" | "whatsapp" | "presencial";
+const manualChannels: readonly SendChannel[] = ["whatsapp", "presencial"];
 type FrozenVersion = { versionNumber: number; snapshotRecord: NonNullable<Awaited<ReturnType<typeof getAdminQuotation>>> } | { error: string };
 
 // Freezes the quotation as it stands into an immutable version (quotation_versions). Sending uses it
 // before e-mailing; accepting uses it when nothing was ever sent from the panel (a PDF shared by
 // WhatsApp, for example), so every accepted quotation keeps a fixed copy of what was agreed.
-async function freezeVersion(client: AdminClient, userId: string, record: NonNullable<Awaited<ReturnType<typeof getAdminQuotation>>>, origen: "envio" | "aceptacion"): Promise<FrozenVersion> {
+async function freezeVersion(client: AdminClient, userId: string, record: NonNullable<Awaited<ReturnType<typeof getAdminQuotation>>>, origen: "envio" | "aceptacion", canal: SendChannel = "correo"): Promise<FrozenVersion> {
   const { quotation } = record;
   const id = quotation.id;
   // The next number comes from the versions themselves, so a failed counter update can never block later sends.
@@ -249,7 +268,7 @@ async function freezeVersion(client: AdminClient, userId: string, record: NonNul
   if (latest.error && !isMissingColumn(latest.error) && latest.error.code !== "42P01") return { error: "No se pudo preparar la versión de la cotización. Intente nuevamente." };
   const versionNumber = Math.max(Number(quotation.version ?? 0), Number(latest.data?.version ?? 0)) + 1;
   const row = { ...quotation, version: versionNumber };
-  const snapshot = { quotation: row, items: record.items, emitida_en: new Date().toISOString(), ...(origen === "aceptacion" ? { origen } : {}) };
+  const snapshot = { quotation: row, items: record.items, emitida_en: new Date().toISOString(), canal, ...(origen === "aceptacion" ? { origen } : {}) };
   const version = await client.from("quotation_versions").insert({ quotation_id: id, version: versionNumber, snapshot, emitida_por: userId }).select("id").single();
   if (version.error?.code === "23505") return { error: "Se registró otra versión al mismo tiempo. Recargue la página e intente nuevamente." };
   if (version.error) return { error: isMissingColumn(version.error) || version.error.code === "42P01" ? schemaMissing : "No se pudo registrar la versión de la cotización. Intente nuevamente." };
@@ -305,6 +324,34 @@ export async function sendQuotation(_: QuotationActionState, form: FormData): Pr
   // The share link opens a chat with the customer; it is omitted when there is no usable phone.
   const whatsappUrl = customerWhatsappHref(normalizePhone(quotation.cliente_telefono ?? "") || quotation.cliente_telefono || "", message);
   return { success: versionNumber ? `Versión ${versionNumber} enviada al correo del cliente.` : "Cotización enviada al correo del cliente.", ...(whatsappUrl ? { whatsappUrl } : {}) };
+}
+
+// Most quotations reach the customer by WhatsApp or in person, not by e-mail. Recording that send freezes
+// the same immutable version an e-mail would (with the channel), marks the quotation sent and links that
+// version, so the customer's answer can later be accepted and converted. Nothing is sent from here: the
+// advisor shares the PDF of that version themselves.
+export async function registerQuotationSent(_: QuotationActionState, form: FormData): Promise<QuotationActionState> {
+  const { client, user } = await requireAdmin();
+  const id = clean(form.get("id")), canal = clean(form.get("canal")) as SendChannel;
+  if (!validUuid(id) || !manualChannels.includes(canal)) return { error: "Elija cómo compartió la cotización." };
+  if (form.get("confirmado") !== "si") return { error: "Confirme que compartió con el cliente el PDF de esta versión." };
+  const record = await getAdminQuotation(client, id);
+  if (!record) return { error: "No se encontró la cotización." };
+  const { quotation } = record;
+  if (!["borrador", "enviada"].includes(quotation.estado)) return { error: quotation.estado === "aceptada" ? "El cliente ya aceptó esta cotización. Para enviar cambios, cree una enmienda." : "Esta cotización ya no está abierta. Use «Duplicar» para preparar una nueva." };
+  if (!record.schemaReady) return { error: schemaMissing };
+  const blocking = quotationReadiness(record.kind, record.details, record.items).filter(issue => issue.nivel === "error");
+  if (blocking.length) return { error: `Antes de registrar el envío: ${blocking.map(issue => issue.mensaje).join(" ")}` };
+  const frozen = await freezeVersion(client, user.id, record, "envio", canal);
+  if ("error" in frozen) return { error: frozen.error };
+  const version = await client.from("quotation_versions").select("id").eq("quotation_id", id).eq("version", frozen.versionNumber).single();
+  if (version.error || !version.data) return { error: `La versión ${frozen.versionNumber} quedó guardada, pero no se pudo vincular. Recargue la página e intente de nuevo.` };
+  const updated = await client.from("quotations").update({ estado: "enviada", sent_version_id: version.data.id }).eq("id", id).in("estado", ["borrador", "enviada"]).select("id").single();
+  if (updated.error || !updated.data) return { error: `La versión ${frozen.versionNumber} quedó guardada, pero no se pudo marcar como enviada. Recargue la página e intente de nuevo.` };
+  refreshQuotationPaths(id);
+  const message = `Hola, le comparto la cotización ${quotation.codigo} de viatour para ${quotation.destino}. Total referencial: ${formatQuotationAmount(Number(quotation.total), quotation.moneda)}.`;
+  const whatsappUrl = canal === "whatsapp" ? customerWhatsappHref(normalizePhone(quotation.cliente_telefono ?? "") || quotation.cliente_telefono || "", message) : "";
+  return { success: `Versión ${frozen.versionNumber} registrada como enviada${canal === "whatsapp" ? " por WhatsApp" : " en persona"}. Cuando el cliente responda, márquela como aceptada.`, versionPdf: `/api/admin/cotizaciones/${id}/pdf?version=${frozen.versionNumber}`, ...(whatsappUrl ? { whatsappUrl } : {}) };
 }
 
 // Hotel photos nobody uses any more: uploaded more than 7 days ago and absent from every quotation and

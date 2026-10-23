@@ -16,6 +16,7 @@ function fakeDb(seed = {}, options = {}) {
     const state = { op: 'select', filters: [], values: null, limit: null, order: null };
     const rows = () => tables[table].filter(row => state.filters.every(([kind, key, value]) => {
       const actual = key.includes('->>') ? (row[key.split('->>')[0]] ?? {})[key.split('->>')[1]] : row[key];
+      if (kind === 'ilike') return new RegExp(`^${value.split('%').map(part => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*')}$`, 'i').test(String(actual ?? ''));
       return kind === 'eq' ? actual === value : value.includes(actual);
     }));
     const missing = values => options.legacy && table === 'quotations' && values && ['tipo', 'detalles', 'vence_en', 'version', 'version_aceptada'].some(key => key in values);
@@ -54,6 +55,7 @@ function fakeDb(seed = {}, options = {}) {
       limit(value) { state.limit = value; return api; },
       eq(key, value) { state.filters.push(['eq', key, value]); return api; },
       in(key, value) { state.filters.push(['in', key, value]); return api; },
+      ilike(key, value) { state.filters.push(['ilike', key, value]); return api; },
       insert(values) { state.op = 'insert'; state.values = values; return api; },
       update(values) { state.op = 'update'; state.values = values; return api; },
       delete() { state.op = 'delete'; return api; },
@@ -654,4 +656,55 @@ test('accepting after a send records the sent version and freezes nothing new', 
   assert.match(accepted.success, /Cotización aceptada/);
   assert.equal(db.tables.quotation_versions.length, 1);
   assert.equal(db.tables.quotation_versions[0].snapshot.origen, undefined);
+});
+
+// Admin overhaul, phase 1: quotations shared by WhatsApp or in person (most of them) can be accepted.
+test('registering a WhatsApp send freezes the version with its channel, sends nothing and allows acceptance', async () => {
+  const db = fakeDb({ reservation_items: [], payments: [], invoices: [] });
+  let calls = 0;
+  const api = actions(db, { fetch: async () => { calls++; return { ok: true }; } });
+  const created = await api.saveQuotation(JSON.stringify(payload({ cliente: { nombre: 'Ana Pérez', email: '', telefono: '+50499998888' } })));
+  const unconfirmed = await api.registerQuotationSent({}, form({ id: created.quotationId, canal: 'whatsapp' }));
+  assert.match(unconfirmed.error, /Confirme/);
+  const result = await api.registerQuotationSent({}, form({ id: created.quotationId, canal: 'whatsapp', confirmado: 'si' }));
+  assert.match(result.success, /Versión 1 registrada como enviada por WhatsApp/);
+  assert.equal(result.versionPdf, `/api/admin/cotizaciones/${created.quotationId}/pdf?version=1`);
+  assert.equal(calls, 0, 'no e-mail is sent');
+  const [quotation] = db.tables.quotations, [version] = db.tables.quotation_versions;
+  assert.equal(quotation.estado, 'enviada');
+  assert.equal(quotation.sent_version_id, version.id);
+  assert.equal(version.snapshot.canal, 'whatsapp');
+  const accepted = await api.updateQuotationStatus({}, form({ id: created.quotationId, estado: 'aceptada', version_id: version.id, confirmado: 'si' }));
+  assert.match(accepted.success, /Cotización aceptada/);
+});
+
+test('registering a send is refused for an unknown channel, an incomplete quotation or an accepted one', async () => {
+  const db = fakeDb({ reservation_items: [], payments: [], invoices: [] });
+  const api = actions(db);
+  const created = await api.saveQuotation(JSON.stringify(payload()));
+  assert.match((await api.registerQuotationSent({}, form({ id: created.quotationId, canal: 'correo', confirmado: 'si' }))).error, /Elija/);
+  const unconfirmed = payload({ id: created.quotationId, expectedUpdatedAt: db.tables.quotations[0].updated_at });
+  unconfirmed.detalles = { ...unconfirmed.detalles, vuelos: { ...unconfirmed.detalles.vuelos, confirmado: false } };
+  await api.saveQuotation(JSON.stringify(unconfirmed));
+  assert.match((await api.registerQuotationSent({}, form({ id: created.quotationId, canal: 'whatsapp', confirmado: 'si' }))).error, /Confirme el itinerario/);
+  assert.equal(db.tables.quotation_versions.length, 0);
+  const acceptedDb = fakeDb({ reservation_items: [], payments: [], invoices: [] });
+  const { id } = await sentAndAccepted(acceptedDb);
+  assert.match((await actions(acceptedDb).registerQuotationSent({}, form({ id, canal: 'presencial', confirmado: 'si' }))).error, /ya aceptó/);
+});
+
+test('a quotation without e-mail is linked to its customer by phone', async () => {
+  const db = fakeDb();
+  const api = actions(db);
+  const whatsappOnly = cliente => payload({ cliente, detalles: { ...payload().detalles, refCreacion: `token-${cliente.nombre.length}-${db.tables.quotations.length}abcdef` } });
+  await api.saveQuotation(JSON.stringify(whatsappOnly({ nombre: 'Ana Pérez', email: '', telefono: '+50499998888' })));
+  assert.equal(db.tables.customers.length, 1);
+  assert.equal(db.tables.customers[0].email, null);
+  assert.equal(db.tables.customers[0].telefono, '+50499998888');
+  await api.saveQuotation(JSON.stringify(whatsappOnly({ nombre: 'ana perez', email: '', telefono: '+50499998888' })));
+  assert.equal(db.tables.customers.length, 1, 'same phone and same name reuses the customer');
+  assert.equal(db.tables.quotations[1].customer_id, db.tables.customers[0].id);
+  const other = await api.saveQuotation(JSON.stringify(whatsappOnly({ nombre: 'Luis Gómez', email: '', telefono: '+50499998888' })));
+  assert.equal(db.tables.customers.length, 1, 'a shared phone alone is only a suggestion');
+  assert.equal(other.customerSuggestions.length, 1);
 });

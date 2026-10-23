@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from
 import { useRouter } from "next/navigation";
 import { AlertTriangle, CheckCircle2, Copy, Download, Eye, FileText, Loader2, RefreshCw, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { SendQuotationForm } from "@/components/admin/quotation-actions";
+import { RegisterSendForm, SendQuotationForm } from "@/components/admin/quotation-actions";
 import { duplicateQuotation, saveQuotation, type CustomerSuggestion } from "@/app/admin/cotizaciones/actions";
 import { cityName, type FlightJourney } from "@/lib/flight-itinerary";
 import { creatableKinds, emptyBaggage, emptyFerry, emptyFare, emptyHotel, quotationKindAdminLabels, quotationReadiness, termsTemplates, type HotelStay, type QuotationDetails, type QuotationKind } from "@/lib/quotation-details";
@@ -214,8 +214,18 @@ export function QuotationEditor({ initial, customers, recentHotels, meta, sideba
     </section>
     {draft.id ? <section aria-labelledby="send-title" className="rounded-panel border border-line bg-canvas p-4">
       <h2 id="send-title" className="mb-2 font-semibold text-ink">Enviar al cliente</h2>
-      <p className="mb-3 t-small text-ink-soft">Se registra una versión con lo que el cliente recibe y se envía el PDF a {draft.cliente.email || "su correo"}.</p>
-      <SendQuotationForm id={draft.id} disabled={saveState !== "saved" || blocking.length > 0 || !draft.cliente.email} reason={saveState !== "saved" ? "Guarde los cambios antes de enviar." : blocking.length ? "Complete los datos pendientes para enviar." : !draft.cliente.email ? "Agregue el correo del cliente." : undefined} />
+      <p className="mb-3 t-small text-ink-soft">Cada envío guarda una versión fija con lo que recibe el cliente. Solo una cotización enviada se puede marcar como aceptada.</p>
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <h3 className="t-small font-semibold text-ink">Por WhatsApp o en persona</h3>
+          <RegisterSendForm id={draft.id} hasPhone={Boolean(draft.cliente.telefono.trim())} disabled={saveState !== "saved" || blocking.length > 0} reason={saveState !== "saved" ? "Guarde los cambios antes de registrar el envío." : blocking.length ? "Complete los datos pendientes antes de registrar el envío." : undefined} />
+        </div>
+        <div className="space-y-2 border-t border-line pt-4">
+          <h3 className="t-small font-semibold text-ink">Por correo electrónico</h3>
+          <p className="t-small text-ink-soft">Se envía el PDF a {draft.cliente.email || "su correo"}.</p>
+          <SendQuotationForm id={draft.id} disabled={saveState !== "saved" || blocking.length > 0 || !draft.cliente.email} reason={saveState !== "saved" ? "Guarde los cambios antes de enviar." : blocking.length ? "Complete los datos pendientes para enviar." : !draft.cliente.email ? "Sin correo: use «Registrar envío» si la compartió por WhatsApp." : undefined} />
+        </div>
+      </div>
     </section> : null}
     {sidebar}
   </div>;
