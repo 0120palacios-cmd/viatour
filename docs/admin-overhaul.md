@@ -42,5 +42,24 @@ La auditoría de la fase 1 (inventario, flujos, hallazgos F-*, diseño de pasaje
 - Respuesta del contador sobre «Factura».
 - Revisión visual del panel con su sesión.
 
-## Siguiente: fase 1, integridad comercial
-Registrar envío sin correo (F-C1), recuperación de envíos fallidos (F-M1), motivo de rechazo, enmienda que reemplaza a la aceptada, duplicado transaccional (F-M7).
+## Staging (2026-10-23)
+Proyecto Supabase `viatour-staging` (ref `cmbptpscpigtcefsmhwe`, Canadá central, plan gratuito), creado por el propietario. Contiene el esquema de producción (`000_baseline_schema.sql`, buckets y políticas de storage, privilegios exactos): la comparación de estructura contra producción da **0 diferencias**. Sin datos. Se usa siempre con `--linked --project-ref cmbptpscpigtcefsmhwe`; el enlace local del CLI sigue apuntando a producción.
+
+Aplicado en staging, pendiente en producción: `admin_audit_log.sql`, `fix_function_encoding.sql`, `conversion_without_email.sql`.
+
+## Hallazgos de la revisión visual con sesión (2026-10-23)
+- 38 cotizaciones, 36 en borrador y 0 enviadas: se comparten por WhatsApp y nunca se podían aceptar. Las dos reservas reales se crearon a mano.
+- El correo obligatorio produjo correos de relleno (`cliente@miviatour.com` compartido por dos clientes) y clientes con el teléfono como nombre.
+- **VT-7CC608B0 y VT-CCB2E6FD**: el cliente ve «Boletos emitidos» (copia pública, revisiones 4/5 del 21-oct a las 18:02:59, escritas por el arreglo manual de esa sesión), pero la copia cifrada que carga el administrador sigue en «Pendiente de emisión» y sin boletos. **No pulse «Guardar expediente revisado» en esas dos reservas** hasta aplicar la protección: guardaría la copia antigua y el cliente vería «pendiente» otra vez.
+- La factura de VT-7CC608B0 (548 USD, pagada) no coincide con la reserva (578 USD, saldo 30).
+- Cinco funciones de producción tienen tildes dañadas por una codificación incorrecta al aplicarlas («versiÃ³n»); el administrador ve esos mensajes. Corrección en `fix_function_encoding.sql`.
+
+## Fase 1: integridad comercial (en curso)
+| Cambio | Estado |
+|---|---|
+| «Registrar envío» por WhatsApp o en persona: versión fija con su canal, cotización enviada, PDF de la versión y chat de WhatsApp; luego se puede aceptar (F-C1) | Hecho en código, con pruebas |
+| Cotización sin correo: el cliente se vincula o se crea por teléfono (E.164) | Hecho en código, con pruebas |
+| Ficha de cliente: correo opcional, nombre más teléfono o correo, sin duplicar correos ni teléfonos | Hecho en código, con pruebas |
+| Convertir sin correo y registrar después un correo de acceso una sola vez (`conversion_without_email.sql`, 8 de 8 en PGlite) | SQL en staging; código hecho |
+| Protección del expediente: no volver atrás la emisión ni perder boletos que el cliente ya ve | **Bloqueado**: el sistema de permisos de Claude Code denegó la edición de `src/app/admin/reservas/travel-actions.ts`; requiere autorización del propietario |
+| Recuperación de envíos fallidos (F-M1), motivo de rechazo, enmienda que reemplaza, duplicado transaccional (F-M7) | Pendiente |
