@@ -12,6 +12,9 @@ import { CommercialLifecycle } from "@/components/admin/commercial-lifecycle";
 import { formatMoney } from "@/lib/reservation-types";
 import { isExpired } from "@/lib/quotation-details";
 import { validUuid } from "@/lib/quotation-validation";
+import { defaultShareMessage } from "@/lib/quotation-share";
+import { normalizePhone } from "@/lib/lead-validation";
+import { RevokeShareButton } from "@/components/admin/whatsapp-share";
 import { type Customer } from "@/lib/quotation-types";
 import { adminQuotationStatusLabel as quotationStatusLabel, type AdminQuotationStatus } from "@/lib/admin-quotation-status";
 
@@ -19,6 +22,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   return pageMetadata(`/admin/cotizaciones/${(await params).id}`, "viatour | Editar cotización", "Editar una cotización en la administración privada de viatour.");
 }
 
+const isPast = (iso: string) => Date.parse(iso) < Date.now();
 const dateTime = new Intl.DateTimeFormat("es-HN", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Tegucigalpa" });
 
 export default async function EditQuotationPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ duplicada?: string; enmienda?: string }> }) {
@@ -52,6 +56,9 @@ export default async function EditQuotationPage({ params, searchParams }: { para
   const related = links.data ? (await client.from("quotations").select("id,codigo,estado").in("id", [links.data.enmienda_de, links.data.reemplazada_por].filter(Boolean) as string[])).data ?? [] : [];
   const amends = related.find(row => row.id === links.data?.enmienda_de);
   const replacedBy = related.find(row => row.id === links.data?.reemplazada_por);
+  // WhatsApp shares of this quotation (docs/sql/quotation_shares.sql); empty until that SQL is applied.
+  const shares = (await client.from("quotation_shares").select("id,estado,telefono,created_at,confirmado_en,expira_en,aperturas,abierto_en,version_id").eq("quotation_id", id).neq("estado", "cancelado").order("created_at", { ascending: false }).limit(20)).data ?? [];
+  const shareLabels: Record<string, string> = { preparado: "Preparado, sin confirmar", confirmado: "Enviado por el asesor", revocado: "Enlace desactivado", enviado: "Enviado", entregado: "Entregado", leido: "Leído", fallido: "Falló" };
   const versionId = quotation.estado === "aceptada" ? lifecycle.data?.accepted_version_id : lifecycle.data?.sent_version_id;
   const selected = versions.find(version => version.id === versionId) ?? (quotation.estado === "aceptada" && !versionId ? versions.find(version => version.version === lifecycle.data?.version_aceptada) : undefined) ?? (quotation.estado === "enviada" && !versionId ? versions.find(version => version.origen !== "aceptacion") : undefined);
   const frozen = selected ? await getQuotationVersion(client, id, selected.version) : null;
@@ -68,6 +75,16 @@ export default async function EditQuotationPage({ params, searchParams }: { para
       <p className="mb-3 t-small text-ink-soft">{quotation.agente_id === user.id ? "Usted tiene asignada esta cotización." : "Asignada a otro asesor. Guardar cambios no la reasigna."}</p>
       {quotation.agente_id !== user.id ? <AssignQuotationForm id={id} /> : null}
     </section>
+    {shares.length ? <section aria-labelledby="shares-title" className="rounded-panel border border-line bg-canvas p-4">
+      <h2 id="shares-title" className="mb-2 font-semibold text-ink">Envíos por WhatsApp</h2>
+      <ul className="space-y-3">{shares.map(share => { const version = versions.find(row => row.id === share.version_id); const expired = isPast(share.expira_en); return <li key={share.id} className="t-small text-ink">
+        <p className="font-semibold">{shareLabels[share.estado] ?? share.estado}{version ? ` · versión ${version.version}` : ""}</p>
+        <p className="text-ink-soft">{share.telefono} · {dateTime.format(new Date(share.confirmado_en ?? share.created_at))}</p>
+        <p className="text-ink-soft">{share.aperturas ? `Enlace abierto ${share.aperturas} ${share.aperturas === 1 ? "vez" : "veces"}, la última el ${dateTime.format(new Date(share.abierto_en))}` : "Enlace aún no abierto"}{share.estado === "revocado" ? "" : expired ? " · vencido" : ` · vence ${dateTime.format(new Date(share.expira_en))}`}</p>
+        {["confirmado", "enviado", "entregado", "leido"].includes(share.estado) && !expired ? <RevokeShareButton id={id} shareId={share.id} /> : null}
+      </li>; })}</ul>
+      <p className="mt-2 t-small text-ink-soft">Una apertura indica que alguien abrió el enlace, no necesariamente el cliente.</p>
+    </section> : null}
     <section aria-labelledby="versions-title" className="rounded-panel border border-line bg-canvas p-4">
       <h2 id="versions-title" className="mb-2 font-semibold text-ink">Versiones</h2>
       {versions.length ? <ul className="space-y-1.5">{versions.map(version => <li key={version.id} className="flex flex-wrap items-center justify-between gap-2 t-small"><span>Versión {version.version} · {version.origen === "aceptacion" ? "guardada al aceptar" : "enviada"} {dateTime.format(new Date(version.emitida_en))}</span><a className="text-brand underline underline-offset-4" href={`/api/admin/cotizaciones/${id}/pdf?version=${version.version}&inline=1`} target="_blank" rel="noreferrer">Ver PDF</a></li>)}</ul> : <p className="t-small text-ink-soft">{record.schemaReady ? "Aún no se ha enviado. Cada envío guarda una copia fija de lo que recibió el cliente." : "El historial de versiones se activa con docs/sql/quotations_v5.sql."}</p>}
@@ -83,6 +100,6 @@ export default async function EditQuotationPage({ params, searchParams }: { para
     {expired ? <p role="alert" className="rounded-card border border-error/40 bg-canvas p-4 text-error">La validez de esta cotización venció el {dateTime.format(new Date(record.expiry))}. Actualícela antes de volver a enviarla; las versiones ya enviadas no cambian.</p> : null}
     {estado === "reemplazada" ? null : <CommercialLifecycle id={id} code={quotation.codigo} status={quotation.estado} needsReview={quotation.estado === "aceptada" && !lifecycle.data?.accepted_version_id} ready={!lifecycle.error} reservation={reservation.data} version={selected && frozen ? { id: selected.id, number: selected.version, customer: frozen.quotation.cliente_nombre, email: frozen.quotation.cliente_email, legacy: !versionId, total: formatMoney(Number(frozen.quotation.total), frozen.quotation.moneda) } : null} />}
     <QuotationEditor initial={draft} customers={(customers.data ?? []) as Customer[]} recentHotels={recentHotels} sidebar={sidebar} catalogs={catalogs}
-      meta={{ codigo: quotation.codigo, estado: quotation.estado, estadoLabel: quotationStatusLabel(estado), expired, schemaReady: record.schemaReady, sent: versions.length > 0 || quotation.estado !== "borrador", converted: Boolean(reservation.data) }} />
+      meta={{ codigo: quotation.codigo, estado: quotation.estado, estadoLabel: quotationStatusLabel(estado), expired, schemaReady: record.schemaReady, sent: versions.length > 0 || quotation.estado !== "borrador", converted: Boolean(reservation.data), share: { phone: normalizePhone(quotation.cliente_telefono ?? "") || (quotation.cliente_telefono ?? ""), message: defaultShareMessage({ nombre: quotation.cliente_nombre, codigo: quotation.codigo, destino: quotation.destino }) } }} />
   </>;
 }

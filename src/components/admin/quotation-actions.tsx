@@ -29,8 +29,8 @@ export function RegisterSendForm({ id, disabled = false, reason, hasPhone }: { i
       <input type="hidden" name="id" value={id} />
       <fieldset className="space-y-2">
         <legend className="t-small font-semibold text-ink">Medio</legend>
-        <label className="flex min-h-11 items-center gap-3"><input type="radio" name="canal" value="whatsapp" defaultChecked className="size-4 accent-brand" />WhatsApp</label>
-        <label className="flex min-h-11 items-center gap-3"><input type="radio" name="canal" value="presencial" className="size-4 accent-brand" />En persona o por otro medio</label>
+        <label className="flex min-h-11 items-center gap-3"><input type="radio" name="canal" value="presencial" defaultChecked className="size-4 accent-brand" />Entregada en persona, impresa o por otro medio</label>
+        <label className="flex min-h-11 items-center gap-3"><input type="radio" name="canal" value="whatsapp" className="size-4 accent-brand" />Ya la envié por WhatsApp desde fuera del panel</label>
       </fieldset>
       <label className="flex items-start gap-3 t-small"><input type="checkbox" name="confirmado" value="si" required className="mt-0.5 size-4 accent-brand" />El cliente recibirá exactamente el PDF de esta versión.</label>
       <Button type="submit" variant="ghost" disabled={pending || disabled}>{pending ? "Registrando" : "Registrar envío"}</Button>

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AlertTriangle, CheckCircle2, Copy, Download, Eye, FileText, Loader2, RefreshCw, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RegisterSendForm, SendQuotationForm } from "@/components/admin/quotation-actions";
+import { WhatsappShareForm } from "@/components/admin/whatsapp-share";
 import { duplicateQuotation, saveQuotation, type CustomerSuggestion } from "@/app/admin/cotizaciones/actions";
 import { cityName, type FlightJourney } from "@/lib/flight-itinerary";
 import { creatableKinds, emptyBaggage, emptyFerry, emptyFare, emptyHotel, quotationKindAdminLabels, quotationReadiness, termsTemplates, type HotelStay, type QuotationDetails, type QuotationKind } from "@/lib/quotation-details";
@@ -22,7 +23,7 @@ import { Field, inputClass, Notice, Section, SmallButton, TextField } from "./fi
 import { cn } from "cn";
 
 type SaveState = "saved" | "dirty" | "saving" | "error" | "conflict";
-export type EditorMeta = { codigo?: string; estado?: string; estadoLabel?: string; expired?: boolean; schemaReady: boolean; sent?: boolean; converted?: boolean };
+export type EditorMeta = { codigo?: string; estado?: string; estadoLabel?: string; expired?: boolean; schemaReady: boolean; sent?: boolean; converted?: boolean; share?: { phone: string; message: string } };
 type Props = { initial: EditorDraft; customers: Customer[]; recentHotels: HotelStay[]; meta: EditorMeta; sidebar?: React.ReactNode; catalogs?: EditorCatalogValue };
 
 const kindDescriptions: Record<QuotationKind, string> = { vuelo: "Pegue el itinerario y complete tarifa, equipaje y precio.", hotel: "Hotel, habitaciones, fotos y lo que incluye la estadía.", ferry: "Trayectos en ferry, clase, equipaje y condiciones de la naviera.", paquete: "Vuelos, hotel y servicios en una sola propuesta.", combinado: "Vuelos, hoteles, ferry, traslados, tours y otros servicios en una sola propuesta, en el orden que usted elija.", general: "Cualquier otro servicio con conceptos de precio." };
@@ -212,12 +213,16 @@ export function QuotationEditor({ initial, customers, recentHotels, meta, sideba
       </div>
       {previewUrl ? <a href={previewUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1.5 px-1 t-small text-brand underline underline-offset-4"><FileText size={15} strokeWidth={2} aria-hidden="true" />Abrir la vista previa en otra pestaña</a> : null}
     </section>
-    {draft.id ? <section aria-labelledby="send-title" className="rounded-panel border border-line bg-canvas p-4">
+    {draft.id && (!meta.estado || ["borrador", "enviada"].includes(meta.estado)) ? <section aria-labelledby="send-title" className="rounded-panel border border-line bg-canvas p-4">
       <h2 id="send-title" className="mb-2 font-semibold text-ink">Enviar al cliente</h2>
       <p className="mb-3 t-small text-ink-soft">Cada envío guarda una versión fija con lo que recibe el cliente. Solo una cotización enviada se puede marcar como aceptada.</p>
       <div className="space-y-4">
         <div className="space-y-2">
-          <h3 className="t-small font-semibold text-ink">Por WhatsApp o en persona</h3>
+          <h3 className="t-small font-semibold text-ink">Compartir por WhatsApp</h3>
+          <WhatsappShareForm id={draft.id} defaultPhone={meta.share?.phone ?? draft.cliente.telefono} defaultMessage={meta.share?.message ?? ""} disabled={saveState !== "saved" || blocking.length > 0} reason={saveState !== "saved" ? "Guarde los cambios antes de compartir." : blocking.length ? "Complete los datos pendientes antes de compartir." : undefined} />
+        </div>
+        <div className="space-y-2 border-t border-line pt-4">
+          <h3 className="t-small font-semibold text-ink">En persona o por otro medio</h3>
           <RegisterSendForm id={draft.id} hasPhone={Boolean(draft.cliente.telefono.trim())} disabled={saveState !== "saved" || blocking.length > 0} reason={saveState !== "saved" ? "Guarde los cambios antes de registrar el envío." : blocking.length ? "Complete los datos pendientes antes de registrar el envío." : undefined} />
         </div>
         <div className="space-y-2 border-t border-line pt-4">

@@ -2,6 +2,8 @@
 
 import { randomBytes } from "node:crypto";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+import { composeShareMessage, linkPlaceholder, maxShareMessage, newShareToken, shareExpiry, shareOrigin, shareTemplate } from "@/lib/quotation-share";
 import { revalidatePath } from "next/cache";
 import { adminSession, requireAdmin } from "@/lib/admin";
 import { getAdminQuotation, getQuotationVersion, isMissingColumn, toRecord } from "@/lib/quotation-data";
@@ -386,6 +388,71 @@ export async function registerQuotationSent(_: QuotationActionState, form: FormD
   const message = `Hola, le comparto la cotización ${quotation.codigo} de viatour para ${quotation.destino}. Total referencial: ${formatQuotationAmount(Number(quotation.total), quotation.moneda)}.`;
   const whatsappUrl = canal === "whatsapp" ? customerWhatsappHref(normalizePhone(quotation.cliente_telefono ?? "") || quotation.cliente_telefono || "", message) : "";
   return { success: `Versión ${frozen.versionNumber} registrada como enviada${canal === "whatsapp" ? " por WhatsApp" : " en persona"}. Cuando el cliente responda, márquela como aceptada.`, versionPdf: `/api/admin/cotizaciones/${id}/pdf?version=${frozen.versionNumber}`, ...(whatsappUrl ? { whatsappUrl } : {}) };
+}
+
+export type ShareState = { error?: string; success?: string; shareId?: string; shareUrl?: string; whatsappUrl?: string; versionPdf?: string; message?: string; versionNumber?: number; done?: "confirmado" | "cancelado" };
+const sharesMissing = "Falta la actualización de la base de datos para compartir por WhatsApp (docs/sql/quotation_shares.sql).";
+
+// "Compartir por WhatsApp", step 1: freezes the version the customer will see (or reuses the one prepared
+// before if nothing changed), creates a secure link to it and returns the WhatsApp chat with the message.
+// Nothing is sent and the quotation does not change state: opening WhatsApp is not proof of sending.
+export async function prepareWhatsappShare(_: ShareState, form: FormData): Promise<ShareState> {
+  const { client, user } = await requireAdmin();
+  const id = clean(form.get("id"));
+  const telefono = normalizePhone(clean(form.get("telefono")));
+  const text = String(form.get("mensaje") ?? "");
+  if (!validUuid(id)) return { error: "Cotización inválida." };
+  if (!telefono) return { error: "Escriba el número de WhatsApp del cliente con su código de país, por ejemplo +504 9999-9999." };
+  if (!text.trim() || text.length > maxShareMessage - 120) return { error: "Escriba un mensaje breve para el cliente (hasta 880 caracteres)." };
+  const record = await getAdminQuotation(client, id);
+  if (!record) return { error: "No se encontró la cotización." };
+  if (!["borrador", "enviada"].includes(record.quotation.estado)) return { error: record.quotation.estado === "aceptada" ? "El cliente ya aceptó esta cotización. Para enviar cambios, cree una enmienda." : "Esta cotización ya no está abierta. Use «Duplicar» para preparar una nueva." };
+  if (!record.schemaReady) return { error: schemaMissing };
+  const blocking = quotationReadiness(record.kind, record.details, record.items).filter(issue => issue.nivel === "error");
+  if (blocking.length) return { error: `Antes de compartir: ${blocking.map(issue => issue.mensaje).join(" ")}` };
+  const frozen = await freezeVersion(client, user.id, record, "envio", "whatsapp");
+  if ("error" in frozen) return { error: frozen.error };
+  const version = await client.from("quotation_versions").select("id").eq("quotation_id", id).eq("version", frozen.versionNumber).single();
+  if (version.error || !version.data) return { error: "No se pudo preparar la versión. Recargue la página e intente de nuevo." };
+  // Only one pending share at a time: an earlier link that was never confirmed stops working.
+  const closed = await client.from("quotation_shares").update({ estado: "cancelado", cerrado_en: new Date().toISOString() }).eq("quotation_id", id).eq("estado", "preparado");
+  if (closed.error) return { error: missingFunction(closed.error) || closed.error.code === "42P01" || closed.error.code === "PGRST205" ? sharesMissing : "No se pudo preparar el enlace. Intente nuevamente." };
+  const { token, hash } = newShareToken();
+  const shareUrl = `${shareOrigin((await headers()).get("host"))}/cotizacion/${token}`;
+  const message = composeShareMessage(text, shareUrl);
+  if (message.length > maxShareMessage) return { error: "El mensaje es demasiado largo. Acórtelo un poco." };
+  // The record keeps the text with {enlace}, never the link itself: only the advisor's screen gets the token.
+  const saved = await client.from("quotation_shares").insert({ quotation_id: id, version_id: version.data.id, canal: "whatsapp_manual", telefono, mensaje: composeShareMessage(text, linkPlaceholder), plantilla: shareTemplate, token_hash: hash, expira_en: shareExpiry(record.expiry).toISOString(), creado_por: user.id }).select("id").single();
+  if (saved.error || !saved.data) return { error: saved.error?.code === "42P01" || saved.error?.code === "PGRST205" ? sharesMissing : "No se pudo preparar el enlace. Intente nuevamente." };
+  return { shareId: String(saved.data.id), shareUrl, message, versionNumber: frozen.versionNumber, whatsappUrl: customerWhatsappHref(telefono, message), versionPdf: `/api/admin/cotizaciones/${id}/pdf?version=${frozen.versionNumber}` };
+}
+
+// Step 2: the advisor confirms the message went out ("Lo envié"), or that it did not ("No lo envié").
+export async function confirmWhatsappShare(_: ShareState, form: FormData): Promise<ShareState> {
+  const { client } = await requireAdmin();
+  const id = clean(form.get("id")), shareId = clean(form.get("share_id"));
+  if (!validUuid(id) || !validUuid(shareId)) return { error: "Envío inválido." };
+  if (form.get("resultado") === "no") {
+    const cancelled = await client.from("quotation_shares").update({ estado: "cancelado", cerrado_en: new Date().toISOString() }).eq("id", shareId).eq("quotation_id", id).eq("estado", "preparado").select("id");
+    if (cancelled.error) return { error: "No se pudo cancelar. Recargue la página." };
+    refreshQuotationPaths(id);
+    return { done: "cancelado", success: "Envío cancelado; el enlace preparado quedó desactivado. La cotización no cambió." };
+  }
+  const result = await client.rpc("confirm_quotation_share", { p_share: shareId });
+  if (result.error) return { error: missingFunction(result.error) ? sharesMissing : commercialError(result.error) };
+  refreshQuotationPaths(id);
+  return { done: "confirmado", success: "Envío registrado. La cotización quedó como enviada; cuando el cliente responda, márquela como aceptada." };
+}
+
+// Turns off a customer link that was already shared (for example, sent to the wrong number).
+export async function revokeQuotationShare(_: ShareState, form: FormData): Promise<ShareState> {
+  const { client } = await requireAdmin();
+  const id = clean(form.get("id")), shareId = clean(form.get("share_id"));
+  if (!validUuid(id) || !validUuid(shareId)) return { error: "Envío inválido." };
+  const result = await client.from("quotation_shares").update({ estado: "revocado", cerrado_en: new Date().toISOString() }).eq("id", shareId).eq("quotation_id", id).in("estado", ["confirmado", "enviado", "entregado", "leido"]).select("id").maybeSingle();
+  if (result.error || !result.data) return { error: "No se pudo desactivar el enlace. Recargue la página." };
+  refreshQuotationPaths(id);
+  return { success: "Enlace desactivado. El cliente ya no puede abrirlo." };
 }
 
 // Hotel photos nobody uses any more: uploaded more than 7 days ago and absent from every quotation and

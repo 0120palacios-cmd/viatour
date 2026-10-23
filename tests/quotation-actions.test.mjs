@@ -8,7 +8,7 @@ import { samples } from './fixtures/quotation-samples.mjs';
 // In-memory stand-in for the Supabase query builder, covering the calls the quotation actions make.
 // Nothing here talks to a real database or sends e-mail.
 function fakeDb(seed = {}, options = {}) {
-  const tables = { customers: [], quotations: [], quotation_items: [], quotation_versions: [], leads: [], reservations: [], hotel_catalog: [], ...structuredClone(seed) };
+  const tables = { customers: [], quotations: [], quotation_items: [], quotation_versions: [], quotation_shares: [], leads: [], reservations: [], hotel_catalog: [], ...structuredClone(seed) };
   const log = [];
   let counter = 0;
   const uuid = () => `00000000-0000-4000-8000-${String(++counter).padStart(12, '0')}`;
@@ -86,6 +86,15 @@ function fakeDb(seed = {}, options = {}) {
     if(name==='create_reservation_invoice') {
       const r=tables.reservations.find(r=>r.id===args.p_id);const i={id:uuid(),reservation_id:r.id,total:r.total,items:tables.reservation_items.filter(x=>x.reservation_id===r.id)};tables.invoices.push(i);return {data:i.id,error:null};
     }
+    // confirm_quotation_share: the share and the quotation change together (scripts/test-quotation-shares-sql.mjs runs the SQL).
+    if (name === "confirm_quotation_share") {
+      const share = tables.quotation_shares.find(row => row.id === args.p_share);
+      if (share?.estado === "confirmado") return { data: share.version_id, error: null };
+      if (!share || share.estado !== "preparado") return { data: null, error: { code: "23514", message: "Este envío ya no está pendiente." } };
+      const q = tables.quotations.find(row => row.id === share.quotation_id);
+      Object.assign(share, { estado: "confirmado" }); Object.assign(q, { estado: "enviada", sent_version_id: share.version_id });
+      return { data: share.version_id, error: null };
+    }
     // create_quotation_copy: the copy and its lines appear together or not at all (scripts/test-quotation-integrity-sql.mjs runs the SQL).
     if (name === 'create_quotation_copy') {
       const src = tables.quotations.find(row => row.id === args.p_source);
@@ -120,6 +129,7 @@ function fakeDb(seed = {}, options = {}) {
   return { tables, log, files, client: { from: builder, rpc, storage } };
 }
 
+const shareModule = load('src/lib/quotation-share.ts', { 'server-only': {}, 'node:crypto': crypto, '@/lib/site-config': { siteConfig: { url: 'https://miviatour.com' } } }, { process: { env: {} } });
 const redirect = path => { throw new Error(`redirect:${path}`); };
 const validation = load('src/lib/quotation-validation.ts', { '@/lib/quotation-types': types });
 const payloadModule = load('src/lib/quotation-payload.ts', { '@/lib/quotation-details': detailsModule, '@/lib/quotation-types': types, '@/lib/quotation-validation': validation });
@@ -134,6 +144,7 @@ function actions(db, { admin = true, user = 'agent-1', fetch = async () => ({ ok
     '@/lib/quotation-validation': validation, '@/lib/quotation-types': types, '@/lib/money': money, '@/lib/notifications': { captureNotificationFailure() {} },
     '@/lib/site-config': { siteConfig: { supportEmail: 'soporte@miviatour.com' } }, '@/lib/lead-admin': { customerWhatsappHref: () => '' }, '@/lib/lead-validation': { normalizePhone: value => value },
     '@/app/admin/reservas/actions': { convertQuotationToReservation: async () => ({}) },
+    'next/headers': { headers: async () => new Map([['host', 'viatour-git-admin-release.vercel.app']]) }, '@/lib/quotation-share': shareModule,
   }, { process: { env }, fetch });
 }
 
@@ -778,4 +789,74 @@ test('a quotation without e-mail is linked to its customer by phone', async () =
   const other = await api.saveQuotation(JSON.stringify(whatsappOnly({ nombre: 'Luis Gómez', email: '', telefono: '+50499998888' })));
   assert.equal(db.tables.customers.length, 1, 'a shared phone alone is only a suggestion');
   assert.equal(other.customerSuggestions.length, 1);
+});
+
+const shareForm = values => { const data = new FormData(); for (const [key, value] of Object.entries(values)) data.set(key, value); return data; };
+
+test('preparing a WhatsApp share freezes the version and a secure link, but sends nothing and keeps the draft', async () => {
+  const db = fakeDb();
+  let calls = 0;
+  const api = actions(db, { fetch: async () => { calls++; return { ok: true }; } });
+  const created = await api.saveQuotation(JSON.stringify(payload()));
+  assert.match((await api.prepareWhatsappShare({}, shareForm({ id: created.quotationId, telefono: '', mensaje: 'Hola {enlace}' }))).error, /número de WhatsApp/);
+  const first = await api.prepareWhatsappShare({}, shareForm({ id: created.quotationId, telefono: '+50499999999', mensaje: 'Buen día. Su cotización: {enlace}\n\nQuedamos atentos.' }));
+  assert.ok(first.shareId, first.error);
+  const token = first.shareUrl.split('/cotizacion/')[1];
+  assert.match(first.shareUrl, /^https:\/\/viatour-git-admin-release\.vercel\.app\/cotizacion\/[A-Za-z0-9_-]{43}$/);
+  assert.equal(first.message, `Buen día. Su cotización: ${first.shareUrl}\n\nQuedamos atentos.`);
+  const row = db.tables.quotation_shares[0];
+  assert.equal(row.token_hash, shareModule.hashShareToken(token));
+  assert.ok(!JSON.stringify(db.tables.quotation_shares).includes(token), 'the token itself is never stored');
+  assert.deepEqual([row.canal, row.telefono, row.plantilla, row.estado ?? 'preparado'], ['whatsapp_manual', '+50499999999', 'cotizacion_v1', 'preparado']);
+  assert.equal(db.tables.quotation_versions[0].snapshot.canal, 'whatsapp');
+  assert.equal(db.tables.quotations[0].estado, 'borrador');
+  assert.equal(calls, 0);
+  // Preparing again (WhatsApp closed without sending) reuses the version and disables the earlier link.
+  row.estado = 'preparado';
+  const second = await api.prepareWhatsappShare({}, shareForm({ id: created.quotationId, telefono: '+50499999999', mensaje: 'Hola' }));
+  assert.equal(second.versionNumber, 1);
+  assert.equal(db.tables.quotation_versions.length, 1);
+  assert.equal(row.estado, 'cancelado');
+  assert.equal(second.message, `Hola\n\n${second.shareUrl}`);
+});
+
+test('only "Lo envié" records the quotation as sent; "No lo envié" leaves it unchanged', async () => {
+  const db = fakeDb();
+  const api = actions(db);
+  const created = await api.saveQuotation(JSON.stringify(payload()));
+  const prepared = await api.prepareWhatsappShare({}, shareForm({ id: created.quotationId, telefono: '+50499999999', mensaje: '{enlace}' }));
+  db.tables.quotation_shares[0].estado = 'preparado';
+  const cancelled = await api.confirmWhatsappShare({}, shareForm({ id: created.quotationId, share_id: prepared.shareId, resultado: 'no' }));
+  assert.equal(cancelled.done, 'cancelado');
+  assert.equal(db.tables.quotations[0].estado, 'borrador');
+  const again = await api.prepareWhatsappShare({}, shareForm({ id: created.quotationId, telefono: '+50499999999', mensaje: '{enlace}' }));
+  db.tables.quotation_shares[1].estado = 'preparado';
+  const sent = await api.confirmWhatsappShare({}, shareForm({ id: created.quotationId, share_id: again.shareId, resultado: 'si' }));
+  assert.equal(sent.done, 'confirmado');
+  assert.deepEqual([db.tables.quotations[0].estado, db.tables.quotations[0].sent_version_id], ['enviada', db.tables.quotation_versions[0].id]);
+  assert.equal((await api.confirmWhatsappShare({}, shareForm({ id: created.quotationId, share_id: again.shareId, resultado: 'si' }))).done, 'confirmado');
+});
+
+test('an accepted quotation cannot be shared again', async () => {
+  const db = fakeDb();
+  const api = actions(db);
+  const created = await api.saveQuotation(JSON.stringify(payload()));
+  db.tables.quotations[0].estado = 'aceptada';
+  assert.match((await api.prepareWhatsappShare({}, shareForm({ id: created.quotationId, telefono: '+50499999999', mensaje: '{enlace}' }))).error, /cree una enmienda/);
+  assert.equal(db.tables.quotation_shares.length, 0);
+});
+
+test('share message, link and expiry rules', () => {
+  const message = shareModule.defaultShareMessage({ nombre: 'Ana Pérez', codigo: 'COT-1', destino: 'Miami' });
+  assert.match(message, /^Buen día, Ana Pérez\. Le compartimos su cotización COT-1 de viatour para Miami\./);
+  assert.ok(message.includes('{enlace}'));
+  assert.ok(!/[\u{1F300}-\u{1FAFF}☀-➿]/u.test(message), 'no emojis');
+  assert.equal(shareModule.composeShareMessage('A\r\n{enlace}\u0007', 'https://x'), 'A\nhttps://x');
+  const now = Date.parse('2026-10-23T12:00:00Z');
+  assert.equal(shareModule.shareExpiry('2026-10-30T05:59:00Z', now).toISOString(), '2026-10-30T05:59:00.000Z');
+  assert.equal(shareModule.shareExpiry('2027-06-01T00:00:00Z', now).toISOString(), '2026-12-22T12:00:00.000Z');
+  const { token, hash } = shareModule.newShareToken();
+  assert.ok(shareModule.validShareToken(token) && /^[0-9a-f]{64}$/.test(hash));
+  assert.ok(!shareModule.validShareToken('../../etc') && !shareModule.validShareToken(`${token}x`));
+  assert.equal(shareModule.shareOrigin('evil.example/../x'), 'https://miviatour.com');
 });
