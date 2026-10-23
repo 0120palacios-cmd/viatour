@@ -1,5 +1,5 @@
 -- viatour production schema snapshot (public + storage policies). Structure only: no rows, no secrets.
--- Generated from a READ ONLY metadata query at 2026-10-23T15:15:37.637517+00:00 (PostgreSQL 17.6).
+-- Generated from a READ ONLY metadata query at 2026-10-23T17:16:10.81632+00:00 (PostgreSQL 17.6).
 -- Migration history table: none (schema is managed by reviewed files in docs/sql).
 -- Reference only. Do NOT run against production. Order: types, sequences, tables, keys, indexes, views, functions, triggers, RLS, grants, storage.
 
@@ -1462,107 +1462,251 @@ alter table public.trip_service_requests enable row level security;
 create policy trip_service_requests_admin_select on public.trip_service_requests as permissive for select to authenticated using (is_admin());
 create policy trip_service_requests_admin_update on public.trip_service_requests as permissive for update to authenticated using (is_admin()) with check ((is_admin() AND (handled_by = auth.uid())));
 
--- Table privileges for the API roles (Supabase defaults included).
+-- Table and view privileges for the API roles, exactly as in production.
+revoke all on public.admins from anon, authenticated, service_role;
 grant delete, insert, references, select, trigger, truncate, update on public.admins to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.admins to service_role;
+revoke all on public.airline_catalog from anon, authenticated, service_role;
 grant delete, insert, references, select, trigger, truncate, update on public.airline_catalog to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.airline_catalog to service_role;
+revoke all on public.airline_fare_presets from anon, authenticated, service_role;
 grant delete, insert, references, select, trigger, truncate, update on public.airline_fare_presets to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.airline_fare_presets to service_role;
+revoke all on public.blog_posts from anon, authenticated, service_role;
 grant select on public.blog_posts to anon;
 grant delete, insert, references, select, trigger, truncate, update on public.blog_posts to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.blog_posts to service_role;
+revoke all on public.customers from anon, authenticated, service_role;
 grant delete, insert, references, select, trigger, truncate, update on public.customers to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.customers to service_role;
+revoke all on public.destinations from anon, authenticated, service_role;
 grant select on public.destinations to anon;
 grant delete, insert, references, select, trigger, truncate, update on public.destinations to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.destinations to service_role;
+revoke all on public.faqs from anon, authenticated, service_role;
 grant select on public.faqs to anon;
 grant delete, insert, references, select, trigger, truncate, update on public.faqs to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.faqs to service_role;
+revoke all on public.hotel_catalog from anon, authenticated, service_role;
 grant delete, insert, references, select, trigger, truncate, update on public.hotel_catalog to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.hotel_catalog to service_role;
+revoke all on public.invoices from anon, authenticated, service_role;
 grant delete, insert, references, select, trigger, truncate, update on public.invoices to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.invoices to service_role;
+revoke all on public.leads from anon, authenticated, service_role;
 grant delete, insert, references, select, trigger, truncate, update on public.leads to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.leads to service_role;
+revoke all on public.newsletter_subscribers from anon, authenticated, service_role;
 grant delete, insert, references, select, trigger, truncate, update on public.newsletter_subscribers to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.newsletter_subscribers to service_role;
+revoke all on public.packages from anon, authenticated, service_role;
 grant select on public.packages to anon;
 grant delete, insert, references, select, trigger, truncate, update on public.packages to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.packages to service_role;
+revoke all on public.payment_receipts from anon, authenticated, service_role;
 grant select on public.payment_receipts to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.payment_receipts to service_role;
+revoke all on public.payment_recording_requests from anon, authenticated, service_role;
 grant select on public.payment_recording_requests to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.payment_recording_requests to service_role;
+revoke all on public.payments from anon, authenticated, service_role;
 grant delete, insert, references, select, trigger, truncate, update on public.payments to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.payments to service_role;
+revoke all on public.portal_otps from anon, authenticated, service_role;
 grant delete, insert, references, select, trigger, truncate, update on public.portal_otps to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.portal_otps to service_role;
+revoke all on public.promo_spins from anon, authenticated, service_role;
 grant delete, insert, references, select, trigger, truncate, update on public.promo_spins to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.promo_spins to service_role;
+revoke all on public.quotation_items from anon, authenticated, service_role;
 grant delete, insert, references, select, trigger, truncate, update on public.quotation_items to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.quotation_items to service_role;
+revoke all on public.quotation_versions from anon, authenticated, service_role;
 grant delete, insert, references, select, trigger, truncate, update on public.quotation_versions to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.quotation_versions to service_role;
+revoke all on public.quotations from anon, authenticated, service_role;
 grant delete, insert, references, select, trigger, truncate, update on public.quotations to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.quotations to service_role;
+revoke all on public.rate_limits from anon, authenticated, service_role;
 grant delete, insert, references, select, trigger, truncate, update on public.rate_limits to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.rate_limits to service_role;
+revoke all on public.reservation_items from anon, authenticated, service_role;
 grant delete, insert, references, select, trigger, truncate, update on public.reservation_items to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.reservation_items to service_role;
+revoke all on public.reservation_message_attachments from anon, authenticated, service_role;
 grant select on public.reservation_message_attachments to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.reservation_message_attachments to service_role;
+revoke all on public.reservation_messages from anon, authenticated, service_role;
 grant select on public.reservation_messages to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.reservation_messages to service_role;
+revoke all on public.reservation_travel from anon, authenticated, service_role;
 grant select on public.reservation_travel to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.reservation_travel to service_role;
+revoke all on public.reservation_travel_history from anon, authenticated, service_role;
 grant select on public.reservation_travel_history to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.reservation_travel_history to service_role;
+revoke all on public.reservations from anon, authenticated, service_role;
 grant delete, insert, references, select, trigger, truncate, update on public.reservations to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.reservations to service_role;
+revoke all on public.review_invitations from anon, authenticated, service_role;
 grant delete, insert, references, select, trigger, truncate, update on public.review_invitations to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.review_invitations to service_role;
+revoke all on public.reviews from anon, authenticated, service_role;
 grant delete, insert, references, select, trigger, truncate, update on public.reviews to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.reviews to service_role;
+revoke all on public.service_catalog from anon, authenticated, service_role;
 grant delete, insert, references, select, trigger, truncate, update on public.service_catalog to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.service_catalog to service_role;
+revoke all on public.support_tickets from anon, authenticated, service_role;
 grant delete, insert, references, select, trigger, truncate, update on public.support_tickets to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.support_tickets to service_role;
+revoke all on public.travel_deliveries from anon, authenticated, service_role;
 grant insert, select, update on public.travel_deliveries to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.travel_deliveries to service_role;
+revoke all on public.trip_feedback from anon, authenticated, service_role;
 grant select on public.trip_feedback to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.trip_feedback to service_role;
+revoke all on public.trip_service_requests from anon, authenticated, service_role;
 grant select on public.trip_service_requests to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.trip_service_requests to service_role;
+revoke all on public.reviews_publicas from anon, authenticated, service_role;
+grant select on public.reviews_publicas to anon;
+grant select, trigger on public.reviews_publicas to authenticated;
+grant delete, insert, references, select, trigger, truncate, update on public.reviews_publicas to service_role;
+revoke all on public.reviews_resumen from anon, authenticated, service_role;
+grant select on public.reviews_resumen to anon;
+grant select, trigger on public.reviews_resumen to authenticated;
+grant delete, insert, references, select, trigger, truncate, update on public.reviews_resumen to service_role;
 
--- Function execute privileges (proacl).
--- accept_quotation(p_id uuid, p_version_id uuid, p_notes text): postgres=X/postgres authenticated=X/postgres service_role=X/postgres
--- catalog_audit(): =X/postgres postgres=X/postgres anon=X/postgres authenticated=X/postgres service_role=X/postgres
--- convert_accepted_quotation(p_id uuid, p_version_id uuid, p_prereservation boolean, p_lastname text): postgres=X/postgres authenticated=X/postgres service_role=X/postgres
--- convert_quotation_with_passengers(p_id uuid, p_version_id uuid, p_prereservation boolean, p_lastname text, p_public jsonb, p_encrypted text): postgres=X/postgres authenticated=X/postgres service_role=X/postgres · SECURITY DEFINER
--- create_payment_receipt(p_payment uuid): postgres=X/postgres authenticated=X/postgres service_role=X/postgres · SECURITY DEFINER
--- create_reservation_invoice(p_id uuid, p_due date): postgres=X/postgres authenticated=X/postgres service_role=X/postgres
--- guard_receipted_payment(): =X/postgres postgres=X/postgres anon=X/postgres authenticated=X/postgres service_role=X/postgres
--- guard_supplier_ticketing(): =X/postgres postgres=X/postgres anon=X/postgres authenticated=X/postgres service_role=X/postgres
--- guard_travel_delivery(): =X/postgres postgres=X/postgres anon=X/postgres authenticated=X/postgres service_role=X/postgres
--- guard_travel_passenger_counts(): =X/postgres postgres=X/postgres anon=X/postgres authenticated=X/postgres service_role=X/postgres · SECURITY DEFINER
--- hit_rate_limit(p_key text, p_max integer, p_window_seconds integer): =X/postgres postgres=X/postgres service_role=X/postgres · SECURITY DEFINER
--- invoice_integrity_guard(): =X/postgres postgres=X/postgres anon=X/postgres authenticated=X/postgres service_role=X/postgres
--- is_admin(): =X/postgres postgres=X/postgres anon=X/postgres authenticated=X/postgres service_role=X/postgres · SECURITY DEFINER
--- post_customer_message(p_reservation_id uuid, p_topic text, p_body text, p_path text, p_name text, p_mime text, p_size integer): postgres=X/postgres service_role=X/postgres
--- purge_reservation_travel_private(p_id uuid, p_revision integer, p_encrypted text): postgres=X/postgres authenticated=X/postgres service_role=X/postgres · SECURITY DEFINER
--- quotation_items_lock_accepted(): =X/postgres postgres=X/postgres anon=X/postgres authenticated=X/postgres service_role=X/postgres
--- quotation_versions_immutable(): =X/postgres postgres=X/postgres anon=X/postgres authenticated=X/postgres service_role=X/postgres
--- quotations_lock_accepted(): =X/postgres postgres=X/postgres anon=X/postgres authenticated=X/postgres service_role=X/postgres
--- record_reservation_payment(p_request uuid, p_reservation uuid, p_amount numeric, p_currency text, p_method text, p_date date, p_reference text, p_notes text): postgres=X/postgres authenticated=X/postgres service_role=X/postgres · SECURITY DEFINER
--- redeem_promo_spin(p_code text, p_segments jsonb): postgres=X/postgres service_role=X/postgres · SECURITY DEFINER
--- replace_quotation_items(p_quotation_id uuid, p_items jsonb): postgres=X/postgres authenticated=X/postgres service_role=X/postgres
--- reservation_commercial_guard(): =X/postgres postgres=X/postgres anon=X/postgres authenticated=X/postgres service_role=X/postgres
--- reservation_items_commercial_guard(): =X/postgres postgres=X/postgres anon=X/postgres authenticated=X/postgres service_role=X/postgres
--- save_reservation_record(p_id uuid, p_values jsonb, p_items jsonb): postgres=X/postgres authenticated=X/postgres service_role=X/postgres
--- save_reservation_travel(p_id uuid, p_revision integer, p_public jsonb, p_encrypted text, p_context uuid): postgres=X/postgres authenticated=X/postgres service_role=X/postgres · SECURITY DEFINER
--- set_updated_at(): =X/postgres postgres=X/postgres anon=X/postgres authenticated=X/postgres service_role=X/postgres
+-- Function execute privileges (from proacl; "=X" is PUBLIC).
+-- accept_quotation(p_id uuid, p_version_id uuid, p_notes text)
+revoke all on function public.accept_quotation(p_id uuid, p_version_id uuid, p_notes text) from public, anon, authenticated, service_role;
+grant execute on function public.accept_quotation(p_id uuid, p_version_id uuid, p_notes text) to authenticated;
+grant execute on function public.accept_quotation(p_id uuid, p_version_id uuid, p_notes text) to service_role;
+-- catalog_audit()
+revoke all on function public.catalog_audit() from public, anon, authenticated, service_role;
+grant execute on function public.catalog_audit() to public;
+grant execute on function public.catalog_audit() to anon;
+grant execute on function public.catalog_audit() to authenticated;
+grant execute on function public.catalog_audit() to service_role;
+-- convert_accepted_quotation(p_id uuid, p_version_id uuid, p_prereservation boolean, p_lastname text)
+revoke all on function public.convert_accepted_quotation(p_id uuid, p_version_id uuid, p_prereservation boolean, p_lastname text) from public, anon, authenticated, service_role;
+grant execute on function public.convert_accepted_quotation(p_id uuid, p_version_id uuid, p_prereservation boolean, p_lastname text) to authenticated;
+grant execute on function public.convert_accepted_quotation(p_id uuid, p_version_id uuid, p_prereservation boolean, p_lastname text) to service_role;
+-- convert_quotation_with_passengers(p_id uuid, p_version_id uuid, p_prereservation boolean, p_lastname text, p_public jsonb, p_encrypted text) · SECURITY DEFINER
+revoke all on function public.convert_quotation_with_passengers(p_id uuid, p_version_id uuid, p_prereservation boolean, p_lastname text, p_public jsonb, p_encrypted text) from public, anon, authenticated, service_role;
+grant execute on function public.convert_quotation_with_passengers(p_id uuid, p_version_id uuid, p_prereservation boolean, p_lastname text, p_public jsonb, p_encrypted text) to authenticated;
+grant execute on function public.convert_quotation_with_passengers(p_id uuid, p_version_id uuid, p_prereservation boolean, p_lastname text, p_public jsonb, p_encrypted text) to service_role;
+-- create_payment_receipt(p_payment uuid) · SECURITY DEFINER
+revoke all on function public.create_payment_receipt(p_payment uuid) from public, anon, authenticated, service_role;
+grant execute on function public.create_payment_receipt(p_payment uuid) to authenticated;
+grant execute on function public.create_payment_receipt(p_payment uuid) to service_role;
+-- create_reservation_invoice(p_id uuid, p_due date)
+revoke all on function public.create_reservation_invoice(p_id uuid, p_due date) from public, anon, authenticated, service_role;
+grant execute on function public.create_reservation_invoice(p_id uuid, p_due date) to authenticated;
+grant execute on function public.create_reservation_invoice(p_id uuid, p_due date) to service_role;
+-- guard_receipted_payment()
+revoke all on function public.guard_receipted_payment() from public, anon, authenticated, service_role;
+grant execute on function public.guard_receipted_payment() to public;
+grant execute on function public.guard_receipted_payment() to anon;
+grant execute on function public.guard_receipted_payment() to authenticated;
+grant execute on function public.guard_receipted_payment() to service_role;
+-- guard_supplier_ticketing()
+revoke all on function public.guard_supplier_ticketing() from public, anon, authenticated, service_role;
+grant execute on function public.guard_supplier_ticketing() to public;
+grant execute on function public.guard_supplier_ticketing() to anon;
+grant execute on function public.guard_supplier_ticketing() to authenticated;
+grant execute on function public.guard_supplier_ticketing() to service_role;
+-- guard_travel_delivery()
+revoke all on function public.guard_travel_delivery() from public, anon, authenticated, service_role;
+grant execute on function public.guard_travel_delivery() to public;
+grant execute on function public.guard_travel_delivery() to anon;
+grant execute on function public.guard_travel_delivery() to authenticated;
+grant execute on function public.guard_travel_delivery() to service_role;
+-- guard_travel_passenger_counts() · SECURITY DEFINER
+revoke all on function public.guard_travel_passenger_counts() from public, anon, authenticated, service_role;
+grant execute on function public.guard_travel_passenger_counts() to public;
+grant execute on function public.guard_travel_passenger_counts() to anon;
+grant execute on function public.guard_travel_passenger_counts() to authenticated;
+grant execute on function public.guard_travel_passenger_counts() to service_role;
+-- hit_rate_limit(p_key text, p_max integer, p_window_seconds integer) · SECURITY DEFINER
+revoke all on function public.hit_rate_limit(p_key text, p_max integer, p_window_seconds integer) from public, anon, authenticated, service_role;
+grant execute on function public.hit_rate_limit(p_key text, p_max integer, p_window_seconds integer) to public;
+grant execute on function public.hit_rate_limit(p_key text, p_max integer, p_window_seconds integer) to service_role;
+-- invoice_integrity_guard()
+revoke all on function public.invoice_integrity_guard() from public, anon, authenticated, service_role;
+grant execute on function public.invoice_integrity_guard() to public;
+grant execute on function public.invoice_integrity_guard() to anon;
+grant execute on function public.invoice_integrity_guard() to authenticated;
+grant execute on function public.invoice_integrity_guard() to service_role;
+-- is_admin() · SECURITY DEFINER
+revoke all on function public.is_admin() from public, anon, authenticated, service_role;
+grant execute on function public.is_admin() to public;
+grant execute on function public.is_admin() to anon;
+grant execute on function public.is_admin() to authenticated;
+grant execute on function public.is_admin() to service_role;
+-- post_customer_message(p_reservation_id uuid, p_topic text, p_body text, p_path text, p_name text, p_mime text, p_size integer)
+revoke all on function public.post_customer_message(p_reservation_id uuid, p_topic text, p_body text, p_path text, p_name text, p_mime text, p_size integer) from public, anon, authenticated, service_role;
+grant execute on function public.post_customer_message(p_reservation_id uuid, p_topic text, p_body text, p_path text, p_name text, p_mime text, p_size integer) to service_role;
+-- purge_reservation_travel_private(p_id uuid, p_revision integer, p_encrypted text) · SECURITY DEFINER
+revoke all on function public.purge_reservation_travel_private(p_id uuid, p_revision integer, p_encrypted text) from public, anon, authenticated, service_role;
+grant execute on function public.purge_reservation_travel_private(p_id uuid, p_revision integer, p_encrypted text) to authenticated;
+grant execute on function public.purge_reservation_travel_private(p_id uuid, p_revision integer, p_encrypted text) to service_role;
+-- quotation_items_lock_accepted()
+revoke all on function public.quotation_items_lock_accepted() from public, anon, authenticated, service_role;
+grant execute on function public.quotation_items_lock_accepted() to public;
+grant execute on function public.quotation_items_lock_accepted() to anon;
+grant execute on function public.quotation_items_lock_accepted() to authenticated;
+grant execute on function public.quotation_items_lock_accepted() to service_role;
+-- quotation_versions_immutable()
+revoke all on function public.quotation_versions_immutable() from public, anon, authenticated, service_role;
+grant execute on function public.quotation_versions_immutable() to public;
+grant execute on function public.quotation_versions_immutable() to anon;
+grant execute on function public.quotation_versions_immutable() to authenticated;
+grant execute on function public.quotation_versions_immutable() to service_role;
+-- quotations_lock_accepted()
+revoke all on function public.quotations_lock_accepted() from public, anon, authenticated, service_role;
+grant execute on function public.quotations_lock_accepted() to public;
+grant execute on function public.quotations_lock_accepted() to anon;
+grant execute on function public.quotations_lock_accepted() to authenticated;
+grant execute on function public.quotations_lock_accepted() to service_role;
+-- record_reservation_payment(p_request uuid, p_reservation uuid, p_amount numeric, p_currency text, p_method text, p_date date, p_reference text, p_notes text) · SECURITY DEFINER
+revoke all on function public.record_reservation_payment(p_request uuid, p_reservation uuid, p_amount numeric, p_currency text, p_method text, p_date date, p_reference text, p_notes text) from public, anon, authenticated, service_role;
+grant execute on function public.record_reservation_payment(p_request uuid, p_reservation uuid, p_amount numeric, p_currency text, p_method text, p_date date, p_reference text, p_notes text) to authenticated;
+grant execute on function public.record_reservation_payment(p_request uuid, p_reservation uuid, p_amount numeric, p_currency text, p_method text, p_date date, p_reference text, p_notes text) to service_role;
+-- redeem_promo_spin(p_code text, p_segments jsonb) · SECURITY DEFINER
+revoke all on function public.redeem_promo_spin(p_code text, p_segments jsonb) from public, anon, authenticated, service_role;
+grant execute on function public.redeem_promo_spin(p_code text, p_segments jsonb) to service_role;
+-- replace_quotation_items(p_quotation_id uuid, p_items jsonb)
+revoke all on function public.replace_quotation_items(p_quotation_id uuid, p_items jsonb) from public, anon, authenticated, service_role;
+grant execute on function public.replace_quotation_items(p_quotation_id uuid, p_items jsonb) to authenticated;
+grant execute on function public.replace_quotation_items(p_quotation_id uuid, p_items jsonb) to service_role;
+-- reservation_commercial_guard()
+revoke all on function public.reservation_commercial_guard() from public, anon, authenticated, service_role;
+grant execute on function public.reservation_commercial_guard() to public;
+grant execute on function public.reservation_commercial_guard() to anon;
+grant execute on function public.reservation_commercial_guard() to authenticated;
+grant execute on function public.reservation_commercial_guard() to service_role;
+-- reservation_items_commercial_guard()
+revoke all on function public.reservation_items_commercial_guard() from public, anon, authenticated, service_role;
+grant execute on function public.reservation_items_commercial_guard() to public;
+grant execute on function public.reservation_items_commercial_guard() to anon;
+grant execute on function public.reservation_items_commercial_guard() to authenticated;
+grant execute on function public.reservation_items_commercial_guard() to service_role;
+-- save_reservation_record(p_id uuid, p_values jsonb, p_items jsonb)
+revoke all on function public.save_reservation_record(p_id uuid, p_values jsonb, p_items jsonb) from public, anon, authenticated, service_role;
+grant execute on function public.save_reservation_record(p_id uuid, p_values jsonb, p_items jsonb) to authenticated;
+grant execute on function public.save_reservation_record(p_id uuid, p_values jsonb, p_items jsonb) to service_role;
+-- save_reservation_travel(p_id uuid, p_revision integer, p_public jsonb, p_encrypted text, p_context uuid) · SECURITY DEFINER
+revoke all on function public.save_reservation_travel(p_id uuid, p_revision integer, p_public jsonb, p_encrypted text, p_context uuid) from public, anon, authenticated, service_role;
+grant execute on function public.save_reservation_travel(p_id uuid, p_revision integer, p_public jsonb, p_encrypted text, p_context uuid) to authenticated;
+grant execute on function public.save_reservation_travel(p_id uuid, p_revision integer, p_public jsonb, p_encrypted text, p_context uuid) to service_role;
+-- set_updated_at()
+revoke all on function public.set_updated_at() from public, anon, authenticated, service_role;
+grant execute on function public.set_updated_at() to public;
+grant execute on function public.set_updated_at() to anon;
+grant execute on function public.set_updated_at() to authenticated;
+grant execute on function public.set_updated_at() to service_role;
 
 -- Storage buckets.
 -- blog-images: PUBLIC, limit 5242880, types image/jpeg image/png image/webp

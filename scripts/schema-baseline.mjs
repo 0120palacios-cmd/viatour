@@ -75,16 +75,28 @@ for (const table of B.tables) {
 }
 line("");
 
-line("-- Table privileges for the API roles (Supabase defaults included).");
-for (const table of B.tables) {
+// Privileges are reset first: a new Supabase project grants everything to the API roles by default,
+// while production has narrower grants.
+line("-- Table and view privileges for the API roles, exactly as in production.");
+for (const relation of [...B.tables, ...(B.views ?? [])]) {
+  line(`revoke all on public.${q(relation.name)} from anon, authenticated, service_role;`);
   const byRole = {};
-  for (const grant of table.grants ?? []) (byRole[grant.grantee] ??= []).push(grant.privilege);
-  for (const [role, privileges] of Object.entries(byRole)) line(`grant ${privileges.join(", ").toLowerCase()} on public.${q(table.name)} to ${role};`);
+  for (const grant of relation.grants ?? []) (byRole[grant.grantee] ??= []).push(grant.privilege);
+  for (const [role, privileges] of Object.entries(byRole)) line(`grant ${privileges.join(", ").toLowerCase()} on public.${q(relation.name)} to ${role};`);
 }
 line("");
 
-line("-- Function execute privileges (proacl).");
-for (const fn of B.functions) comment(`${fn.name}(${fn.args}): ${(fn.acl ?? ["default (PUBLIC)"]).join(" ")}${fn.security_definer ? " · SECURITY DEFINER" : ""}`);
+line("-- Function execute privileges (from proacl; \"=X\" is PUBLIC).");
+for (const fn of B.functions) {
+  comment(`${fn.name}(${fn.args})${fn.security_definer ? " · SECURITY DEFINER" : ""}`);
+  line(`revoke all on function public.${q(fn.name)}(${fn.args}) from public, anon, authenticated, service_role;`);
+  const acl = fn.acl ?? ["=X/postgres"]; // null proacl means the default: PUBLIC may execute
+  for (const entry of acl) {
+    const grantee = entry.split("=")[0];
+    if (grantee === "postgres" || !entry.split("=")[1]?.split("/")[0]?.includes("X")) continue;
+    line(`grant execute on function public.${q(fn.name)}(${fn.args}) to ${grantee || "public"};`);
+  }
+}
 line("");
 
 line("-- Storage buckets.");
