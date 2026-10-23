@@ -1,18 +1,29 @@
 "use client";
 import { useActionState,useState } from "react";
 import { saveTravel } from "@/app/admin/reservas/travel-actions";
-import { emptyTravel,emptyPassenger,legalName,type Passenger,type TravelOperations } from "@/lib/travel-operations";
+import { emptyTravel,emptyPassenger,legalName,type Passenger,type PublicTravel,type TravelOperations } from "@/lib/travel-operations";
 import { Button } from "@/components/ui/button";
 import { destinationCountryMap } from "@/lib/requirements/country-map";
 const input="mt-1 min-h-11 w-full rounded-btn border border-line bg-canvas px-3 py-2";
 const labels:Partial<Record<keyof Passenger,string>>={firstName:"Primer nombre",middleName:"Otros nombres",lastName:"Apellidos",birthDate:"Fecha de nacimiento",nationality:"Nacionalidad",sex:"Sexo requerido por el proveedor",documentNumber:"Número de documento",issuingCountry:"País emisor",expiryDate:"Vencimiento del documento",phone:"Teléfono",email:"Correo",emergencyContact:"Contacto de emergencia",assistance:"Asistencia solicitada",notes:"Notas internas del viajero"};
-export function TravelEditor({id,initial,revision,available,hasFlights=true}:{id:string;initial:TravelOperations|null;revision:number;available:boolean;hasFlights?:boolean}){
- const [value,setValue]=useState(initial??emptyTravel()),[show,setShow]=useState(false);
+const issuanceRank={pendiente:0,en_emision:1,emitida:2} as const;
+// When the encrypted copy is behind what the traveller sees (an issuance recorded outside this form),
+// start from the visible issuance and tickets, so saving brings both copies together instead of
+// taking them back. Passengers and their private data always come from the encrypted copy.
+function reconcile(initial:TravelOperations|null,visible:PublicTravel|null){
+ const base=initial??emptyTravel();
+ if(!visible||issuanceRank[visible.status]<issuanceRank[base.status]||(visible.status===base.status&&visible.tickets.length<=base.tickets.length))return {value:base,behind:false};
+ return {value:{...base,status:visible.status,tickets:visible.tickets.map(t=>({...t})),confirmedAt:visible.confirmedAt||base.confirmedAt,estimateApproved:visible.estimateApproved,estimateMinHours:visible.estimateMinHours??base.estimateMinHours,estimateMaxHours:visible.estimateMaxHours??base.estimateMaxHours,reviewed:visible.reviewed||base.reviewed},behind:true};
+}
+export function TravelEditor({id,initial,visible=null,revision,available,hasFlights=true}:{id:string;initial:TravelOperations|null;visible?:PublicTravel|null;revision:number;available:boolean;hasFlights?:boolean}){
+ const [start]=useState(()=>reconcile(initial,visible));
+ const [value,setValue]=useState(start.value),[show,setShow]=useState(false);
  const [state,action,pending]=useActionState(saveTravel,{});
  const update=(index:number,key:keyof Passenger,v:string|boolean)=>setValue(old=>({...old,passengers:old.passengers.map((p,i)=>i===index?{...p,[key]:v}:p)}));
  function field(p:Passenger,i:number,key:keyof Passenger,type="text") {return <label key={key} className="t-small">{labels[key]}<input className={input} type={type} list={key==="nationality"||key==="issuingCountry"?"travel-country-options":undefined} value={String(p[key])} maxLength={key==="notes"?1000:250} autoComplete="off" onChange={e=>update(i,key,e.target.value)} /></label>;}
  return <section id="pasajeros" className="scroll-mt-6 rounded-panel border border-line bg-canvas p-4 sm:p-6"><h2 className="t-h2">Pasajeros y emisión</h2><p className="mt-2 text-ink-soft">Complete los nombres como figuran en el documento. Solicite identificación únicamente cuando el servicio la requiera. Los datos privados se guardan cifrados y no se incluyen en el itinerario.</p>
  {!available?<p role="alert" className="mt-4 text-error">Expediente no disponible. Revise la migración de operaciones de viaje.</p>:<form action={action} className="mt-6 space-y-6" onSubmit={e=>{if(!window.confirm("¿Confirma que revisó los datos y que las referencias registradas corresponden a evidencia real del proveedor?")) e.preventDefault();}}>
+ {start.behind&&!state.success?<p role="status" className="rounded-card border border-line bg-brand-tint p-4 text-ink">La copia privada del expediente estaba desactualizada. Se cargaron el estado de emisión y los boletos que el cliente ya ve en Mi viaje. Revise que los boletos correspondan a cada pasajero y guarde para sincronizar ambas copias.</p>:null}
  <input type="hidden" name="id" value={id}/><input type="hidden" name="revision" value={state.revision??revision}/><input type="hidden" name="payload" value={JSON.stringify(value)}/>
  <datalist id="travel-country-options">{Array.from(new Set(["HN",...Object.values(destinationCountryMap)])).sort().map(code=><option key={code} value={new Intl.DisplayNames(["es"],{type:"region"}).of(code)??code}/>)}</datalist>
  <label className="flex items-center gap-3"><input type="checkbox" checked={show} onChange={e=>setShow(e.target.checked)}/>Mostrar números de identificación en este formulario</label>
