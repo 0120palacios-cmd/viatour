@@ -116,3 +116,16 @@ SQL `docs/sql/quotation_shares.sql` (ensayo 8 de 8; **aplicado solo en staging**
 Verificado en el preview con staging: preparar, enlace de WhatsApp correcto, página del cliente, PDF, enlace alterado rechazado, «Lo envié» desde el historial, enlace desactivado. No verificado: «Compartir PDF» en un teléfono real (Android/iPhone).
 
 **Textos pendientes de aprobación del propietario:** el mensaje predeterminado de WhatsApp (`src/lib/quotation-share.ts`) y los textos de la página del cliente (`src/app/cotizacion/[token]/page.tsx`).
+
+## Paso 5: finanzas (2026-10-23)
+SQL `docs/sql/finance_ledger.sql` (ensayo 11 de 11; se aplica **después** de `quotation_integrity.sql`; **aplicado solo en staging**). Código en `admin-release` (`4bb2fb4`, `dbe7d8e`).
+
+- Devoluciones (hasta lo recibido) y reversos (un pago registrado por error, antes de tener recibo, sin dejar el neto en negativo) son filas nuevas negativas en `payments` con `tipo` y `motivo`. Todas las sumas existentes (saldo del panel, facturas, recibos, resumen diario y «Recibido» de Mi viaje) las descuentan sin cambiar el código del cliente. Idempotentes por solicitud.
+- Los pagos ya no se pueden editar ni borrar; las facturas y reservas ya no se pueden borrar (se anulan o cancelan). Recibos solo para pagos reales.
+- «Cancelar reserva»: lista de revisión con datos reales (pagado neto, facturas pendientes, proveedor, boletos emitidos), motivo obligatorio, anulación opcional de facturas no pagadas; las pagadas y los pagos se conservan. El formulario general ya no ofrece «Cancelada».
+- Aviso cuando una factura tiene un total distinto al de la reserva (por ejemplo, tras una enmienda). En producción marcará VT-7CC608B0 (548 frente a 578).
+- «Comparar copias» (solo lectura): expediente cifrado frente a lo que ve el cliente, por identificador de pasajero, y si «Guardar expediente revisado» se aceptaría. Solo funciona donde está la clave del expediente (producción, o Preview con su clave de prueba).
+
+Verificado en el preview con staging: aviso de factura desactualizada (578 frente a 600), devolución de 50 (pagado 250, saldo 350), reverso rechazado por dejar el neto en negativo, cancelación guiada con motivo y factura anulada. No verificado en pantalla: «Comparar copias» (las reservas de prueba no tienen expediente).
+
+**Decisiones del propietario pendientes para las dos reservas reales:** VT-7CC608B0, ¿578 o 548? VT-CCB2E6FD, ¿pasar a «confirmada»?
