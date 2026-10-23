@@ -88,3 +88,18 @@ El propietario decidió no publicar Mi viaje premium junto con la administració
 Verificación: 361 de 362 pruebas (la que falla, paquetes de Panamá, depende de fotos sin commit que solo existen en la carpeta principal y falla igual en `main`), typecheck y lint sin errores, 5 ensayos SQL, build de Vercel correcto. Preview: https://viatour-git-admin-release-miviatour.vercel.app (staging).
 
 Las 19 vistas previas antiguas (construidas con las variables de producción) se eliminaron el 2026-10-23 con autorización del propietario.
+
+## Paso 3: integridad de cotizaciones (2026-10-23)
+SQL `docs/sql/quotation_integrity.sql` (ensayo 12 de 12; **aplicado solo en staging**). Código en `admin-release` (`a4c703f`, `c7b6b79`).
+
+| Cambio | Verificación |
+|---|---|
+| Reenvío tras un envío fallido reutiliza la versión no entregada (mismo número, PDF y clave de idempotencia) si nada cambió y el medio es el mismo | Pruebas unitarias |
+| Rechazo con motivo obligatorio (columna, fecha y regla en la base) | Pruebas + preview en staging: motivo y fecha visibles |
+| Enmienda que reemplaza: al aceptarla, la original pasa a «Reemplazada por enmienda» y su reserva toma la nueva versión (total, servicios, fechas); pagos, facturas, pasajeros y acceso a Mi viaje no cambian; se rechaza con otra moneda o cliente, reserva cancelada o completada, o pagos mayores al nuevo total | Ensayo SQL + preview: Marta Flores 578 → 600, pago de 300 intacto, saldo 300 |
+| Una sola enmienda abierta por cotización | Preview: «Ya existe la enmienda … en curso» |
+| Copia y enmienda en una sola transacción (`create_quotation_copy`) | Ensayo SQL + pruebas |
+
+«Reemplazada» vive en `src/lib/admin-quotation-status.ts`: `quotation-types.ts` es compartido con el área del cliente congelada.
+
+Pendiente para pasos siguientes: la factura anterior conserva el total previo (578) tras una enmienda (paso de finanzas); en la cotización aceptada aún se muestran los paneles de envío (el servidor los rechaza); los enlaces «Abrir reserva» y «Ver versión aceptada» aparecen pegados.
