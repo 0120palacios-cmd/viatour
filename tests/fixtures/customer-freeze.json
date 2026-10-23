@@ -1,0 +1,409 @@
+{
+  "note": "Fingerprint of the approved customer experience. Regenerate only after owner approval: node scripts/customer-freeze.mjs --update",
+  "files": {
+    "data/panama-photo-credits.json": {
+      "owner": "shared",
+      "sha256": "1ba55cce90211d30"
+    },
+    "data/trip-photo-credits.json": {
+      "owner": "shared",
+      "sha256": "50b6becac57a8d48"
+    },
+    "src/app/api/mi-reserva/documentos/route.ts": {
+      "owner": "customer",
+      "sha256": "737044973a98d244"
+    },
+    "src/app/api/mi-reserva/facturas/[id]/pdf/route.ts": {
+      "owner": "customer",
+      "sha256": "0b1013ddd400d8be"
+    },
+    "src/app/api/mi-reserva/itinerario/route.ts": {
+      "owner": "customer",
+      "sha256": "bf9856951c292a02"
+    },
+    "src/app/api/mi-reserva/mensajes/adjuntos/[id]/route.ts": {
+      "owner": "customer",
+      "sha256": "95b8b166586361e8"
+    },
+    "src/app/api/mi-reserva/mensajes/route.ts": {
+      "owner": "customer",
+      "sha256": "4a840dbba583e7f4"
+    },
+    "src/app/api/mi-reserva/opinion/route.ts": {
+      "owner": "customer",
+      "sha256": "89bbc8e5db45b1f5"
+    },
+    "src/app/api/mi-reserva/pdf/route.ts": {
+      "owner": "customer",
+      "sha256": "8769547362e76d49"
+    },
+    "src/app/api/mi-reserva/recibos/[id]/route.ts": {
+      "owner": "customer",
+      "sha256": "cda36452a5006d6c"
+    },
+    "src/app/api/mi-reserva/servicios/route.ts": {
+      "owner": "customer",
+      "sha256": "e4f0006a0e511fd6"
+    },
+    "src/app/api/mi-reserva/tickets/route.ts": {
+      "owner": "customer",
+      "sha256": "9e44d8db6a8af343"
+    },
+    "src/app/mi-reserva/(portal)/loading.tsx": {
+      "owner": "customer",
+      "sha256": "652da1e91831ff2c"
+    },
+    "src/app/mi-reserva/(portal)/page.tsx": {
+      "owner": "customer",
+      "sha256": "1493becf638d016c"
+    },
+    "src/app/mi-reserva/[seccion]/page.tsx": {
+      "owner": "customer",
+      "sha256": "a67186a6ec96f308"
+    },
+    "src/app/mi-reserva/actions.ts": {
+      "owner": "customer",
+      "sha256": "7945f98d611af3c9"
+    },
+    "src/app/mi-reserva/error.tsx": {
+      "owner": "customer",
+      "sha256": "c1113990c3ecca16"
+    },
+    "src/app/mi-reserva/mensajes/page.tsx": {
+      "owner": "customer",
+      "sha256": "6b9899ccefea2772"
+    },
+    "src/components/layout/whatsapp-link.tsx": {
+      "owner": "shared",
+      "sha256": "351a33469bb30022"
+    },
+    "src/components/portal/access-form.tsx": {
+      "owner": "customer",
+      "sha256": "85c99b7b87227e92"
+    },
+    "src/components/portal/document-upload-form.tsx": {
+      "owner": "customer",
+      "sha256": "d398e268b42e2334"
+    },
+    "src/components/trip/copy-button.tsx": {
+      "owner": "customer",
+      "sha256": "f237cb5e8f4d44b8"
+    },
+    "src/components/trip/customer-links.ts": {
+      "owner": "customer",
+      "sha256": "fd79fbe86d887bc7"
+    },
+    "src/components/trip/flight-journey.tsx": {
+      "owner": "customer",
+      "sha256": "b772df9a262d3aff"
+    },
+    "src/components/trip/service-request.tsx": {
+      "owner": "customer",
+      "sha256": "84504aff8efe8ca3"
+    },
+    "src/components/trip/trip-chat.tsx": {
+      "owner": "customer",
+      "sha256": "3426038ba91dd235"
+    },
+    "src/components/trip/trip-destination-page.tsx": {
+      "owner": "customer",
+      "sha256": "d1389f33551dff44"
+    },
+    "src/components/trip/trip-feedback.tsx": {
+      "owner": "customer",
+      "sha256": "27473ff30bf79f9c"
+    },
+    "src/components/trip/trip-itinerary.tsx": {
+      "owner": "customer",
+      "sha256": "20c9e89cb118824a"
+    },
+    "src/components/trip/trip-overview.tsx": {
+      "owner": "customer",
+      "sha256": "82d1bd388654ff98"
+    },
+    "src/components/trip/trip-portal.tsx": {
+      "owner": "customer",
+      "sha256": "4242a4840640b4c4"
+    },
+    "src/components/trip/trip-records.tsx": {
+      "owner": "customer",
+      "sha256": "0c1083e887d2b20b"
+    },
+    "src/components/trip/trip-shell.tsx": {
+      "owner": "customer",
+      "sha256": "c8caf8370232a408"
+    },
+    "src/components/trip/trip-ui.tsx": {
+      "owner": "customer",
+      "sha256": "86b4100b546020f8"
+    },
+    "src/components/ui/button.tsx": {
+      "owner": "shared",
+      "sha256": "518ac0e426b83c7c"
+    },
+    "src/components/ui/input.tsx": {
+      "owner": "shared",
+      "sha256": "a9a1eb415ac123cb"
+    },
+    "src/i18n/config.ts": {
+      "owner": "shared",
+      "sha256": "cd124c78e94d9503"
+    },
+    "src/i18n/navigation.ts": {
+      "owner": "shared",
+      "sha256": "4aea5a92fb65d2dc"
+    },
+    "src/lib/airline-links.ts": {
+      "owner": "shared",
+      "sha256": "538079bbac5a76e2"
+    },
+    "src/lib/amount-words.ts": {
+      "owner": "shared",
+      "sha256": "67dae0a666bad6a8"
+    },
+    "src/lib/analytics.ts": {
+      "owner": "shared",
+      "sha256": "48d0293fe3d224ad"
+    },
+    "src/lib/attachment-image.ts": {
+      "owner": "shared",
+      "sha256": "e03259ec08586d72"
+    },
+    "src/lib/chat-attachments.ts": {
+      "owner": "shared",
+      "sha256": "6ece06a51ae2a477"
+    },
+    "src/lib/content-cache.ts": {
+      "owner": "shared",
+      "sha256": "b5cc0fed0c7059a6"
+    },
+    "src/lib/destination-guides.ts": {
+      "owner": "shared",
+      "sha256": "2503abef2e237a33"
+    },
+    "src/lib/destination-match.ts": {
+      "owner": "shared",
+      "sha256": "95bbd8f81c986ff3"
+    },
+    "src/lib/destinations.ts": {
+      "owner": "shared",
+      "sha256": "f4a5c1c1616bc3d6"
+    },
+    "src/lib/email-layout.ts": {
+      "owner": "shared",
+      "sha256": "576e6300fcf470ee"
+    },
+    "src/lib/flight-itinerary.ts": {
+      "owner": "shared",
+      "sha256": "beb5b8ca7926a7e8"
+    },
+    "src/lib/flight-reference.ts": {
+      "owner": "shared",
+      "sha256": "c0d7fde40e8e6b18"
+    },
+    "src/lib/invoice-pdf.tsx": {
+      "owner": "shared",
+      "sha256": "868118e676f81489"
+    },
+    "src/lib/invoice-query.ts": {
+      "owner": "shared",
+      "sha256": "41cf67cee54dc1d3"
+    },
+    "src/lib/itinerary-pdf.tsx": {
+      "owner": "shared",
+      "sha256": "2924c935e33c1559"
+    },
+    "src/lib/money.ts": {
+      "owner": "shared",
+      "sha256": "4caebae32189cc19"
+    },
+    "src/lib/navigation.ts": {
+      "owner": "shared",
+      "sha256": "377fddff520a9645"
+    },
+    "src/lib/notifications.ts": {
+      "owner": "shared",
+      "sha256": "4215e9f38a331dd4"
+    },
+    "src/lib/pdf-kit.ts": {
+      "owner": "shared",
+      "sha256": "37310bc432b22214"
+    },
+    "src/lib/photo-credits.ts": {
+      "owner": "shared",
+      "sha256": "8437483d663495e0"
+    },
+    "src/lib/portal-data.ts": {
+      "owner": "shared",
+      "sha256": "bdfea1450fbb91fd"
+    },
+    "src/lib/portal-documents.ts": {
+      "owner": "shared",
+      "sha256": "fa0719041f64c9c5"
+    },
+    "src/lib/portal-summary.ts": {
+      "owner": "shared",
+      "sha256": "2d52f001e70bd4fd"
+    },
+    "src/lib/portal.ts": {
+      "owner": "shared",
+      "sha256": "f9bf425a4fb8998a"
+    },
+    "src/lib/public-security.ts": {
+      "owner": "shared",
+      "sha256": "36383e748ce74697"
+    },
+    "src/lib/quotation-data.ts": {
+      "owner": "shared",
+      "sha256": "eea6f40b61b92d18"
+    },
+    "src/lib/quotation-details.ts": {
+      "owner": "shared",
+      "sha256": "6557ec90a435ad9e"
+    },
+    "src/lib/quotation-media.ts": {
+      "owner": "shared",
+      "sha256": "fb989121bbd62fca"
+    },
+    "src/lib/quotation-pdf.tsx": {
+      "owner": "shared",
+      "sha256": "fd445d71c968b1a7"
+    },
+    "src/lib/quotation-text.ts": {
+      "owner": "shared",
+      "sha256": "c2a11f3803b2f203"
+    },
+    "src/lib/quotation-types.ts": {
+      "owner": "shared",
+      "sha256": "b205020c89c59540"
+    },
+    "src/lib/quotation-validation.ts": {
+      "owner": "shared",
+      "sha256": "25bc07f1eb8e236b"
+    },
+    "src/lib/receipt-data.ts": {
+      "owner": "shared",
+      "sha256": "89df08129bebb3d1"
+    },
+    "src/lib/receipt-pdf.tsx": {
+      "owner": "shared",
+      "sha256": "3eefb554d5d8b8a0"
+    },
+    "src/lib/reservation-confirmation-pdf.tsx": {
+      "owner": "shared",
+      "sha256": "45314f0072e1132f"
+    },
+    "src/lib/reservation-data.ts": {
+      "owner": "shared",
+      "sha256": "40b80884b80012ea"
+    },
+    "src/lib/reservation-messages.ts": {
+      "owner": "shared",
+      "sha256": "f6c19ae9a07c56d8"
+    },
+    "src/lib/reservation-pdf.ts": {
+      "owner": "shared",
+      "sha256": "b9ef74b7dcc539b4"
+    },
+    "src/lib/reservation-types.ts": {
+      "owner": "shared",
+      "sha256": "aa9d415dd6e38e1e"
+    },
+    "src/lib/seo.ts": {
+      "owner": "shared",
+      "sha256": "8917b13c9cdca72d"
+    },
+    "src/lib/site-config.ts": {
+      "owner": "shared",
+      "sha256": "cef5eca7896b497b"
+    },
+    "src/lib/supabase/admin.ts": {
+      "owner": "shared",
+      "sha256": "6c35135a0ac02892"
+    },
+    "src/lib/supabase/public.ts": {
+      "owner": "shared",
+      "sha256": "bc043b89007fb3f5"
+    },
+    "src/lib/travel-calendar.ts": {
+      "owner": "shared",
+      "sha256": "bacc6ce0285caeb0"
+    },
+    "src/lib/travel-data.ts": {
+      "owner": "shared",
+      "sha256": "707afb05f4063634"
+    },
+    "src/lib/travel-download.ts": {
+      "owner": "shared",
+      "sha256": "7973b6b4514fb0b4"
+    },
+    "src/lib/travel-email.ts": {
+      "owner": "shared",
+      "sha256": "778edf7a3dc92183"
+    },
+    "src/lib/travel-operations.ts": {
+      "owner": "shared",
+      "sha256": "9d56284f71ced5e2"
+    },
+    "src/lib/travel-services.ts": {
+      "owner": "shared",
+      "sha256": "8a3178e7c14cf237"
+    },
+    "src/lib/travel-vault.ts": {
+      "owner": "shared",
+      "sha256": "30a8ea1b1ce770e5"
+    },
+    "src/lib/trip-chat.ts": {
+      "owner": "shared",
+      "sha256": "00a4dbfc8dbb2e62"
+    },
+    "src/lib/trip-checklist.ts": {
+      "owner": "shared",
+      "sha256": "144b620a1305097d"
+    },
+    "src/lib/trip-copy.ts": {
+      "owner": "shared",
+      "sha256": "a7905f2ccd12a952"
+    },
+    "src/lib/trip-data.ts": {
+      "owner": "shared",
+      "sha256": "595473605e16e145"
+    },
+    "src/lib/trip-destination.ts": {
+      "owner": "shared",
+      "sha256": "4ca81928c6a427ac"
+    },
+    "src/lib/trip-format.ts": {
+      "owner": "shared",
+      "sha256": "030cac509ad83cd2"
+    },
+    "src/lib/trip-model.ts": {
+      "owner": "shared",
+      "sha256": "42113b08de8d807a"
+    },
+    "src/lib/trip-offers.ts": {
+      "owner": "shared",
+      "sha256": "a1f405a086c8bc42"
+    },
+    "src/lib/trip-request-store.ts": {
+      "owner": "shared",
+      "sha256": "a30d4b70b58ba2cb"
+    },
+    "src/lib/trip-requests.ts": {
+      "owner": "shared",
+      "sha256": "64387e13287253d0"
+    },
+    "src/lib/trip-view.ts": {
+      "owner": "shared",
+      "sha256": "044f34c94167fc8a"
+    }
+  },
+  "messages": {
+    "es:trip": "48c5c32a111c9d8f",
+    "es:portal": "b47b40fea53f4600",
+    "es:v4.portal": "5fbb660101a62506",
+    "en:trip": "a55cd7a5c5d6f4e1",
+    "en:portal": "c46e8b462683ee77",
+    "en:v4.portal": "add5425a4ab2947e"
+  }
+}
