@@ -81,3 +81,10 @@ Datos de prueba: `docs/sql/staging_seed.sql` (solo staging; se niega a correr si
 | Convertir sin correo y registrar después un correo de acceso una sola vez (`conversion_without_email.sql`, 8 de 8 en PGlite) | SQL en staging; código hecho |
 | Protección del expediente: no volver atrás la emisión ni perder boletos que el cliente ya ve | **Bloqueado**: el sistema de permisos de Claude Code denegó la edición de `src/app/admin/reservas/travel-actions.ts`; requiere autorización del propietario |
 | Recuperación de envíos fallidos (F-M1), motivo de rechazo, enmienda que reemplaza, duplicado transaccional (F-M7) | Pendiente |
+
+## Ramas (paso 2, 2026-10-23)
+El propietario decidió no publicar Mi viaje premium junto con la administración. `admin-release` = `main` (lo que corre en producción) + solo los commits de administración; es la rama que se fusionará. El único conflicto (encabezado de la reserva) se resolvió conservando la versión de producción y añadiendo el formulario de correo de acceso. Los commits de administración no cambian ningún archivo del cliente ni traducciones; la huella del área del cliente se regeneró con aprobación del propietario sobre la versión de producción (66 archivos, 15 propios del cliente). `admin-overhaul` conserva Mi viaje premium hasta que el propietario decida publicarlo.
+
+Verificación: 361 de 362 pruebas (la que falla, paquetes de Panamá, depende de fotos sin commit que solo existen en la carpeta principal y falla igual en `main`), typecheck y lint sin errores, 5 ensayos SQL, build de Vercel correcto. Preview: https://viatour-git-admin-release-miviatour.vercel.app (staging).
+
+Las 19 vistas previas antiguas (construidas con las variables de producción) se eliminaron el 2026-10-23 con autorización del propietario.
