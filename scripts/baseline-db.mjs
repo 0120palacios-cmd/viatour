@@ -4,12 +4,19 @@
 // Used by the SQL rehearsal scripts (scripts/test-*-sql.mjs) so new migrations are tested against the
 // real schema instead of hand-written tables.
 import fs from "node:fs";
+import { execFileSync } from "node:child_process";
 import { PGlite } from "@electric-sql/pglite";
 
 export const ADMIN = "11111111-1111-4111-8111-111111111111";
 export const STAFF = "22222222-2222-4222-8222-222222222222";
 
-export async function baselineDb() {
+// The production snapshot as committed at a given revision, for rehearsals of migrations that are already
+// applied (their "before" state only exists in history).
+export function snapshotAt(revision) {
+  return execFileSync("git", ["show", `${revision}:docs/sql/000_baseline_schema.sql`], { encoding: "utf8", maxBuffer: 32 * 1024 * 1024 });
+}
+
+export async function baselineDb({ snapshot } = {}) {
   const db = new PGlite();
   await db.exec(`
     create role anon nologin; create role authenticated nologin; create role service_role nologin bypassrls;
@@ -26,7 +33,7 @@ export async function baselineDb() {
   `);
   // Function bodies are validated at call time, so creation order inside the snapshot does not matter.
   await db.exec("set check_function_bodies = off;");
-  await db.exec(fs.readFileSync(new URL("../docs/sql/000_baseline_schema.sql", import.meta.url), "utf8"));
+  await db.exec(snapshot ?? fs.readFileSync(new URL("../docs/sql/000_baseline_schema.sql", import.meta.url), "utf8"));
   await db.exec("set check_function_bodies = on;");
   await db.exec(`insert into public.admins (user_id) values ('${ADMIN}');`);
   // Supabase's default privileges: every new table, sequence and function in public is granted to the API
