@@ -93,6 +93,8 @@ export async function saveReservation(_: ReservationActionState, form: FormData)
   if (fecha_inicio && fecha_fin && fecha_fin < fecha_inicio) return { error: "La fecha final no puede ser anterior a la fecha inicial." };
   const current = await getAdminReservation(client, id);
   if (!current) return { error: "Reserva no encontrada." };
+  // Cancelling records a reason and reviews money and documents: it only happens in «Cancelar reserva».
+  if (estado === "cancelada" && current.reservation.estado !== "cancelada") return { error: "Para cancelar la reserva use «Cancelar reserva»: registra el motivo y revisa pagos y facturas." };
   const comision = clean(form.get("comision")), segmento = clean(form.get("segmento"));
   if (comision && (!amountPattern.test(comision) || Number(comision) > 10000000)) return { error: "Revise la comisión." };
   if (segmento && !leadSegments.includes(segmento as never)) return { error: "Segmento inválido." };

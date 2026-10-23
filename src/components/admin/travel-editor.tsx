@@ -1,20 +1,12 @@
 "use client";
 import { useActionState,useState } from "react";
 import { saveTravel } from "@/app/admin/reservas/travel-actions";
-import { emptyTravel,emptyPassenger,legalName,type Passenger,type PublicTravel,type TravelOperations } from "@/lib/travel-operations";
+import { emptyPassenger,legalName,type Passenger,type PublicTravel,type TravelOperations } from "@/lib/travel-operations";
+import { reconcile } from "@/lib/travel-compare";
 import { Button } from "@/components/ui/button";
 import { destinationCountryMap } from "@/lib/requirements/country-map";
 const input="mt-1 min-h-11 w-full rounded-btn border border-line bg-canvas px-3 py-2";
 const labels:Partial<Record<keyof Passenger,string>>={firstName:"Primer nombre",middleName:"Otros nombres",lastName:"Apellidos",birthDate:"Fecha de nacimiento",nationality:"Nacionalidad",sex:"Sexo requerido por el proveedor",documentNumber:"Número de documento",issuingCountry:"País emisor",expiryDate:"Vencimiento del documento",phone:"Teléfono",email:"Correo",emergencyContact:"Contacto de emergencia",assistance:"Asistencia solicitada",notes:"Notas internas del viajero"};
-const issuanceRank={pendiente:0,en_emision:1,emitida:2} as const;
-// When the encrypted copy is behind what the traveller sees (an issuance recorded outside this form),
-// start from the visible issuance and tickets, so saving brings both copies together instead of
-// taking them back. Passengers and their private data always come from the encrypted copy.
-function reconcile(initial:TravelOperations|null,visible:PublicTravel|null){
- const base=initial??emptyTravel();
- if(!visible||issuanceRank[visible.status]<issuanceRank[base.status]||(visible.status===base.status&&visible.tickets.length<=base.tickets.length))return {value:base,behind:false};
- return {value:{...base,status:visible.status,tickets:visible.tickets.map(t=>({...t})),confirmedAt:visible.confirmedAt||base.confirmedAt,estimateApproved:visible.estimateApproved,estimateMinHours:visible.estimateMinHours??base.estimateMinHours,estimateMaxHours:visible.estimateMaxHours??base.estimateMaxHours,reviewed:visible.reviewed||base.reviewed},behind:true};
-}
 export function TravelEditor({id,initial,visible=null,revision,available,hasFlights=true}:{id:string;initial:TravelOperations|null;visible?:PublicTravel|null;revision:number;available:boolean;hasFlights?:boolean}){
  const [start]=useState(()=>reconcile(initial,visible));
  const [value,setValue]=useState(start.value),[show,setShow]=useState(false);
