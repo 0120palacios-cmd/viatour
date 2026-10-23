@@ -103,3 +103,16 @@ SQL `docs/sql/quotation_integrity.sql` (ensayo 12 de 12; **aplicado solo en stag
 «Reemplazada» vive en `src/lib/admin-quotation-status.ts`: `quotation-types.ts` es compartido con el área del cliente congelada.
 
 Pendiente para pasos siguientes: la factura anterior conserva el total previo (578) tras una enmienda (paso de finanzas); en la cotización aceptada aún se muestran los paneles de envío (el servidor los rechaza); los enlaces «Abrir reserva» y «Ver versión aceptada» aparecen pegados.
+
+## Paso 4: compartir por WhatsApp (2026-10-23)
+SQL `docs/sql/quotation_shares.sql` (ensayo 8 de 8; **aplicado solo en staging**). Código en `admin-release` (`fc8d153`, `e550a14`).
+
+- Panel «Compartir por WhatsApp»: número del cliente (editable, E.164) y mensaje editable con `{enlace}` → «Preparar envío» congela la versión (o reutiliza la preparada si nada cambió) y crea el enlace seguro → «Abrir WhatsApp» (wa.me con el mensaje), «Compartir PDF» (menú nativo del sistema, solo si el navegador admite archivos), «Descargar PDF», «Copiar enlace» → «Lo envié» / «No lo envié». Solo «Lo envié» marca la cotización como enviada. Un envío preparado se puede confirmar desde el historial después de recargar.
+- Enlace `/cotizacion/<token>`: muestra la versión congelada y su PDF; token aleatorio de 256 bits, en la base solo su SHA-256 (el mensaje se guarda con `{enlace}`, nunca con el enlace); vence con la validez (máximo 60 días); límite de solicitudes, `noindex`, `no-referrer`; enlaces cancelados, desactivados o vencidos no muestran nada. Cuenta aperturas de la página.
+- `quotation_shares` guarda canal, versión, teléfono, plantilla y estado (`preparado`, `confirmado`, `cancelado`, `revocado`, y para la futura API `enviado`, `entregado`, `leido`, `fallido`, `proveedor_id`). La API de WhatsApp Business **no** está configurada.
+- Historial de actividad: preparado, confirmado y desactivado, sin teléfono, mensaje ni token.
+- Los paneles de envío solo aparecen en borradores y cotizaciones enviadas.
+
+Verificado en el preview con staging: preparar, enlace de WhatsApp correcto, página del cliente, PDF, enlace alterado rechazado, «Lo envié» desde el historial, enlace desactivado. No verificado: «Compartir PDF» en un teléfono real (Android/iPhone).
+
+**Textos pendientes de aprobación del propietario:** el mensaje predeterminado de WhatsApp (`src/lib/quotation-share.ts`) y los textos de la página del cliente (`src/app/cotizacion/[token]/page.tsx`).
