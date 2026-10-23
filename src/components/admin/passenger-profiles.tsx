@@ -5,7 +5,8 @@ import { Camera, IdCard, ScanLine, Trash2, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { attachPassengerImage, deletePassengerProfile, removePassengerImage, savePassengerProfile, type ProfileState } from "@/app/admin/clientes/passenger-actions";
-import { countryName, parseMrz, type MrzResult } from "@/lib/mrz";
+import { countryName, normalizeMrz, parseMrz, type MrzResult } from "@/lib/mrz";
+import { readMrzFromImage } from "@/lib/mrz-ocr";
 
 export type ProfileView = {
   id: string; firstName: string; middleName: string; lastName: string; category: "adulto" | "nino" | "infante"; nationality: string;
@@ -30,6 +31,16 @@ async function prepareImage(file: File) {
   return new Promise<Blob>((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error("image")), "image/jpeg", 0.85));
 }
 const randomName = () => crypto.randomUUID().replaceAll("-", "");
+async function uploadPassengerImage(profileId: string, kind: "foto" | "pasaporte", file: File): Promise<ProfileState> {
+  try {
+    const blob = await prepareImage(file);
+    if (blob.size > 5 * 1024 * 1024) throw new Error("size");
+    const path = `${profileId}/${kind}-${randomName()}.jpg`;
+    const { error } = await createClient().storage.from("passenger-docs").upload(path, blob, { contentType: "image/jpeg", upsert: false });
+    if (error) throw error;
+    return await attachPassengerImage(profileId, kind, path);
+  } catch { return { error: "No se pudo subir la imagen. Use una foto JPG, PNG o HEIC de menos de 20 MB." }; }
+}
 
 // A private image behind a 60-second signed link: it must not go through the public image optimizer or its cache.
 function PrivatePhoto({ id, alt }: { id: string; alt: string }) {
@@ -79,8 +90,23 @@ function ProfileForm({ customerId, profile, onDone }: { customerId: string; prof
   const field = (key: keyof Draft, label: string, type = "text", extra: Record<string, unknown> = {}) => <label className="block t-small">{label}<input className={input} type={type} value={String(draft[key])} onChange={event => set(key, event.target.value)} {...extra} /></label>;
   const profileId = profile?.id ?? state.profileId;
 
-  function readMrz() {
-    const result = parseMrz(mrzText);
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [reading, setReading] = useState<number | null>(null);
+  const [photoSaved, setPhotoSaved] = useState("");
+  function readMrz() { applyMrz(parseMrz(mrzText)); }
+  // Reads the MRZ from a photo on this device; the recognised lines are shown so they can be checked or corrected.
+  async function readPhoto(file: File | undefined) {
+    if (!file) return;
+    setPhoto(file); setPhotoSaved(""); setReading(0); setMrz(null);
+    try {
+      const reading = await readMrzFromImage(file, setReading);
+      const lines = normalizeMrz(reading.text).filter(line => line.length >= 29);
+      setMrzText(lines.slice(-3).join("\n"));
+      applyMrz(reading.result);
+    } catch { setMrz("none"); }
+    setReading(null);
+  }
+  function applyMrz(result: MrzResult | null) {
     setMrz(result ?? "none");
     if (!result) return;
     setDraft(current => ({ ...current, lastName: title(result.lastName), firstName: title(result.firstName), middleName: title(result.middleName), documentType: result.documentType,
@@ -91,10 +117,13 @@ function ProfileForm({ customerId, profile, onDone }: { customerId: string; prof
   return <div className="space-y-5 rounded-panel border border-line bg-surface p-4 sm:p-6">
     <details className="rounded-card border border-line bg-canvas p-4">
       <summary className="flex min-h-11 cursor-pointer items-center gap-2 font-semibold"><ScanLine size={18} strokeWidth={1.75} aria-hidden="true" className="text-brand" />Leer el pasaporte (zona MRZ)</summary>
-      <p className="t-small mt-2 text-ink-soft">Copie las dos líneas con «&lt;&lt;&lt;» al pie del pasaporte (en el teléfono: Texto en vivo en iPhone o Google Lens en Android, sobre la foto) y péguelas aquí. Se leen en este navegador; no se envían a ningún servicio. Revise siempre el resultado.</p>
+      <p className="t-small mt-2 text-ink-soft">Tome o elija una foto de la página de datos del pasaporte, recta y bien iluminada, o pegue las dos líneas con «&lt;&lt;&lt;» de su pie (en el teléfono, Texto en vivo o Google Lens las copian de la foto). Todo se lee en este navegador; la imagen no se envía a ningún servicio. Revise siempre el resultado.</p>
+      <label className="mt-3 inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-btn border border-line bg-canvas px-4 font-semibold text-ink hover:border-brand"><Camera size={18} strokeWidth={1.75} aria-hidden="true" />{reading !== null ? `Leyendo la foto ${reading}%` : "Leer desde una foto"}<input type="file" accept="image/*" className="sr-only" disabled={reading !== null} onChange={event => void readPhoto(event.target.files?.[0])} /></label>
+      {reading !== null ? <p role="status" className="t-small mt-2 text-ink-soft">La primera lectura descarga el lector (unos 6 MB) una sola vez; las siguientes son inmediatas.</p> : null}
       <textarea className={`${input} font-mono`} rows={3} value={mrzText} onChange={event => setMrzText(event.target.value)} spellCheck={false} autoCapitalize="characters" placeholder={"P<HND...\n..."} aria-label="Líneas MRZ del pasaporte" />
       <Button type="button" variant="ghost" className="mt-2" onClick={readMrz} disabled={!mrzText.trim()}>Leer y completar</Button>
-      {mrz === "none" ? <p role="alert" className="t-small mt-2 text-error">No se reconocieron las líneas MRZ. Copie las dos líneas completas (44 caracteres cada una).</p> : null}
+      {mrz === "none" ? <p role="alert" className="t-small mt-2 text-error">No se reconocieron las líneas MRZ. Pruebe con una foto más recta y nítida, o copie las dos líneas completas (44 caracteres cada una).</p> : null}
+      {photo && mrz && reading === null ? (profileId ? photoSaved ? <p role="status" className="t-small mt-2 text-success">{photoSaved}</p> : <Button type="button" variant="ghost" className="mt-2" onClick={async () => { const result = await uploadPassengerImage(profileId, "pasaporte", photo); setPhotoSaved(result.error ?? result.success ?? ""); }}>Guardar esta foto como imagen del pasaporte</Button> : <p className="t-small mt-2 text-ink-soft">Guarde el pasajero para adjuntar esta foto como imagen del pasaporte.</p>) : null}
       {mrz && mrz !== "none" ? <p role="status" className={`t-small mt-2 ${mrz.valid ? "text-success" : "text-error"}`}>{mrz.valid ? "Datos leídos y verificados con los dígitos de control. Revíselos antes de guardar." : `Leído con errores en: ${[!mrz.checks.documentNumber && "número", !mrz.checks.birthDate && "nacimiento", !mrz.checks.expiryDate && "vencimiento", !mrz.checks.composite && "control general"].filter(Boolean).join(", ")}. Corrija contra el documento.`}</p> : null}
     </details>
     <form action={action} className="space-y-4">
@@ -127,15 +156,8 @@ function ImageField({ profileId, kind, label, has, icon, note }: { profileId: st
   async function upload(file: File | undefined) {
     if (!file) return;
     setBusy(true); setMessage(null);
-    try {
-      const blob = await prepareImage(file);
-      if (blob.size > 5 * 1024 * 1024) throw new Error("size");
-      const path = `${profileId}/${kind}-${randomName()}.jpg`;
-      const { error } = await createClient().storage.from("passenger-docs").upload(path, blob, { contentType: "image/jpeg", upsert: false });
-      if (error) throw error;
-      const result = await attachPassengerImage(profileId, kind, path);
-      setMessage(result.error ? { tone: "error", text: result.error } : { tone: "success", text: result.success ?? "Imagen guardada." });
-    } catch { setMessage({ tone: "error", text: "No se pudo subir la imagen. Use una foto JPG, PNG o HEIC de menos de 20 MB." }); }
+    const result = await uploadPassengerImage(profileId, kind, file);
+    setMessage(result.error ? { tone: "error", text: result.error } : { tone: "success", text: result.success ?? "Imagen guardada." });
     setBusy(false);
   }
   async function remove() {

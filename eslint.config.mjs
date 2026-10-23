@@ -13,6 +13,8 @@ const eslintConfig = defineConfig([
     "output/**",
     "build/**",
     "next-env.d.ts",
+    // On-device OCR files copied from node_modules (scripts/copy-ocr-assets.mjs).
+    "public/ocr/**",
   ]),
 ]);
 
