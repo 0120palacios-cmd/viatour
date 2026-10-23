@@ -13,7 +13,8 @@ const issued = { passengers: [{ id: 'p1', firstName: 'ANA', middleName: '', last
 function saveTravel(visible) {
   const rpcs = [];
   const client = {
-    from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { fecha_inicio: '2026-12-01', estado: 'confirmada', accepted_snapshot: { quotation: { detalles: {} } } }, error: null }) }) }) }),
+    // Saved passenger profiles (step 6): none in these files.
+    from: table => table === 'passenger_profiles' ? { select: () => ({ in: () => ({ not: async () => ({ data: [], error: null }) }) }) } : ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { fecha_inicio: '2026-12-01', estado: 'confirmada', accepted_snapshot: { quotation: { detalles: {} } } }, error: null }) }) }) }),
     rpc: async (name, args) => { rpcs.push({ name, args }); return { data: 7, error: null }; },
   };
   const actions = load('src/app/admin/reservas/travel-actions.ts', {
@@ -21,7 +22,7 @@ function saveTravel(visible) {
     '@/lib/travel-operations': operations, '@/lib/travel-vault': { sealTravel: () => 'sealed' },
     '@/lib/travel-data': { getTravel: async () => ({ available: true, revision: 6, data: visible, privateData: null }) },
     '@/lib/travel-services': { travelServices: () => ({ vuelos: { journeys: [{ segmentos: [{}] }] } }) },
-    'next/cache': { revalidatePath() {} }, '@/lib/passenger-counts': { validatePassengerCounts() {} },
+    'next/cache': { revalidatePath() {} }, '@/lib/passenger-counts': { validatePassengerCounts() {} }, '@/lib/passenger-profiles': { addDays: date => date, passportRetentionDays: 30 },
   });
   return { rpcs, save: travel => { const form = new FormData(); form.set('id', RESERVATION); form.set('revision', '6'); form.set('payload', JSON.stringify(travel)); return actions.saveTravel({}, form); } };
 }

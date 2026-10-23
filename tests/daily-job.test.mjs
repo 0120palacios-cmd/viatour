@@ -99,3 +99,16 @@ test('cron route requires the bearer secret', async () => {
   const disabled = load('src/app/api/cron/daily/route.ts', { 'node:crypto': await import('node:crypto'), '@/lib/supabase/admin': {}, '@/lib/daily-job': {}, '@/lib/notifications': {} }, { process: { env: {} } });
   assert.equal((await disabled.GET(new Request('http://local/api/cron/daily', { headers: { authorization: 'Bearer ' } }))).status, 401);
 });
+
+test('passport images past their date are deleted from storage first, then unlinked; off with passportRetention false', async () => {
+  const P1 = '7a7a7a7a-0000-4000-8000-000000000001';
+  const due = { ...tables, 'passenger_profiles:select': { data: [{ id: P1, pasaporte_path: `${P1}/pasaporte-${'a'.repeat(32)}.jpg` }], error: null }, 'passenger_profiles:update': { data: null, error: null } };
+  const log = [];
+  const report = await job().api.runDailyJob(client(due, log), { now, passportRetention: true });
+  const steps = log.filter(entry => entry[0] === 'storage' || entry[0] === 'passenger_profiles').map(entry => entry.slice(0, 3));
+  assert.deepEqual(JSON.parse(JSON.stringify(steps)), [['passenger_profiles', 'select', 'id,pasaporte_path'], ['storage', 'remove', [`${P1}/pasaporte-${'a'.repeat(32)}.jpg`]], ['passenger_profiles', 'update', { pasaporte_path: null, pasaporte_borrar_despues: null }]]);
+  assert.ok(report.actions.some(line => line.startsWith('1 imagen(es) de pasaporte eliminadas')));
+  const off = [];
+  await job().api.runDailyJob(client(due, off), { now, passportRetention: false });
+  assert.ok(!off.some(entry => entry[0] === 'passenger_profiles'));
+});

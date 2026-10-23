@@ -8,7 +8,7 @@ import { listReservationDocuments, portalDocsBucket } from "@/lib/portal-documen
 
 // Deterministic, rule-based daily routine (no AI): an owner digest plus opt-in automations.
 // Every automatic send is keyed to an exact calendar day, so running once a day sends once.
-export type DailyOptions = { now?: Date; autoReviews?: boolean; customerReminders?: boolean; docRetentionDays?: number };
+export type DailyOptions = { now?: Date; autoReviews?: boolean; customerReminders?: boolean; docRetentionDays?: number; passportRetention?: boolean };
 type Row = Record<string, unknown>;
 const s = (value: unknown) => String(value ?? "").trim();
 
@@ -110,6 +110,20 @@ export async function runDailyJob(client: SupabaseClient, options: DailyOptions 
         if (removed.error) problems.push(`documentos ${s(row.codigo)}`); else actions.push(`${paths.length} documento(s) eliminados de ${s(row.codigo)} por política de conservación.`);
       }
     }
+  }
+
+  // 8. Passport images of saved passengers, 30 days after their last trip (docs/sql/passenger_profiles.sql).
+  // Only the image is removed; the profile and its encrypted data stay. Missing table: nothing to do.
+  if (options.passportRetention) {
+    const due = await client.from("passenger_profiles").select("id,pasaporte_path").lt("pasaporte_borrar_despues", today).not("pasaporte_path", "is", null).limit(100);
+    let removedCount = 0;
+    for (const row of (due.data ?? []) as Row[]) {
+      const removed = await client.storage.from("passenger-docs").remove([s(row.pasaporte_path)]);
+      if (removed.error) { problems.push("imágenes de pasaporte"); continue; }
+      const cleared = await client.from("passenger_profiles").update({ pasaporte_path: null, pasaporte_borrar_despues: null }).eq("id", s(row.id));
+      if (cleared.error) problems.push("imágenes de pasaporte"); else removedCount += 1;
+    }
+    if (removedCount) actions.push(`${removedCount} imagen(es) de pasaporte eliminadas 30 días después del viaje, por política de conservación.`);
   }
 
   const text = [`Resumen diario de viatour — ${today}`, "", ...(actions.length ? ["Acciones automáticas:", ...actions.map(line => `- ${line}`), ""] : []),

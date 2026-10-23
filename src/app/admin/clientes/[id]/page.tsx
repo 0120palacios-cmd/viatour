@@ -10,6 +10,8 @@ import { customerWhatsappHref } from "@/lib/lead-admin";
 import { formatQuotationAmount } from "@/lib/quotation-types";
 import { adminQuotationStatusLabel as quotationStatusLabel, type AdminQuotationStatus as QuotationStatus } from "@/lib/admin-quotation-status";
 import { formatMoney, reservationStatusLabel, type ReservationStatus } from "@/lib/reservation-types";
+import { listProfiles } from "@/lib/passenger-profiles";
+import { PassengerProfiles, type ProfileView } from "@/components/admin/passenger-profiles";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   return pageMetadata(`/admin/clientes/${(await params).id}`, "viatour | Cliente", "Ficha de un cliente en la administración privada de viatour.");
@@ -30,6 +32,14 @@ export default async function CustomerPage({ params, searchParams }: { params: P
   if (result.error) throw new Error("No se pudo cargar el cliente.");
   if (!result.data) notFound();
   const customer = result.data;
+  // Travellers saved for this customer (docs/sql/passenger_profiles.sql); private fields decrypted for the form.
+  const passengers = await listProfiles(client, id, { decrypt: true });
+  const profileViews: ProfileView[] = passengers.profiles.map(profile => ({
+    id: profile.id, firstName: profile.firstName, middleName: profile.middleName, lastName: profile.lastName, category: profile.category, nationality: profile.nationality,
+    documentType: profile.documentType, issuingCountry: profile.issuingCountry, expiryDate: profile.expiryDate, documentLast4: profile.documentLast4,
+    hasPhoto: Boolean(profile.photoPath), hasPassport: Boolean(profile.passportPath), passportDeleteAfter: profile.passportDeleteAfter, privateReadable: profile.private !== null,
+    birthDate: "", sex: "", documentNumber: "", phone: "", email: "", emergencyContact: "", assistance: "", notes: "", ...(profile.private ?? {}),
+  }));
   const phone = String(customer.telefono ?? "");
   const whatsapp = phone ? customerWhatsappHref(phone, `Hola ${customer.nombre}, le saluda su asesor de viatour.`) : "";
 
@@ -49,6 +59,9 @@ export default async function CustomerPage({ params, searchParams }: { params: P
         {!reservations.data?.length ? <p className="p-6 text-ink-soft">{reservations.error ? "No se pudieron cargar las reservas." : "Este cliente todavía no tiene reservas."}</p> : <ul className="divide-y divide-line">{reservations.data.map(row => <RecordRow key={String(row.id)} href={`/admin/reservas/${row.id}`} icon={<CalendarDays size={18} strokeWidth={1.75} />} title={String(row.destino)} badges={<StatusBadge tone={reservationTone[row.estado as ReservationStatus]}>{reservationStatusLabel(row.estado as ReservationStatus)}</StatusBadge>} meta={`${row.codigo} · ${row.fecha_inicio ? `Inicia ${formatDay(String(row.fecha_inicio))}` : "Fechas por definir"}`} aside={<span className="t-small font-semibold tabular-nums">{formatMoney(Number(row.total), row.moneda as "USD" | "HNL")}</span>} />)}</ul>}
       </Panel>
     </div>
+    <Panel title="Pasajeros" description="Viajeros de este cliente (él mismo o sus acompañantes). Se cargan en una reserva desde «Pasajeros y emisión».">
+      <div className="p-4 sm:p-6"><PassengerProfiles customerId={id} profiles={profileViews} available={passengers.available} /></div>
+    </Panel>
     <Panel title="Datos del cliente" description="Los cambios aplican a las cotizaciones nuevas. Las cotizaciones y versiones ya enviadas conservan los datos con que se prepararon.">
       <div className="p-4 sm:p-6"><CustomerForm row={customer} compact /></div>
     </Panel>

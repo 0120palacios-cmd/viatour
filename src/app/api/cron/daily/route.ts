@@ -24,6 +24,8 @@ async function handle(request: Request) {
       autoReviews: process.env.AUTO_REVIEW_INVITES === "1",
       customerReminders: process.env.CUSTOMER_REMINDERS === "1",
       docRetentionDays: Number(process.env.DOC_RETENTION_DAYS) || 0,
+      // Owner-approved policy (on unless PASSPORT_IMAGE_RETENTION=0): passport images 30 days after the trip.
+      passportRetention: process.env.PASSPORT_IMAGE_RETENTION !== "0",
     });
     return Response.json({ ok: true, date: report.today, sections: report.sections.length, actions: report.actions.length, problems: report.problems.length }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
