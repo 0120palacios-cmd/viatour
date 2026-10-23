@@ -60,6 +60,12 @@ await check("a mistaken payment is reversed once, only before it has a receipt",
   await admin("select public.create_payment_receipt($1)", [receipted]);
   await assert.rejects(refund(r, null, { kind: "reverso", reverses: receipted }), /ya tiene recibo: registre un reembolso/);
   await assert.rejects(refund(r, null, { kind: "reverso", reverses: reversal }), /Elija un pago/);
+  // A payment already partly refunded cannot be reversed: the net received would go below zero.
+  const other = await reservation();
+  const partly = await pay(other, 300);
+  await refund(other, 50);
+  await assert.rejects(refund(other, null, { kind: "reverso", reverses: partly }), /saldo recibido en negativo/);
+  assert.equal(await received(other), 250);
 });
 
 await check("receipts are only for payments, and show the net balance", async () => {

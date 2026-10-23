@@ -68,6 +68,9 @@ begin
     if exists (select 1 from public.payments where revierte_a = original.id) then raise exception 'Ese pago ya fue revertido.' using errcode = '23514'; end if;
     if exists (select 1 from public.payment_receipts where payment_id = original.id) then
       raise exception 'Ese pago ya tiene recibo: registre un reembolso en lugar de un reverso.' using errcode = '23514'; end if;
+    select coalesce(sum(monto), 0) into received from public.payments where reservation_id = r.id and moneda = r.moneda;
+    if original.moneda = r.moneda and received - original.monto < 0 then
+      raise exception 'Ya se devolvió parte de este pago; revertirlo dejaría el saldo recibido en negativo. Revise las devoluciones.' using errcode = '23514'; end if;
     amount := original.monto; method := original.metodo; day := (now() at time zone 'America/Tegucigalpa')::date;
   else
     if p_reverses is not null then raise exception 'Movimiento inválido.' using errcode = '23514'; end if;
