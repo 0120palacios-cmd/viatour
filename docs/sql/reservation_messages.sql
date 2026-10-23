@@ -46,7 +46,9 @@ create policy reservation_messages_admin_insert on public.reservation_messages f
 drop policy if exists reservation_messages_admin_update on public.reservation_messages;
 create policy reservation_messages_admin_update on public.reservation_messages for update to authenticated using (public.is_admin()) with check (public.is_admin());
 
-revoke all on table public.reservation_messages from anon, public;
+-- authenticated too: Supabase default privileges grant it everything on new tables (found in production 2026-10-23;
+-- mi_viaje_premium.sql repairs the production table).
+revoke all on table public.reservation_messages from anon, public, authenticated;
 grant select on table public.reservation_messages to authenticated;
 -- Column-level insert: an admin session cannot backdate created_at or pre-set read flags.
 grant insert (reservation_id, sender, topic, body, admin_id) on table public.reservation_messages to authenticated;

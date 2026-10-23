@@ -236,6 +236,8 @@ body:has([aria-labelledby="cookie-title"]) .whatsapp-float { display: none; }
 @media (max-width: 1023px) {
   body:has(.sticky-quote-bar) .whatsapp-float { display: none; }
 }
+/* Mi viaje has its own WhatsApp actions (with the booking code); the float would sit on its copy buttons. */
+body:has([data-trip-portal]) .whatsapp-float { display: none; }
 @media (min-width: 640px) {
   .whatsapp-float { right: max(24px, env(safe-area-inset-right)); bottom: max(24px, env(safe-area-inset-bottom)); }
 }

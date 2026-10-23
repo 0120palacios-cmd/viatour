@@ -1,0 +1,382 @@
+[
+  {
+    "archivo": "/destinos/miami.jpg",
+    "alt": "Rascacielos de Miami frente a la bahía de Biscayne",
+    "autor": "P. Hughes",
+    "licencia": "CC BY-SA 4.0",
+    "licencia_url": "https://creativecommons.org/licenses/by-sa/4.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Miami_-_Skyline_from_Harbor.jpg",
+    "fecha": "2023-12-11",
+    "original": "4394x2404"
+  },
+  {
+    "archivo": "/destinos/que-hacer/miami/south-beach.jpg",
+    "alt": "Hoteles art déco y palmeras en Ocean Drive, South Beach",
+    "autor": "Robbschultz69",
+    "licencia": "CC BY-SA 4.0",
+    "licencia_url": "https://creativecommons.org/licenses/by-sa/4.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Ocean_Drive_in_the_Miami_Beach_Art_Deco_Historic_District.jpg",
+    "fecha": "2024-02-26 09:38:02",
+    "original": "6720x4480"
+  },
+  {
+    "archivo": "/destinos/que-hacer/miami/little-havana.jpg",
+    "alt": "Parque del Dominó en la Calle Ocho de la Pequeña Habana",
+    "autor": "Infrogmation of New Orleans",
+    "licencia": "CC BY-SA 3.0",
+    "licencia_url": "https://creativecommons.org/licenses/by-sa/3.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Little_Havana_Domino_Club_Park_Calle_Ocho.JPG",
+    "fecha": "2010-06",
+    "original": "4000x3000"
+  },
+  {
+    "archivo": "/destinos/que-hacer/miami/vizcaya.jpg",
+    "alt": "Villa y jardines del Museo Vizcaya en Miami",
+    "autor": "Averette",
+    "licencia": "CC BY 3.0",
+    "licencia_url": "https://creativecommons.org/licenses/by/3.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Villa_Vizcaya_20110228.jpg",
+    "fecha": "2011-02-28",
+    "original": "3310x1838"
+  },
+  {
+    "archivo": "/destinos/que-hacer/miami/bayside.jpg",
+    "alt": "Letras de Bayside entre palmeras, frente a la bahía de Miami",
+    "autor": "User:Kolossos",
+    "licencia": "CC BY-SA 3.0",
+    "licencia_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Miami-Bayside.jpg",
+    "fecha": "2009-03-17",
+    "original": "3888x2592"
+  },
+  {
+    "archivo": "/destinos/que-hacer/miami/brickell.jpg",
+    "alt": "Torres de Brickell iluminadas junto al río Miami de noche",
+    "autor": "Periodismodepaz",
+    "licencia": "CC BY 4.0",
+    "licencia_url": "https://creativecommons.org/licenses/by/4.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Icon_Brickell_3.jpg",
+    "fecha": "18 February 2024 (according to Exif data",
+    "original": "4032x2268"
+  },
+  {
+    "archivo": "/destinos/que-hacer/miami/everglades.jpg",
+    "alt": "Caimán americano en el sendero Anhinga del Parque Nacional Everglades",
+    "autor": "Judy Gallagher",
+    "licencia": "CC BY 2.0",
+    "licencia_url": "https://creativecommons.org/licenses/by/2.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:American_Alligator_-_Anhinga_Trail,_Everglades_National_Park,_Homestead,_Florida.jpg",
+    "fecha": "2011-12-11 10:19:25",
+    "original": "4752x3168"
+  },
+  {
+    "archivo": "/destinos/que-hacer/miami/dolphin-mall.jpg",
+    "alt": "Entrada principal del centro comercial Dolphin Mall",
+    "autor": "Balou46",
+    "licencia": "CC BY-SA 4.0",
+    "licencia_url": "https://creativecommons.org/licenses/by-sa/4.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:US-miami-dolphinmall.jpg",
+    "fecha": "2015-11-12 22:13:53",
+    "original": "4928x3264"
+  },
+  {
+    "archivo": "/destinos/nueva-york.jpg",
+    "alt": "Rascacielos del bajo Manhattan vistos desde el agua",
+    "autor": "Rhododendrites",
+    "licencia": "CC BY-SA 4.0",
+    "licencia_url": "https://creativecommons.org/licenses/by-sa/4.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Lower_Manhattan_from_Governors_Island_with_a_fishing_boat_(46294p).jpg",
+    "fecha": "2021-10-24 15:44:54",
+    "original": "20037x9141"
+  },
+  {
+    "archivo": "/destinos/que-hacer/nueva-york/central-park.jpg",
+    "alt": "Puente Bow sobre el lago de Central Park",
+    "autor": "Christian David",
+    "licencia": "CC BY-SA 4.0",
+    "licencia_url": "https://creativecommons.org/licenses/by-sa/4.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Bow_Bridge_over_the_Lake,_Central_Park,_Manhattan,_New_York.jpg",
+    "fecha": "2026-04-18 08:28:54",
+    "original": "9328x5247"
+  },
+  {
+    "archivo": "/destinos/que-hacer/nueva-york/estatua-libertad.jpg",
+    "alt": "Estatua de la Libertad con un barco turístico en la bahía",
+    "autor": "Christian David",
+    "licencia": "CC BY-SA 4.0",
+    "licencia_url": "https://creativecommons.org/licenses/by-sa/4.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Statue_of_Liberty_and_a_sightseeing_boat,_Liberty_Island,_New_York.jpg",
+    "fecha": "2026-04-17 11:40:56",
+    "original": "7728x5152"
+  },
+  {
+    "archivo": "/destinos/que-hacer/nueva-york/puente-brooklyn.jpg",
+    "alt": "Paseo peatonal del puente de Brooklyn con Manhattan al fondo",
+    "autor": "Famartin",
+    "licencia": "CC BY-SA 4.0",
+    "licencia_url": "https://creativecommons.org/licenses/by-sa/4.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:2024-06-15_09_53_30_View_from_the_middle_of_the_Brooklyn_Bridge_looking_northwest_along_the_pedestrian_walkway_in_Manhattan,_New_York_City,_New_York.jpg",
+    "fecha": "2024-06-15 09:53:30",
+    "original": "4032x3024"
+  },
+  {
+    "archivo": "/destinos/que-hacer/nueva-york/times-square.jpg",
+    "alt": "Pantallas iluminadas de Times Square de noche",
+    "autor": "Paulinabial",
+    "licencia": "CC BY-SA 4.0",
+    "licencia_url": "https://creativecommons.org/licenses/by-sa/4.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:1_times_square_night_2013_anonymized.jpg",
+    "fecha": "2020-05-13",
+    "original": "7360x4912"
+  },
+  {
+    "archivo": "/destinos/orlando.jpg",
+    "alt": "Lago Eola y edificios del centro de Orlando al atardecer",
+    "autor": "Miosotis Jade",
+    "licencia": "CC BY-SA 4.0",
+    "licencia_url": "https://creativecommons.org/licenses/by-sa/4.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Lake_Eola_Park_in_Orlando_01.jpg",
+    "fecha": "2016-06-16 00:28:42",
+    "original": "2786x2072"
+  },
+  {
+    "archivo": "/destinos/que-hacer/orlando/parques-tematicos.jpg",
+    "alt": "Calle principal de un parque temático de Orlando",
+    "autor": "Louiemantia",
+    "licencia": "CC BY-SA 4.0",
+    "licencia_url": "https://creativecommons.org/licenses/by-sa/4.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Magic_Kingdom_Main_Street.jpg",
+    "fecha": "2018-05-02 16:23:20",
+    "original": "4032x3024"
+  },
+  {
+    "archivo": "/destinos/que-hacer/orlando/kennedy-space-center.jpg",
+    "alt": "Jardín de cohetes del Kennedy Space Center",
+    "autor": "Daderot",
+    "licencia": "CC0",
+    "licencia_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Rocket_garden_-_Kennedy_Space_Center_-_Cape_Canaveral,_Florida_-_DSC02560.jpg",
+    "fecha": "2017-03-22 12:18:31",
+    "original": "4739x3350"
+  },
+  {
+    "archivo": "/destinos/que-hacer/orlando/disney-springs.jpg",
+    "alt": "Tiendas y restaurantes junto al agua en Disney Springs",
+    "autor": "Jennifer Lynn",
+    "licencia": "CC BY 2.0",
+    "licencia_url": "https://creativecommons.org/licenses/by/2.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Disney_Springs_(27832916856).jpg",
+    "fecha": "2016-05-09 02:24",
+    "original": "5472x3648"
+  },
+  {
+    "archivo": "/destinos/que-hacer/orlando/citywalk.jpg",
+    "alt": "Canal y restaurantes de Universal CityWalk",
+    "autor": "Farragutful",
+    "licencia": "CC BY-SA 4.0",
+    "licencia_url": "https://creativecommons.org/licenses/by-sa/4.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Universal_CityWalk_-_Orlando_08.jpg",
+    "fecha": "Taken on 2 September 2025 11:17:55",
+    "original": "5174x3633"
+  },
+  {
+    "archivo": "/destinos/houston.jpg",
+    "alt": "Rascacielos del centro de Houston sobre el Buffalo Bayou",
+    "autor": "Tony Webster",
+    "licencia": "CC BY 2.0",
+    "licencia_url": "https://creativecommons.org/licenses/by/2.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Houston_Texas_Skyline_and_the_Buffalo_Bayou_(54182707440).jpg",
+    "fecha": "2019-04-04 14:50",
+    "original": "7952x5304"
+  },
+  {
+    "archivo": "/destinos/que-hacer/houston/space-center.jpg",
+    "alt": "Edificio de Space Center Houston",
+    "autor": "Shujianyang",
+    "licencia": "CC BY 4.0",
+    "licencia_url": "https://creativecommons.org/licenses/by/4.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Space_Center_Houston_2025.08.jpg",
+    "fecha": "2025-08-12 00:05:45",
+    "original": "2400x1600"
+  },
+  {
+    "archivo": "/destinos/que-hacer/houston/museo-bellas-artes.jpg",
+    "alt": "Museo de Bellas Artes de Houston entre robles",
+    "autor": "Michael Barera",
+    "licencia": "CC BY-SA 4.0",
+    "licencia_url": "https://creativecommons.org/licenses/by-sa/4.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Houston_May_2022_25_(Museum_of_Fine_Arts,_Houston).jpg",
+    "fecha": "Taken on 19 May 2022",
+    "original": "6000x4000"
+  },
+  {
+    "archivo": "/destinos/costa-rica.jpg",
+    "alt": "Volcán Arenal rodeado de bosque en Costa Rica",
+    "autor": "Rhododendrites",
+    "licencia": "CC BY-SA 4.0",
+    "licencia_url": "https://creativecommons.org/licenses/by-sa/4.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Arenal_volcano_(70785p).jpg",
+    "fecha": "2024-12-07 16:28:39",
+    "original": "7409x3105"
+  },
+  {
+    "archivo": "/destinos/guatemala.jpg",
+    "alt": "Arco de Santa Catalina en Antigua Guatemala con el volcán al fondo",
+    "autor": "Not So Dusty",
+    "licencia": "CC BY 2.0",
+    "licencia_url": "https://creativecommons.org/licenses/by/2.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Volcano_Street,_Antigua_Guatemala,_2022-01-27.jpg",
+    "fecha": "2022-01-27 15:37:34",
+    "original": "5166x3843"
+  },
+  {
+    "archivo": "/destinos/medellin.jpg",
+    "alt": "Vista de Medellín entre montañas",
+    "autor": "I.D. R.J.",
+    "licencia": "CC BY-SA 2.0",
+    "licencia_url": "https://creativecommons.org/licenses/by-sa/2.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Medell%C3%ADn_skyline02.jpg",
+    "fecha": "2011-11-20 14:35:06",
+    "original": "2592x1944"
+  },
+  {
+    "archivo": "/destinos/bogota.jpg",
+    "alt": "Cerro de Monserrate sobre el centro de Bogotá",
+    "autor": "Jos Cuevasc",
+    "licencia": "CC BY-SA 4.0",
+    "licencia_url": "https://creativecommons.org/licenses/by-sa/4.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Monserrate_y_centro_de_Bogota.jpg",
+    "fecha": "2019-01-26 11:05:50",
+    "original": "3791x2527"
+  },
+  {
+    "archivo": "/destinos/espana.jpg",
+    "alt": "Edificios de la Gran Vía en Madrid",
+    "autor": "Felipe Gabaldón",
+    "licencia": "CC BY 2.0",
+    "licencia_url": "https://creativecommons.org/licenses/by/2.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Gran_V%C3%ADa_(Madrid)_1.jpg",
+    "fecha": "Taken on 12 May 2010, 10:23:37",
+    "original": "4310x2868"
+  },
+  {
+    "archivo": "/destinos/san-andres.jpg",
+    "alt": "Johnny Cay rodeado de mar turquesa frente a San Andrés",
+    "autor": "Mario Carvajal",
+    "licencia": "CC BY 3.0",
+    "licencia_url": "https://creativecommons.org/licenses/by/3.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Johny_Cay.jpg",
+    "fecha": "2012-02-20",
+    "original": "4019x2674"
+  },
+  {
+    "archivo": "/destinos/que-hacer/cancun/chichen-itza.jpg",
+    "alt": "Pirámide de El Castillo en Chichén Itzá",
+    "autor": "Daniel Schwen",
+    "licencia": "CC BY-SA 4.0",
+    "licencia_url": "https://creativecommons.org/licenses/by-sa/4.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Chichen_Itza_3.jpg",
+    "fecha": "2009-08-18",
+    "original": "9771x5197"
+  },
+  {
+    "archivo": "/destinos/que-hacer/cancun/isla-mujeres.jpg",
+    "alt": "Agua turquesa de Playa Norte en Isla Mujeres",
+    "autor": "Bernard DUPONT",
+    "licencia": "CC BY-SA 2.0",
+    "licencia_url": "https://creativecommons.org/licenses/by-sa/2.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Playa_Norte,_Isla_Mujeres_QR_2020_01.jpg",
+    "fecha": "2020-03-04 19:36:27",
+    "original": "4744x2012"
+  },
+  {
+    "archivo": "/destinos/que-hacer/cancun/tulum.jpg",
+    "alt": "Zona arqueológica de Tulum sobre el mar Caribe",
+    "autor": "Graeme Churchard from Bristol (51.473110 -2.625987), UK",
+    "licencia": "CC BY 2.0",
+    "licencia_url": "https://creativecommons.org/licenses/by/2.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Tulum_Ruins-30_(6025731897).jpg",
+    "fecha": "Taken on 3 August 2011, 10:49",
+    "original": "3648x2736"
+  },
+  {
+    "archivo": "/destinos/que-hacer/cancun/cenote.jpg",
+    "alt": "Cenote Ik Kil con raíces colgantes sobre el agua",
+    "autor": "GreenMeansGo",
+    "licencia": "CC BY-SA 4.0",
+    "licencia_url": "https://creativecommons.org/licenses/by-sa/4.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Ik_Kil_Cenote_2021_1.jpg",
+    "fecha": "2021-05-04 15:16:54",
+    "original": "4624x3468"
+  },
+  {
+    "archivo": "/destinos/que-hacer/punta-cana/isla-saona.jpg",
+    "alt": "Playa de arena blanca y palmeras en Isla Saona",
+    "autor": "Danu Widjajanto",
+    "licencia": "CC BY-SA 4.0",
+    "licencia_url": "https://creativecommons.org/licenses/by-sa/4.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Saona_Island_December_2020.jpg",
+    "fecha": "2020-12-17 18:18:29",
+    "original": "3456x2304"
+  },
+  {
+    "archivo": "/destinos/que-hacer/punta-cana/altos-de-chavon.jpg",
+    "alt": "Altos de Chavón sobre el río Chavón",
+    "autor": "Balou46",
+    "licencia": "CC BY-SA 4.0",
+    "licencia_url": "https://creativecommons.org/licenses/by-sa/4.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:DO-altos-de-ch-chavon.jpg",
+    "fecha": "2015-11-17 17:26:46",
+    "original": "4928x3264"
+  },
+  {
+    "archivo": "/destinos/que-hacer/punta-cana/zona-colonial.jpg",
+    "alt": "Fachada de la Catedral Primada de América en Santo Domingo",
+    "autor": "-wuppertaler",
+    "licencia": "CC BY 4.0",
+    "licencia_url": "https://creativecommons.org/licenses/by/4.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:DOM_Santo_Domingo,_Ciudad_Colonial,_Catedral_Primada_de_Am%C3%A9rica_0015.jpg",
+    "fecha": "2024-05-02 17:32:11",
+    "original": "3929x2947"
+  },
+  {
+    "archivo": "/destinos/que-hacer/punta-cana/playas.jpg",
+    "alt": "Costa de Punta Cana con arena blanca y palmeras",
+    "autor": "CT Cooper",
+    "licencia": "Public domain",
+    "licencia_url": null,
+    "fuente": "https://commons.wikimedia.org/wiki/File:View_southwards_along_coastline_at_Punta_Cana_9.jpg",
+    "fecha": "2008-04-08 22:05",
+    "original": "3072x2304"
+  },
+  {
+    "archivo": "/destinos/que-hacer/cartagena/ciudad-amurallada.jpg",
+    "alt": "Puerta del Reloj, entrada a la ciudad amurallada de Cartagena",
+    "autor": "Bernard Gagnon",
+    "licencia": "CC BY-SA 4.0",
+    "licencia_url": "https://creativecommons.org/licenses/by-sa/4.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Puerta_del_Reloj,_Cartagena_03.jpg",
+    "fecha": "2020-01-25",
+    "original": "4800x3200"
+  },
+  {
+    "archivo": "/destinos/que-hacer/cartagena/getsemani.jpg",
+    "alt": "Casas coloridas con balcones en Getsemaní",
+    "autor": "Fernan Acosta",
+    "licencia": "CC BY 3.0",
+    "licencia_url": "https://creativecommons.org/licenses/by/3.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Getseman%C3%AD_(30677449).jpeg",
+    "fecha": "13 March 2013, 04:00:00 (UTC)",
+    "original": "2048x1536"
+  },
+  {
+    "archivo": "/destinos/que-hacer/cartagena/san-felipe.jpg",
+    "alt": "Murallas del Castillo San Felipe de Barajas",
+    "autor": "Bernard Gagnon",
+    "licencia": "CC BY-SA 4.0",
+    "licencia_url": "https://creativecommons.org/licenses/by-sa/4.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Castillo_San_Felipe_de_Barajas,_Cartagena_18.jpg",
+    "fecha": "2020-01-26",
+    "original": "4366x2911"
+  }
+]

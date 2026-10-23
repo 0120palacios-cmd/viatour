@@ -16,7 +16,7 @@ import type { StoredDocument } from "@/lib/portal-documents";
 
 export type TripStage = "cancelled" | "completed" | "in_progress" | "ready" | "ticketing" | "confirmed" | "registered" | "prereserved";
 export type MilestoneState = "done" | "current" | "upcoming";
-export type NextStepKey = "cancelled" | "completed" | "inProgress" | "balance" | "travelersReview" | "awaitingConfirmation" | "awaitingTickets" | "ticketing" | "awaitingDocuments" | "readySoon" | "ready";
+export type NextStepKey = "cancelled" | "completed" | "travelDay" | "inProgress" | "balance" | "travelersReview" | "awaitingConfirmation" | "awaitingTickets" | "ticketing" | "awaitingDocuments" | "checkin" | "readySoon" | "ready";
 
 export type Place = { code: string; city: string; airport: string };
 export type FlightLeg = {
@@ -36,7 +36,7 @@ export type HotelView = {
   mealPlan: string; included: string[]; mapQuery: string; photoPath: string;
 };
 export type FerryView = { id: string; operator: string; vessel: string; fromPort: string; toPort: string; date: string; time: string; arriveDate: string; arriveTime: string; className: string };
-export type ServiceKind = "traslado" | "tour" | "actividad" | "seguro" | "asistencia" | "otro";
+export type ServiceKind = "traslado" | "tour" | "actividad" | "seguro" | "asistencia" | "auto" | "otro";
 export type ServiceView = { id: string; kind: ServiceKind; title: string; description: string; date: string; time: string; endDate: string; place: string; duration: string; mode: string; operator: string; included: string[] };
 export type TripEvent =
   | { kind: "flight"; date: string; time: string; journey: JourneyView }
@@ -47,8 +47,10 @@ export type TimelineEntry = { type: "day"; date: string; dayNumber: number; even
 
 export type BaggagePieceView = { kind: "personal" | "mano" | "documentado"; state: BaggageState; pieces: number | null; weight: string; size: string };
 export type BaggageView = { scope: string; pieces: BaggagePieceView[]; notes: string };
-export type TravelerView = { id: string; name: string; category: "adulto" | "nino" | "infante"; pnr: string; ticketNumber: string; airline: string };
 export type TicketState = "none" | "pending" | "processing" | "issued";
+export type TravelerView = { id: string; name: string; category: "adulto" | "nino" | "infante"; pnr: string; ticketNumber: string; airline: string; ticket: TicketState };
+// One airline booking code (PNR) and the travelers it covers, so a code shared by everyone is shown once.
+export type AirlineConfirmation = { airline: string; pnr: string; travelerIds: string[] };
 
 export type TripDocumentKey = "itinerary" | "confirmation" | "tickets" | "hotelVoucher" | "receipt" | "agency" | "customer";
 export type TripDocument = { key: TripDocumentKey; status: "available" | "pending" | "processing"; title: string; date: string | null; ref: string };
@@ -112,8 +114,12 @@ function included(items: { nombre: string; estado: string; detalle: string }[]) 
   return items.filter(item => item.estado === "incluido").map(item => [item.nombre, item.detalle].filter(Boolean).join(": "));
 }
 
-function serviceKind(tipo: string): ServiceKind {
-  return (["traslado", "tour", "actividad", "seguro", "asistencia"] as const).find(kind => kind === tipo) ?? "otro";
+// A car rental is its own type since the V6 registry gained "auto"; older quotations wrote it as a generic
+// service, so an "otro" whose own text clearly names a rental car is read as one too.
+const carRental = /\b(auto|carro|veh[ií]culo|camioneta)s? de (alquiler|renta)\b|\b(alquiler|renta) de (auto|carro|veh[ií]culo|camioneta)s?\b|\brent ?a ?car\b|\bcar rental\b/i;
+export function serviceKind(tipo: string, text = ""): ServiceKind {
+  const kind = (["traslado", "tour", "actividad", "seguro", "asistencia", "auto"] as const).find(value => value === tipo) ?? "otro";
+  return kind === "otro" && carRental.test(text) ? "auto" : kind;
 }
 
 function baggageViews(details: ReturnType<typeof travelServices>): BaggageView[] {
@@ -182,12 +188,13 @@ export function nextStepFor(input: { stage: TripStage; balance: number; traveler
   const { stage, balance, travelersReviewed, hasFlights, timing } = input;
   if (stage === "cancelled") return "cancelled";
   if (stage === "completed") return "completed";
-  if (stage === "in_progress") return "inProgress";
+  if (stage === "in_progress") return timing.kind === "today" ? "travelDay" : "inProgress";
   if (balance > 0) return "balance";
   if (!travelersReviewed) return "travelersReview";
   if (stage === "registered" || stage === "prereserved") return "awaitingConfirmation";
   if (stage === "ticketing") return "ticketing";
   if (stage === "confirmed") return hasFlights ? "awaitingTickets" : "awaitingDocuments";
+  if (timing.kind === "upcoming" && timing.days <= 2 && hasFlights) return "checkin";
   return timing.kind === "upcoming" && timing.days <= 7 ? "readySoon" : "ready";
 }
 
@@ -208,12 +215,12 @@ export function buildTripView(input: TripInput) {
   const ferries: FerryView[] = expanded.ferry.legs.map(leg => ({ id: leg.id, operator: leg.operador, vessel: leg.embarcacion, fromPort: leg.origenPuerto, toPort: leg.destinoPuerto, date: leg.salidaFecha, time: leg.salidaHora, arriveDate: leg.llegadaFecha, arriveTime: leg.llegadaHora, className: expanded.ferry.clase }));
   const extras: ServiceView[] = [
     ...original.paquete.componentes.flatMap(component => component.servicio ? [{
-      id: component.id, kind: serviceKind(component.tipo), title: componentTitle(component), description: component.servicio.descripcion !== componentTitle(component) ? component.servicio.descripcion : "", date: component.servicio.fecha, time: component.servicio.hora, endDate: component.servicio.fechaFin,
+      id: component.id, kind: serviceKind(component.tipo, `${componentTitle(component)} ${component.servicio.descripcion}`), title: componentTitle(component), description: component.servicio.descripcion !== componentTitle(component) ? component.servicio.descripcion : "", date: component.servicio.fecha, time: component.servicio.hora, endDate: component.servicio.fechaFin,
       place: component.servicio.lugar, duration: component.servicio.duracion, mode: component.servicio.modalidad, operator: component.servicio.operador,
       included: component.servicio.inclusionesConfirmadas ? included(component.servicio.inclusiones) : [],
     }] : []),
     // Older quotations list included services as free text: shown without a date.
-    ...original.servicios.filter(service => service.descripcion).map(service => ({ id: service.id, kind: serviceKind(service.tipo.toLowerCase()), title: service.tipo || service.descripcion, description: service.tipo ? service.descripcion : "", date: "", time: "", endDate: "", place: "", duration: "", mode: "", operator: "", included: [] })),
+    ...original.servicios.filter(service => service.descripcion).map(service => ({ id: service.id, kind: serviceKind(service.tipo.toLowerCase(), `${service.tipo} ${service.descripcion}`), title: service.tipo || service.descripcion, description: service.tipo ? service.descripcion : "", date: "", time: "", endDate: "", place: "", duration: "", mode: "", operator: "", included: [] })),
   ];
 
   const events: TripEvent[] = [
@@ -225,11 +232,19 @@ export function buildTripView(input: TripInput) {
   const timeline = buildTimeline(events, reservation.fecha_inicio);
 
   const reviewed = Boolean(travel?.reviewed);
+  const ticketing: TicketState = !hasFlights ? "none" : travel?.status === "emitida" ? "issued" : travel?.status === "en_emision" ? "processing" : "pending";
   const travelers: TravelerView[] = reviewed && travel ? travel.passengers.map(passenger => {
     const ticket = travel.tickets.find(item => item.passengerId === passenger.id);
-    return { id: passenger.id, name: legalName(passenger), category: passenger.category, pnr: ticket?.pnr ?? "", ticketNumber: travel.status === "emitida" ? ticket?.number ?? "" : "", airline: ticket?.airline ?? "" };
+    const ticketNumber = travel.status === "emitida" ? ticket?.number?.trim() ?? "" : "";
+    // A person's ticket reads "issued" only with the issued file and that person's own ticket number.
+    return { id: passenger.id, name: legalName(passenger), category: passenger.category, pnr: ticket?.pnr?.trim() ?? "", ticketNumber, airline: ticket?.airline?.trim() ?? "", ticket: ticketing === "issued" && !ticketNumber ? "processing" : ticketing };
   }) : [];
-  const ticketing: TicketState = !hasFlights ? "none" : travel?.status === "emitida" ? "issued" : travel?.status === "en_emision" ? "processing" : "pending";
+  const confirmations: AirlineConfirmation[] = [];
+  for (const traveler of travelers) {
+    if (!traveler.pnr) continue;
+    const found = confirmations.find(item => item.pnr === traveler.pnr && item.airline === traveler.airline);
+    if (found) found.travelerIds.push(traveler.id); else confirmations.push({ airline: traveler.airline, pnr: traveler.pnr, travelerIds: [traveler.id] });
+  }
   const counted = original.pasajeros.adultos + original.pasajeros.ninos + original.pasajeros.infantes;
 
   const paid = Math.round(input.payments.filter(payment => payment.moneda === reservation.moneda).reduce((cents, payment) => cents + Math.round(Number(payment.monto) * 100), 0)) / 100;
@@ -265,6 +280,10 @@ export function buildTripView(input: TripInput) {
     start: reservation.fecha_inicio, end: reservation.fecha_fin,
     tripDays: reservation.fecha_inicio && reservation.fecha_fin ? (dayDifference(reservation.fecha_inicio, reservation.fecha_fin) ?? 0) + 1 : 0,
     travelerCount: travelers.length || counted,
+    // Who travels, from the reviewed passenger list when there is one, else the quoted party.
+    party: travelers.length
+      ? { adults: travelers.filter(traveler => traveler.category === "adulto").length, children: travelers.filter(traveler => traveler.category === "nino").length, infants: travelers.filter(traveler => traveler.category === "infante").length }
+      : { adults: original.pasajeros.adultos, children: original.pasajeros.ninos, infants: original.pasajeros.infantes },
     prereservation: Boolean(reservation.prerreserva),
     stage, timing, milestones: milestones(stage, hasFlights),
     nextStep: nextStepFor({ stage, balance: finance.balance, travelersReviewed: reviewed, hasFlights, timing }),
@@ -274,7 +293,7 @@ export function buildTripView(input: TripInput) {
     journeys, hotels, ferries, services: extras,
     timeline: timeline.entries, undated: timeline.undated,
     baggage: baggageViews(services), separateTickets: services.vuelos.boletosSeparados,
-    travelers, finance, receipts, documents, customerDocuments,
+    travelers, confirmations, finance, receipts, documents, customerDocuments,
   };
 }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
-import { Send } from "lucide-react";
+import { Paperclip, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { markConversationRead, replyToReservation } from "@/app/admin/reservas/message-actions";
 import { messageMaxLength, type MessageThread } from "@/lib/reservation-messages";
@@ -28,7 +28,8 @@ export function ReservationMessages({ reservationId, code, customer, thread }: {
           return <li key={message.id} className={`flex ${agency ? "justify-end" : "justify-start"}`}>
             <article className={`max-w-[85%] rounded-card px-4 py-3 ${agency ? "bg-brand-tint" : "border border-line bg-canvas"}`}>
               <p className="t-small flex flex-wrap gap-x-2 font-semibold">{agency ? "viatour" : customer}{message.topic ? <span className="font-normal text-ink-soft">· {topicLabels[message.topic]}</span> : null}{!agency && !message.agency_read_at ? <span className="rounded-btn bg-brand px-2 text-[12px] leading-5 text-white">Nuevo</span> : null}</p>
-              <p className="mt-1 whitespace-pre-wrap break-words">{message.body}</p>
+              {message.body ? <p className="mt-1 whitespace-pre-wrap break-words">{message.body}</p> : null}
+              {message.attachments?.length ? <ul className="mt-2 space-y-1">{message.attachments.map(file => <li key={file.id}><a className="t-small inline-flex min-h-10 items-center gap-2 font-semibold text-brand underline-offset-4 hover:underline" href={`/api/admin/reservas/${reservationId}/adjuntos/${file.id}`} target="_blank" rel="noopener noreferrer"><Paperclip size={16} strokeWidth={1.75} aria-hidden="true" />{file.name} <span className="font-normal text-ink-soft">({Math.max(1, Math.round(file.size / 1024))} KB)</span></a></li>)}</ul> : null}
               <p className="t-small mt-1 text-ink-soft"><time dateTime={message.created_at}>{time.format(new Date(message.created_at))}</time>{agency && message.customer_read_at ? " · Leído por el cliente" : ""}</p>
             </article>
           </li>;

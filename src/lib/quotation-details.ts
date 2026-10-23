@@ -63,6 +63,7 @@ export const packageServiceTypes = {
   actividad: { label: "Actividad", descripcion: "Buceo, parques, espectáculos u otra actividad.", data: "servicio", variante: "general", itemType: "Tour", sugerencias: ["Equipo", "Instructor", "Transporte", "Entradas", "Fotos", "Propinas"] },
   seguro: { label: "Seguro de viaje", descripcion: "Vigencia, aseguradora y coberturas confirmadas.", data: "servicio", variante: "cobertura", itemType: "Seguro", sugerencias: ["Gastos médicos", "Equipaje", "Cancelación del viaje", "Asistencia 24 horas"] },
   asistencia: { label: "Asistencia al viajero", descripcion: "Vigencia, proveedor y lo que cubre.", data: "servicio", variante: "cobertura", itemType: "Asistencia", sugerencias: ["Gastos médicos", "Asistencia 24 horas", "Equipaje", "Traslado médico"] },
+  auto: { label: "Auto de alquiler", descripcion: "Rentadora, retiro, devolución y lo que incluye.", data: "servicio", variante: "general", itemType: "Otro", sugerencias: ["Kilometraje ilimitado", "Seguro básico", "Conductor adicional", "Asiento para niño"] },
   otro: { label: "Otro servicio", descripcion: "Cualquier otro servicio con su propia descripción.", data: "servicio", variante: "general", itemType: "Otro", sugerencias: [] },
 } as const satisfies Record<string, ServiceTypeDefinition>;
 export type PackageServiceKind = keyof typeof packageServiceTypes;

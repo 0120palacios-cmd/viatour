@@ -11,7 +11,7 @@ import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 const origin = process.argv[2] ?? 'http://localhost:3021';
 const out = 'output/trip-documents';
 fs.mkdirSync(path.join(out, 'pages'), { recursive: true });
-const cases = ['miami-pendiente', 'cancun-listo', 'grupo-multidestino', 'cancelada'];
+const cases = ['miami-emitido', 'miami-pendiente', 'un-viajero', 'cancun-listo', 'grupo-multidestino', 'completado', 'cancelada'];
 const forbidden = /INTERNAL DO NOT PRINT|PASSPORT|birthDate|documentNumber|notasInternas|undefined|NaN|\[object Object\]|trip\.[a-z]/;
 const report = [];
 for (const name of cases) {

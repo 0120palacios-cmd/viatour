@@ -80,12 +80,12 @@ test('mock reservation requires OTP, uses generic errors, and locks after five a
   for (let i = 0; i < 5; i++) {
     const wrong = new FormData(); wrong.set('otp', '000000');
     const result = await actions.verifyPortalOtp({}, wrong);
-    assert.equal(result.error, 'No se pudo verificar el código. Revise la información e inténtelo nuevamente.');
+    assert.equal(result.error, 'No se pudo verificar el código. Use el código más reciente que recibió por correo; si ya no es válido, elija «Ingresar otros datos» para solicitar uno nuevo.');
   }
   assert.equal(attempts, 5);
   const locked = new FormData(); locked.set('otp', otp);
   const lockedResult = await actions.verifyPortalOtp({}, locked);
-  assert.equal(lockedResult.error, 'No se pudo verificar el código. Revise la información e inténtelo nuevamente.');
+  assert.equal(lockedResult.error, 'No se pudo verificar el código. Use el código más reciente que recibió por correo; si ya no es válido, elija «Ingresar otros datos» para solicitar uno nuevo.');
   assert.equal(cookieValues.has('viatour-portal'), false);
 
   attempts = 0;

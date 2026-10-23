@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
-import { ArrowDown, ArrowUp, BedDouble, CarFront, ChevronDown, ChevronUp, CopyPlus, LifeBuoy, MapPinned, Plane, Plus, ShieldCheck, Ship, Ticket, Trash2, type LucideIcon } from "lucide-react";
+import { ArrowDown, ArrowUp, BedDouble, Car, CarFront, ChevronDown, ChevronUp, CopyPlus, LifeBuoy, MapPinned, Plane, Plus, ShieldCheck, Ship, Ticket, Trash2, type LucideIcon } from "lucide-react";
 import { componentTitle, duplicateComponent, emptyComponent, maxPackageComponents, packageServiceKinds, packageServiceLabels, packageServiceTypes, serviceType, type GeneralService, type PackageComponent, type PackageServiceKind, type QuotationDetails, type ServiceMode } from "@/lib/quotation-details";
 import type { FlightJourney } from "@/lib/flight-itinerary";
 import type { HotelStay } from "@/lib/quotation-details";
@@ -18,7 +18,7 @@ type Update = (change: (details: QuotationDetails) => QuotationDetails) => void;
 type Props = { details: QuotationDetails; update: Update; recentHotels: HotelStay[]; onApplyItinerary: (journeys: FlightJourney[]) => void };
 
 // Icon per service type (packageServiceTypes in quotation-details.ts); a new type without one shows "+".
-const serviceIcons: Partial<Record<PackageServiceKind, LucideIcon>> = { vuelo: Plane, hotel: BedDouble, ferry: Ship, traslado: CarFront, tour: MapPinned, actividad: Ticket, seguro: ShieldCheck, asistencia: LifeBuoy, otro: Plus };
+const serviceIcons: Partial<Record<PackageServiceKind, LucideIcon>> = { vuelo: Plane, hotel: BedDouble, ferry: Ship, traslado: CarFront, tour: MapPinned, actividad: Ticket, seguro: ShieldCheck, asistencia: LifeBuoy, auto: Car, otro: Plus };
 export const serviceIcon = (kind: PackageServiceKind) => serviceIcons[kind] ?? Plus;
 
 // "+ Agregar servicio": opens the list of every registered service type. No type is required and any

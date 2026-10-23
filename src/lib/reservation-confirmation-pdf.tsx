@@ -73,6 +73,7 @@ export function ConfirmationDocument({ reservation, items, payments, invoices = 
   const details = sanitizeDetails(snapshot.quotation.detalles);
   const view = buildTripView({ reservation: { ...reservation, total: Number(reservation.total) }, details: snapshot.quotation.detalles, travel: null, payments, invoices, receipts: [], documents: [], today: hondurasToday() });
   const headline = confirmationHeadline(reservation);
+  const cancelled = reservation.estado === "cancelada";
   // Only a supplier-confirmed reservation is titled a confirmation; otherwise it is a reservation summary.
   const docName = view.supplierConfirmed && !reservation.prerreserva && reservation.estado !== "cancelada" ? "Confirmación de reserva" : "Resumen de reserva";
   const tone = { success: { border: c.success, bg: c.successTint, text: c.success }, brand: { border: c.brand, bg: c.brandTint, text: c.brandDeep }, muted: { border: c.line, bg: c.surface, text: c.inkSoft } }[headline.tone];
@@ -124,10 +125,12 @@ export function ConfirmationDocument({ reservation, items, payments, invoices = 
         <View style={s.totals}>
           <View style={{ ...s.totalRow, borderTopWidth: 1.5, borderTopColor: c.ink, paddingTop: 6 }}><Text style={{ fontWeight: 700 }}>Total de la reserva</Text><Text style={{ fontWeight: 800 }}>{formatAmount(view.finance.total, view.finance.currency)}</Text></View>
           <View style={s.totalRow}><Text style={s.muted}>Pagos recibidos</Text><Text>{formatAmount(view.finance.paid, view.finance.currency)}</Text></View>
-          <View style={{ ...s.totalRow, borderTopWidth: 1, borderTopColor: c.line }}><Text style={{ fontWeight: 700 }}>{view.finance.balance > 0 ? "Saldo pendiente" : "Saldo"}</Text><Text style={{ fontWeight: 800, color: view.finance.balance > 0 ? c.brandDeep : c.success }}>{view.finance.balance > 0 ? formatAmount(view.finance.balance, view.finance.currency) : "Pagada"}</Text></View>
+          {cancelled ? null : <View style={{ ...s.totalRow, borderTopWidth: 1, borderTopColor: c.line }}><Text style={{ fontWeight: 700 }}>{view.finance.balance > 0 ? "Saldo pendiente" : "Saldo"}</Text><Text style={{ fontWeight: 800, color: view.finance.balance > 0 ? c.brandDeep : c.success }}>{view.finance.balance > 0 ? formatAmount(view.finance.balance, view.finance.currency) : "Pagada"}</Text></View>}
         </View>
-        {payment.saldoFecha && view.finance.balance > 0 ? <Text style={{ ...s.small, marginTop: 4 }}>Fecha límite para el saldo: {formatTripDate(payment.saldoFecha, "es", "long")}</Text> : null}
-        {payment.instrucciones ? <Text style={{ ...s.small, ...s.muted, marginTop: 2 }}>{payment.instrucciones}</Text> : null}
+        {/* A cancelled reservation shows no balance due or deadline: same rule as Mi viaje. */}
+        {cancelled ? <Text style={{ ...s.small, marginTop: 4 }}>Esta reserva fue cancelada. Su asesor le informará sobre cualquier pago o reembolso, según las condiciones de cada proveedor.</Text> : null}
+        {!cancelled && payment.saldoFecha && view.finance.balance > 0 ? <Text style={{ ...s.small, marginTop: 4 }}>Fecha límite para el saldo: {formatTripDate(payment.saldoFecha, "es", "long")}</Text> : null}
+        {!cancelled && payment.instrucciones ? <Text style={{ ...s.small, ...s.muted, marginTop: 2 }}>{payment.instrucciones}</Text> : null}
         {view.finance.otherCurrency ? <Text style={{ ...s.small, ...s.muted, marginTop: 2 }}>Hay pagos registrados en otra moneda; su asesor los aplicará al saldo.</Text> : null}
       </View>
 

@@ -1,0 +1,51 @@
+{
+  "_comentario": "Fotografías de destino para Mi viaje (cabecera del viaje y 'Qué hacer en su destino'). Fuente: Wikimedia Commons, solo licencias que permiten uso comercial (CC BY, CC BY-SA, CC0, dominio público). Las descarga y optimiza scripts/fetch-commons-photos.mjs data/trip-photos.json; los créditos quedan en data/trip-photo-credits.json. Las cabeceras usan public/destinos/<slug>.jpg, que Mi viaje detecta por el nombre del destino.",
+  "sizes": { "cabecera": [2000, 1250], "experiencia": [1200, 800] },
+  "photos": [
+    { "archivo": "/destinos/miami.jpg", "tipo": "cabecera", "commons": "File:Miami - Skyline from Harbor.jpg", "alt": "Rascacielos de Miami frente a la bahía de Biscayne" },
+    { "archivo": "/destinos/que-hacer/miami/south-beach.jpg", "tipo": "experiencia", "commons": "File:Ocean Drive in the Miami Beach Art Deco Historic District.jpg", "alt": "Hoteles art déco y palmeras en Ocean Drive, South Beach" },
+    { "archivo": "/destinos/que-hacer/miami/little-havana.jpg", "tipo": "experiencia", "commons": "File:Little Havana Domino Club Park Calle Ocho.JPG", "alt": "Parque del Dominó en la Calle Ocho de la Pequeña Habana" },
+    { "archivo": "/destinos/que-hacer/miami/vizcaya.jpg", "tipo": "experiencia", "commons": "File:Villa Vizcaya 20110228.jpg", "alt": "Villa y jardines del Museo Vizcaya en Miami" },
+    { "archivo": "/destinos/que-hacer/miami/bayside.jpg", "tipo": "experiencia", "commons": "File:Miami-Bayside.jpg", "alt": "Letras de Bayside entre palmeras, frente a la bahía de Miami" },
+    { "archivo": "/destinos/que-hacer/miami/brickell.jpg", "tipo": "experiencia", "commons": "File:Icon Brickell 3.jpg", "alt": "Torres de Brickell iluminadas junto al río Miami de noche" },
+    { "archivo": "/destinos/que-hacer/miami/everglades.jpg", "tipo": "experiencia", "commons": "File:American Alligator - Anhinga Trail, Everglades National Park, Homestead, Florida.jpg", "alt": "Caimán americano en el sendero Anhinga del Parque Nacional Everglades" },
+    { "archivo": "/destinos/que-hacer/miami/dolphin-mall.jpg", "tipo": "experiencia", "commons": "File:US-miami-dolphinmall.jpg", "alt": "Entrada principal del centro comercial Dolphin Mall" },
+
+    { "archivo": "/destinos/nueva-york.jpg", "tipo": "cabecera", "commons": "File:Lower Manhattan from Governors Island with a fishing boat (46294p).jpg", "alt": "Rascacielos del bajo Manhattan vistos desde el agua" },
+    { "archivo": "/destinos/que-hacer/nueva-york/central-park.jpg", "tipo": "experiencia", "commons": "File:Bow Bridge over the Lake, Central Park, Manhattan, New York.jpg", "alt": "Puente Bow sobre el lago de Central Park" },
+    { "archivo": "/destinos/que-hacer/nueva-york/estatua-libertad.jpg", "tipo": "experiencia", "commons": "File:Statue of Liberty and a sightseeing boat, Liberty Island, New York.jpg", "alt": "Estatua de la Libertad con un barco turístico en la bahía" },
+    { "archivo": "/destinos/que-hacer/nueva-york/puente-brooklyn.jpg", "tipo": "experiencia", "commons": "File:2024-06-15 09 53 30 View from the middle of the Brooklyn Bridge looking northwest along the pedestrian walkway in Manhattan, New York City, New York.jpg", "alt": "Paseo peatonal del puente de Brooklyn con Manhattan al fondo" },
+    { "archivo": "/destinos/que-hacer/nueva-york/times-square.jpg", "tipo": "experiencia", "commons": "File:1 times square night 2013 anonymized.jpg", "alt": "Pantallas iluminadas de Times Square de noche" },
+
+    { "archivo": "/destinos/orlando.jpg", "tipo": "cabecera", "commons": "File:Lake Eola Park in Orlando 01.jpg", "alt": "Lago Eola y edificios del centro de Orlando al atardecer" },
+    { "archivo": "/destinos/que-hacer/orlando/parques-tematicos.jpg", "tipo": "experiencia", "commons": "File:Magic Kingdom Main Street.jpg", "alt": "Calle principal de un parque temático de Orlando" },
+    { "archivo": "/destinos/que-hacer/orlando/kennedy-space-center.jpg", "tipo": "experiencia", "commons": "File:Rocket garden - Kennedy Space Center - Cape Canaveral, Florida - DSC02560.jpg", "alt": "Jardín de cohetes del Kennedy Space Center" },
+    { "archivo": "/destinos/que-hacer/orlando/disney-springs.jpg", "tipo": "experiencia", "commons": "File:Disney Springs (27832916856).jpg", "alt": "Tiendas y restaurantes junto al agua en Disney Springs" },
+    { "archivo": "/destinos/que-hacer/orlando/citywalk.jpg", "tipo": "experiencia", "commons": "File:Universal CityWalk - Orlando 08.jpg", "alt": "Canal y restaurantes de Universal CityWalk" },
+
+    { "archivo": "/destinos/houston.jpg", "tipo": "cabecera", "commons": "File:Houston Texas Skyline and the Buffalo Bayou (54182707440).jpg", "alt": "Rascacielos del centro de Houston sobre el Buffalo Bayou" },
+    { "archivo": "/destinos/que-hacer/houston/space-center.jpg", "tipo": "experiencia", "commons": "File:Space Center Houston 2025.08.jpg", "alt": "Edificio de Space Center Houston" },
+    { "archivo": "/destinos/que-hacer/houston/museo-bellas-artes.jpg", "tipo": "experiencia", "commons": "File:Houston May 2022 25 (Museum of Fine Arts, Houston).jpg", "alt": "Museo de Bellas Artes de Houston entre robles" },
+
+    { "archivo": "/destinos/costa-rica.jpg", "tipo": "cabecera", "commons": "File:Arenal volcano (70785p).jpg", "alt": "Volcán Arenal rodeado de bosque en Costa Rica" },
+    { "archivo": "/destinos/guatemala.jpg", "tipo": "cabecera", "commons": "File:Volcano Street, Antigua Guatemala, 2022-01-27.jpg", "alt": "Arco de Santa Catalina en Antigua Guatemala con el volcán al fondo" },
+    { "archivo": "/destinos/medellin.jpg", "tipo": "cabecera", "commons": "File:Medellín skyline02.jpg", "alt": "Vista de Medellín entre montañas" },
+    { "archivo": "/destinos/bogota.jpg", "tipo": "cabecera", "commons": "File:Monserrate y centro de Bogota.jpg", "alt": "Cerro de Monserrate sobre el centro de Bogotá" },
+    { "archivo": "/destinos/espana.jpg", "tipo": "cabecera", "commons": "File:Gran Vía (Madrid) 1.jpg", "alt": "Edificios de la Gran Vía en Madrid" },
+    { "archivo": "/destinos/san-andres.jpg", "tipo": "cabecera", "commons": "File:Johny Cay.jpg", "alt": "Johnny Cay rodeado de mar turquesa frente a San Andrés" },
+
+    { "archivo": "/destinos/que-hacer/cancun/chichen-itza.jpg", "tipo": "experiencia", "commons": "File:Chichen Itza 3.jpg", "alt": "Pirámide de El Castillo en Chichén Itzá" },
+    { "archivo": "/destinos/que-hacer/cancun/isla-mujeres.jpg", "tipo": "experiencia", "commons": "File:Playa Norte, Isla Mujeres QR 2020 01.jpg", "alt": "Agua turquesa de Playa Norte en Isla Mujeres" },
+    { "archivo": "/destinos/que-hacer/cancun/tulum.jpg", "tipo": "experiencia", "commons": "File:Tulum Ruins-30 (6025731897).jpg", "alt": "Zona arqueológica de Tulum sobre el mar Caribe" },
+    { "archivo": "/destinos/que-hacer/cancun/cenote.jpg", "tipo": "experiencia", "commons": "File:Ik Kil Cenote 2021 1.jpg", "alt": "Cenote Ik Kil con raíces colgantes sobre el agua" },
+
+    { "archivo": "/destinos/que-hacer/punta-cana/isla-saona.jpg", "tipo": "experiencia", "commons": "File:Saona Island December 2020.jpg", "alt": "Playa de arena blanca y palmeras en Isla Saona" },
+    { "archivo": "/destinos/que-hacer/punta-cana/altos-de-chavon.jpg", "tipo": "experiencia", "commons": "File:DO-altos-de-ch-chavon.jpg", "alt": "Altos de Chavón sobre el río Chavón" },
+    { "archivo": "/destinos/que-hacer/punta-cana/zona-colonial.jpg", "tipo": "experiencia", "commons": "File:DOM Santo Domingo, Ciudad Colonial, Catedral Primada de América 0015.jpg", "alt": "Fachada de la Catedral Primada de América en Santo Domingo" },
+    { "archivo": "/destinos/que-hacer/punta-cana/playas.jpg", "tipo": "experiencia", "commons": "File:View southwards along coastline at Punta Cana 9.jpg", "alt": "Costa de Punta Cana con arena blanca y palmeras" },
+
+    { "archivo": "/destinos/que-hacer/cartagena/ciudad-amurallada.jpg", "tipo": "experiencia", "commons": "File:Puerta del Reloj, Cartagena 03.jpg", "alt": "Puerta del Reloj, entrada a la ciudad amurallada de Cartagena" },
+    { "archivo": "/destinos/que-hacer/cartagena/getsemani.jpg", "tipo": "experiencia", "commons": "File:Getsemaní (30677449).jpeg", "alt": "Casas coloridas con balcones en Getsemaní" },
+    { "archivo": "/destinos/que-hacer/cartagena/san-felipe.jpg", "tipo": "experiencia", "commons": "File:Castillo San Felipe de Barajas, Cartagena 18.jpg", "alt": "Murallas del Castillo San Felipe de Barajas" }
+  ]
+}

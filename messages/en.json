@@ -762,113 +762,126 @@
     "greeting": "Hello, {name}",
     "eyebrow": "Your trip to",
     "reference": "Booking {code}",
+    "referenceLabel": "Booking",
+    "travelersLabel": "Travelers",
+    "durationLabel": "Duration",
     "travelerCount": "{count, plural, one {# traveler} other {# travelers}}",
-    "travelers": {
-      "title": "Travelers",
-      "intro": "Names as they appear on the booking. If any does not match the travel document, let us know right away.",
-      "adulto": "Adult",
-      "nino": "Child",
-      "infante": "Infant",
-      "pnr": "Airline booking code",
-      "ticket": "Ticket",
-      "pendingReview": "We are reviewing the traveler details. They will appear here once confirmed.",
-      "privacy": "For your security, document numbers and other personal details are not shown on this page."
-    },
     "days": "{count, plural, one {# day} other {# days}}",
     "nights": "{count, plural, one {# night} other {# nights}}",
-    "countdown": "{days, plural, one {# day until your trip} other {# days until your trip}}",
+    "countdown": "{days, plural, one {Your trip is tomorrow} other {# days until your trip}}",
     "startsToday": "Your trip starts today",
-    "ongoing": "Your trip is in progress",
+    "ongoing": "Trip in progress",
     "ended": "Trip completed",
     "datesToConfirm": "Dates to be confirmed",
     "from": "From {city}",
     "signOut": "Sign out",
     "prereservation": "Pre-booking",
     "heroAlt": "Photo of {destination}",
+    "route": "From {from} to {to}",
+    "copy": "Copy",
+    "copied": "Copied",
+    "copyLabel": "Copy {value}",
     "nav": {
-      "label": "Trip sections",
+      "label": "Sections of your trip",
+      "flights": "Flights",
+      "stay": "Stay",
       "itinerary": "Itinerary",
       "travelers": "Travelers",
       "documents": "Documents",
       "messages": "Messages",
       "payments": "Payments",
-      "help": "Help"
+      "help": "Help",
+      "destination": "Destination"
     },
     "stage": {
-      "prereserved": "Pre-booking registered",
-      "prereservedBody": "We registered your request. Your advisor will confirm availability and conditions before booking with the suppliers.",
+      "prereserved": "Pre-booking",
       "registered": "Booking registered",
-      "registeredBody": "We received your booking and are confirming each service with the airline and the other suppliers.",
       "confirmed": "Booking confirmed",
-      "confirmedBody": "Suppliers confirmed your booking. We are preparing your travel documents.",
       "ticketing": "Tickets being issued",
-      "ticketingBody": "Your airline tickets are being issued. They will appear in My trip when ready.",
-      "ready": "Everything is ready for your trip",
-      "readyBody": "Your booking is confirmed and your travel documents are ready. Review the details before you leave.",
-      "in_progress": "Your trip is in progress",
-      "in_progressBody": "Keep your itinerary and documents at hand. If you need help, write to us.",
+      "ready": "Ready to travel",
+      "in_progress": "Trip in progress",
       "completed": "Trip completed",
-      "completedBody": "Thank you for traveling with viatour.",
-      "cancelled": "Booking cancelled",
-      "cancelledBody": "This booking was cancelled. If you have questions, write to us."
+      "cancelled": "Booking cancelled"
+    },
+    "headline": {
+      "prereserved": "Your pre-booking is registered",
+      "registered": "We are confirming your trip",
+      "confirmed": "Your booking is confirmed",
+      "ticketing": "We are issuing your tickets",
+      "ready": "Your tickets have been issued",
+      "readyNoFlights": "Everything is ready for your trip",
+      "in_progress": "Your trip is in progress",
+      "completed": "Thank you for traveling with viatour",
+      "cancelled": "This booking was cancelled"
     },
     "milestones": {
-      "prereserved": "Pre-booking registered",
       "label": "Booking progress",
-      "registered": "Booking registered",
-      "confirmed": "Supplier confirmation",
-      "tickets": "Tickets issued",
-      "documents": "Travel documents",
+      "step": "Step {current} of {total}: {name}",
+      "prereserved": "Pre-booking",
+      "registered": "Booking",
+      "confirmed": "Confirmation",
+      "tickets": "Tickets",
+      "documents": "Documents",
       "trip": "Trip",
-      "done": "Completed",
-      "current": "In progress",
-      "upcoming": "Pending"
+      "done": "completed",
+      "current": "in progress",
+      "upcoming": "pending"
     },
     "next": {
       "title": "Next step",
-      "cancelled": "If you would like to plan a new trip or have questions about this booking, write to us.",
-      "completed": "We hope you enjoyed your trip. Your review helps other travelers.",
+      "cancelled": "If you have questions about this booking or would like to plan another trip, write to us.",
+      "completed": "We hope you enjoyed your trip. If you like, tell us how it went.",
+      "travelDay": "Your trip starts today. Keep the passports, your itinerary and the airline booking code at hand.",
       "inProgress": "Keep your itinerary at hand. If something changes during the trip, write to us on WhatsApp.",
-      "balance": "You have a balance due of {amount}. Arrange the payment with your advisor.",
-      "travelersReview": "We are reviewing the traveler details. If your advisor asks for a document, you can send it from this page.",
-      "awaitingConfirmation": "Review your itinerary and the travelers' names. We will let you know when the booking is confirmed.",
-      "awaitingTickets": "Your booking is confirmed. We will let you know when your tickets are issued.",
-      "ticketing": "We are issuing your tickets. They will appear in My trip when ready.",
+      "balance": "There is a balance of {amount}. Arrange the payment with your advisor.",
+      "travelersReview": "Your advisor is reviewing the traveler details. If a document is needed, they will ask for it here or on WhatsApp.",
+      "awaitingConfirmation": "We are confirming each service with the airline and suppliers. Meanwhile, check that the travelers' names are correct.",
+      "awaitingTickets": "Suppliers confirmed your booking. The next step is issuing your tickets.",
+      "ticketing": "Your tickets will appear here, with each traveler's number, as soon as they are issued.",
       "ticketingEstimate": "Estimated time set by the agency: {min} to {max} hours, subject to supplier confirmation.",
       "awaitingDocuments": "Your booking is confirmed. Your advisor will post your trip vouchers here.",
-      "readySoon": "Your trip is coming up. Check the entry requirements, check in online when the airline allows it and keep your documents at hand.",
-      "ready": "Everything is in order. Review your itinerary and your destination's requirements before traveling."
+      "checkin": "Your flight leaves soon. Check in online on the airline's website and keep the passports at hand.",
+      "readySoon": "Your trip is coming up. Check the entry requirements and check in online when the airline allows it.",
+      "ready": "Review the travelers' names and your itinerary. We recommend downloading it to keep it at hand."
+    },
+    "prepare": {
+      "title": "Before you leave",
+      "documents": "A valid passport or travel document for each traveler.",
+      "requirements": "Entry requirements for your destination and connection countries.",
+      "checkin": "Online check-in with the airline, once available.",
+      "airport": "Arrive at the airport early: each airline sets its own cut-off time."
     },
     "actions": {
       "viewItinerary": "View itinerary",
+      "itineraryPdf": "Itinerary PDF",
       "downloadItinerary": "Download itinerary",
+      "viewFlights": "View my flights",
+      "viewDocuments": "Documents",
+      "reviewTravelers": "Review travelers",
       "addCalendar": "Add flights to calendar",
       "whatsapp": "Write to us on WhatsApp",
       "sendMessage": "Send a message",
       "requirements": "Check travel requirements",
-      "viewDocuments": "View documents",
       "leaveReview": "Share my review",
       "map": "View on map",
-      "uploadDocument": "Send a document",
       "coordinatePayment": "Arrange payment"
     },
     "itinerary": {
-      "title": "Your itinerary",
-      "localTimes": "All times are local to each city.",
-      "before": "Before your trip",
-      "beforeDocuments": "Bring a valid passport or ID for each traveler.",
-      "beforeRequirements": "Check your destination's entry requirements, such as visas or permits.",
-      "beforeCheckin": "Check in online when the airline allows it.",
-      "beforeAirport": "Arrive at the airport with enough time: each airline sets its own cut-off time.",
-      "day": "Day {number}",
-      "freeTime": "{days, plural, one {# day at your destination} other {# days at your destination}}",
-      "freeTimeNote": "No services booked with viatour on these days.",
+      "localTimes": "Local times at each airport.",
       "undated": "Other included services",
-      "empty": "Your advisor is preparing your itinerary details."
+      "empty": "Your advisor is preparing your itinerary details.",
+      "cancelled": "This booking was cancelled, so the itinerary is no longer shown.",
+      "day": "Day {number}",
+      "daysLabel": "Your trip day by day",
+      "freeDays": "{count, plural, one {# free day} other {# free days}} in {destination}.",
+      "freeIdeas": "Ideas for those days"
+    },
+    "flights": {
+      "title": "Your flights"
     },
     "flight": {
-      "ida": "Outbound flight",
-      "regreso": "Return flight",
+      "ida": "Outbound",
+      "regreso": "Return",
       "tramo": "Flight {number}",
       "direct": "Nonstop",
       "stops": "{count, plural, one {# stop} other {# stops}}",
@@ -877,41 +890,49 @@
       "arrives": "Arrives",
       "nextDay": "+{days}",
       "nextDayLabel": "{days, plural, one {Arrives the next day} other {Arrives # days later}}",
+      "arrivesOn": "Arrives {date}",
       "connection": "Connection in {city}",
       "wait": "{duration} layover",
-      "overnight": "Overnight connection: continues the next day",
-      "airportChange": "Airport change: arrive at {from} and depart from {to}",
+      "overnight": "Overnight connection: the flight continues the next day.",
+      "airportChange": "Airport change: arrive at {from} and depart from {to}.",
       "operatedBy": "Operated by {airline}",
-      "cabin": "{cabin}",
-      "class": "Fare class {value}",
+      "class": "Class {value}",
       "flightTime": "{duration} flight",
-      "separateTickets": "Your itinerary combines separately issued tickets: each one has its own change and baggage rules."
+      "separateTickets": "Your itinerary combines separately issued tickets: each has its own change and baggage conditions."
     },
     "baggage": {
       "title": "Baggage",
       "personal": "Personal item",
-      "mano": "Carry-on bag",
+      "mano": "Carry-on",
       "documentado": "Checked bag",
       "incluido": "Included",
       "no_incluido": "Not included",
       "con_cargo": "Extra charge",
       "unknown": "To be confirmed",
-      "pieces": "{count, plural, one {# piece} other {# pieces}}"
+      "pieces": "{count, plural, one {# piece} other {# pieces}}",
+      "airlineRules": "Exact sizes and weights are set by each airline; check its website before you travel."
+    },
+    "stay": {
+      "title": "Stay and services",
+      "hotel": "Hotel"
     },
     "hotel": {
-      "checkin": "Hotel check-in",
-      "checkout": "Hotel check-out",
+      "checkin": "Check-in",
+      "checkout": "Check-out",
+      "checkoutTitle": "Hotel check-out",
       "room": "Room",
-      "meals": "Meal plan",
+      "meals": "Meals",
       "included": "Includes",
       "address": "Address",
+      "photoAlt": "Photo of {hotel}",
       "guests": "{adults, plural, one {# adult} other {# adults}}{children, plural, =0 {} one {, # child} other {, # children}}"
     },
     "ferry": {
       "title": "Ferry {from} – {to}",
-      "operator": "Operator"
+      "operator": "Ferry operator"
     },
     "service": {
+      "ferry": "Ferry",
       "traslado": "Transfer",
       "tour": "Tour",
       "actividad": "Activity",
@@ -923,41 +944,68 @@
       "provider": "Provider",
       "until": "Until {date}",
       "compartido": "Shared",
-      "privado": "Private"
+      "privado": "Private",
+      "auto": "Rental car",
+      "date": "Date",
+      "modeLabel": "Type",
+      "untilLabel": "Until"
+    },
+    "travelers": {
+      "title": "Travelers and tickets",
+      "titleNoFlights": "Travelers",
+      "intro": "Check that each name matches the passport or travel document. If anything does not match, let us know before traveling.",
+      "adulto": "Adult",
+      "nino": "Child",
+      "infante": "Infant",
+      "pnr": "Airline booking code",
+      "pnrHelp": "Use it for online check-in and at the airline counter.",
+      "pnrFor": "{count, plural, one {For # traveler} other {For # travelers}}",
+      "ticket": "Ticket",
+      "ticketIssued": "Ticket issued",
+      "ticketProcessing": "Being issued",
+      "ticketPending": "Pending issue",
+      "pendingReview": "We are reviewing the traveler details. They will appear here once confirmed.",
+      "privacy": "For your security, passport numbers and other personal data are not shown here.",
+      "mismatchTitle": "A name doesn't match the passport?",
+      "mismatchBody": "Message us before you travel so we can correct it with the airline."
     },
     "documents": {
+      "title": "Documents",
+      "none": "There are no documents available for this booking.",
+      "receipts": "Payment receipts",
+      "receiptsDetail": "{count, plural, one {# receipt} other {# receipts}}, with amounts under Payments",
       "summary": "Booking summary",
-      "title": "Travel documents",
-      "intro": "Everything you need for your trip, in one place.",
       "itinerary": "Travel itinerary",
-      "itineraryDetail": "Flights, times, baggage and contacts",
-      "itineraryProcessing": "Available once your advisor reviews the trip details.",
+      "itineraryDetail": "Flights, times and baggage, ready to print",
+      "itineraryProcessing": "Available once your advisor reviews the trip details",
       "confirmation": "Booking confirmation",
       "confirmationDetail": "Services, travelers, payments and conditions",
-      "confirmationPending": "Available once the booking is active.",
-      "tickets": "Airline tickets",
-      "ticketsPending": "Issued once the booking is confirmed.",
-      "ticketsProcessing": "Being issued.",
-      "ticketsIssued": "Ticket numbers appear under Travelers.",
+      "confirmationPending": "Available once the booking is active",
+      "tickets": "E-tickets",
+      "ticketsPending": "Issued once the booking is confirmed",
+      "ticketsProcessing": "Being issued",
+      "ticketsIssued": "Ticket numbers are under Travelers and tickets",
       "hotelVoucher": "Hotel voucher",
-      "hotelPending": "Your advisor will post it here.",
-      "receipt": "Payment receipt {number}",
+      "hotelPending": "Your advisor will share it here",
+      "receipt": "Receipt {number}",
       "agency": "Shared by viatour",
       "available": "Available",
       "pending": "Pending",
-      "processing": "In preparation",
-      "open": "Open",
+      "processing": "Being prepared",
+      "open": "View",
       "sentOn": "Sent on {date}",
       "fromYou": "Documents you sent",
       "noCustomerDocuments": "You have not sent any documents yet.",
       "uploadTitle": "Send a document to your advisor",
-      "uploadIntro": "Only if your advisor asks for it, for example your passport data page."
+      "uploadIntro": "Only if your advisor asks for it, for example the passport data page.",
+      "trouble": "If a document does not open, write to us and we will send it another way."
     },
     "messages": {
-      "title": "Messages about this trip",
-      "intro": "Write to your advisor about this booking; replies will appear here.",
+      "title": "Messages",
+      "intro": "Write to your advisor about this trip. Replies will appear here.",
       "label": "Conversation with viatour",
-      "topic": "Topic",
+      "topic": "Topic (optional)",
+      "topicNone": "No topic",
       "topics": {
         "vuelo": "Flights",
         "hotel": "Hotel",
@@ -969,66 +1017,508 @@
       "placeholder": "Write your message",
       "send": "Send message",
       "sending": "Sending",
-      "empty": "No messages yet. Write to us if you have any question about your trip.",
+      "empty": "No messages yet. If you have any question about your trip, write to us here.",
       "you": "You",
       "agency": "viatour",
       "sent": "Message sent.",
       "error": "The message could not be sent. Please try again.",
       "unavailable": "Messages are not available right now.",
       "loading": "Loading messages",
-      "tooLong": "Messages can have up to 2000 characters.",
-      "previewDisabled": "Messages are not sent from the preview.",
+      "tooLong": "Messages can be up to 2000 characters.",
+      "previewDisabled": "Messages are not sent in the preview.",
       "whatsapp": "Write to us on WhatsApp",
-      "new": "New"
+      "new": "New",
+      "open": "Open conversation",
+      "write": "Write to your advisor",
+      "reassurance": "Send us a message and one of our advisors will reply in this conversation."
     },
     "payments": {
-      "cancelled": "This booking was cancelled. Your advisor will inform you about any payment or refund, according to each supplier's conditions.",
-      "status": "Payment status",
       "title": "Payments",
-      "paid": "Paid",
-      "paidBody": "Your booking is paid in full.",
+      "cancelled": "This booking was cancelled. Your advisor will inform you about any payment or refund, according to each supplier's conditions.",
+      "paid": "Paid in full",
       "due": "Balance due",
       "total": "Booking total",
-      "received": "Payments received",
+      "received": "Paid",
+      "progress": "{paid} of {total} paid",
       "receipts": "Receipts",
-      "noReceipts": "Receipts for your payments will appear here.",
+      "noReceipts": "Your payment receipts will appear here.",
       "viewReceipt": "View receipt",
       "otherCurrency": "There are payments in another currency; your advisor will apply them to your balance.",
       "none": "Your advisor will confirm the amount of your booking.",
-      "receiptNote": "Each receipt confirms a payment recorded by viatour."
+      "receiptNote": "Each receipt certifies a payment registered by viatour.",
+      "see": "View payments"
     },
     "help": {
-      "title": "Help with your trip",
+      "title": "Need help?",
       "advisor": "Your travel advisor",
-      "advisorBody": "For questions, changes or payments, write to us and include your booking code {code}.",
+      "advisorBody": "For changes, payments or any question, write to us and mention your booking {code}.",
       "email": "Email",
       "phone": "Phone",
       "duringTitle": "If something changes during your trip",
-      "duringBody": "If a flight is delayed or cancelled, the airline or supplier is the one who can rebook you on the spot. Let us know on WhatsApp so we can follow up.",
+      "duringBody": "In case of a delay or cancellation, the airline or supplier is the one who can rebook you on the spot. Let us know on WhatsApp so we can follow up.",
       "changesTitle": "Changes and cancellations",
       "changesBody": "Changes, cancellations and refunds follow each supplier's conditions.",
-      "changesLink": "View the cancellation policy",
-      "whatsappMessage": "Hello, I am writing about my booking {code} ({destination})."
+      "changesLink": "See the cancellation policy",
+      "addTitle": "Add services to your trip",
+      "addBody": "Transfers, tours or travel assistance in {destination}. Your advisor will prepare a no-obligation quote.",
+      "addAsk": "Ask on WhatsApp",
+      "addMessage": "Hello, I would like to add services to my trip to {destination} (booking {code}).",
+      "whatsappMessage": "Hello, I am writing about my booking {code} ({destination}).",
+      "paymentMessage": "Hello, I'd like to arrange payment of the balance on my booking {code} ({amount})."
     },
-    "discover": {
-      "title": "Complete your trip to {destination}",
-      "intro": "If you would like to add a service, your advisor will prepare a quote with no obligation.",
-      "transfer": "Transfers",
-      "transferBody": "From the airport to your hotel and back.",
-      "tours": "Tours and activities",
-      "toursBody": "Excursions and experiences at your destination.",
-      "assistance": "Travel assistance",
-      "assistanceBody": "Coverage during your trip, depending on the plan you choose.",
-      "hotel": "Hotel",
-      "hotelBody": "Accommodation that fits your travel style.",
-      "ask": "Ask",
-      "askMessage": "Hello, I would like information about {service} for my trip to {destination} (booking {code})."
+    "states": {
+      "loading": "Loading your trip",
+      "errorTitle": "We could not load your trip",
+      "errorBody": "It may be a connection problem. Please try again; if it continues, write to us on WhatsApp with your booking code.",
+      "retry": "Try again",
+      "notFound": "We could not find this booking's information. Sign in again or write to us on WhatsApp."
     },
     "preview": {
-      "adjusted": "Internal note (not shown to the customer): the total shown, {shown}, is the one on the invoice marked as paid; the accepted booking total is {reservation}. Confirm which one is correct before sending communications or generating receipts.",
+      "adjusted": "Internal note (the customer does not see it): the total shown, {shown}, is the paid invoice total; the accepted booking total is {reservation}. Confirm which one is correct before sending communications or issuing receipts.",
       "badge": "Admin preview",
-      "body": "This is how the customer will see their portal. No code was generated, no customer session was started and no email was sent. Customer actions are disabled.",
+      "body": "This is how the customer will see the portal. No code was generated, no customer session was started and no email was sent. Customer actions are disabled.",
       "disabled": "Disabled in the preview"
+    },
+    "quick": {
+      "label": "Trip actions",
+      "itinerary": "Itinerary",
+      "itineraryHint": "PDF to take along",
+      "trip": "Your trip",
+      "tripHint": "Flights and details",
+      "messages": "Messages",
+      "messagesHint": "Talk to your advisor",
+      "unread": "{count, plural, one {# new message} other {# new messages}}",
+      "documents": "Documents",
+      "documentsHint": "{count, plural, =0 {No files yet} one {# available} other {# available}}",
+      "whatsappHint": "Write to us"
+    },
+    "confirmation": {
+      "title": "Your trip confirmation",
+      "issued": "{total, plural, one {Ticket issued} other {{issued} of {total} tickets issued}}",
+      "verify": "With this code and your last name you can look up your booking on the {airline} website.",
+      "theAirline": "airline",
+      "copyPnr": "Copy code",
+      "pending": "Your {airline} booking code will appear here once your booking is confirmed and your tickets are issued.",
+      "processing": "We are issuing your tickets. The airline booking code and each ticket number will appear here.",
+      "ticketsPending": "Tickets not yet issued",
+      "ticketsProcessing": "Tickets being issued",
+      "travelersLink": "Travelers and tickets"
+    },
+    "destination": {
+      "title": "Your destination: {destination}",
+      "requirements": "Entry requirements",
+      "more": "{destination} at viatour"
+    },
+    "chat": {
+      "title": "Your viatour advisor",
+      "subtitle": "Booking {code}",
+      "back": "Back to My trip",
+      "label": "Conversation with viatour",
+      "agency": "viatour",
+      "you": "You",
+      "new": "New",
+      "today": "Today",
+      "loading": "Loading the conversation",
+      "loadError": "We could not load the conversation",
+      "loadErrorBody": "Check your connection and try again, or write to us on WhatsApp.",
+      "retry": "Try again",
+      "retryNow": "Please try again in a moment.",
+      "whatsapp": "Write to us on WhatsApp",
+      "whatsappShort": "Write to us on WhatsApp.",
+      "emptyTitle": "Write to us about your trip",
+      "emptyBody": "Ask anything about flights, changes, payments or services. Your advisor will reply in this conversation.",
+      "suggestions": {
+        "flight": "I have a question about my flight",
+        "change": "I need to make a change",
+        "add": "I would like to add a service",
+        "payment": "I would like to arrange a payment"
+      },
+      "composer": "Write a message",
+      "placeholder": "Write your message",
+      "send": "Send message",
+      "sending": "Sending",
+      "sent": "Message sent. Your advisor will reply here.",
+      "delivered": "Sent",
+      "error": "The message could not be sent. Please try again.",
+      "tooLong": "Messages can be up to 2000 characters.",
+      "footnote": "If you need immediate help during your trip,",
+      "previewDisabled": "Messages are not sent in the preview.",
+      "attach": "Attach a photo or PDF",
+      "attachPreparing": "Preparing the file",
+      "attachRemove": "Remove {name}",
+      "attachOpen": "Open file",
+      "attachTooLarge": "The file can be up to 4 MB.",
+      "attachType": "You can attach photos (JPG, PNG or WebP) and PDF documents only.",
+      "attachUnavailable": "Attachments aren't available right now. Send the text or share the file on WhatsApp.",
+      "attachHint": "You can attach photos or a PDF up to 4 MB.",
+      "attachmentOnly": "Attachment",
+      "captionPlaceholder": "Add a comment (optional)",
+      "edit": "Edit",
+      "notSent": "Not sent",
+      "unreadDivider": "New messages",
+      "uploadLabel": "File upload progress",
+      "uploading": "Uploading file: {progress}%"
+    },
+    "more": {
+      "title": "More from viatour",
+      "videoTitle": "Share your trip and win",
+      "videoBody": "Post a video of your trip tagging @miviatour and enter for a prize for your trip.",
+      "videoCta": "See how to take part",
+      "referralTitle": "Recommend viatour",
+      "referralBody": "Is someone close to you planning a trip? Share viatour with them. When they book, your advisor will give you a code to enter for a prize.",
+      "referralCta": "Share on WhatsApp",
+      "referralMessage": "I recommend viatour for planning your next trip:",
+      "nextTitle": "Ideas for your next trip",
+      "allDestinations": "See all destinations",
+      "videoBodyAfter": "Post your trip video tagging @miviatour, send us the link and, once it's approved, spin the wheel for a prize.",
+      "duringNote": "If you film your trip, you can enter Share your trip and win when you're back.",
+      "beforeNote": "Film your best moments while you travel: when you're back, you can enter Share your trip and win."
+    },
+    "eyebrowPast": "Your trip to",
+    "opensNewWindow": "(opens in a new window)",
+    "party": {
+      "adults": "{count, plural, one {# adult} other {# adults}}",
+      "children": "{count, plural, one {# child} other {# children}}",
+      "infants": "{count, plural, one {# infant} other {# infants}}"
+    },
+    "sections": {
+      "resumen": "Overview",
+      "itinerario": "Itinerary",
+      "itinerarioTitle": "Your itinerary",
+      "viajeros": "Travelers",
+      "documentos": "Documents",
+      "pagos": "Payments",
+      "destino": "Destination",
+      "mensajes": "Messages"
+    },
+    "hero": {
+      "actionItinerary": "View itinerary",
+      "actionDestination": "Explore your destination",
+      "actionMessage": "Message your advisor",
+      "actionFeedback": "Tell us how it went"
+    },
+    "airline": {
+      "manage": "View booking on {airline}",
+      "site": "Go to {airline}",
+      "neutral": "Use this code and your last name to look up your booking on the airline's website.",
+      "sync": "Your viatour booking is confirmed and your tickets have been issued. Some airlines take a little longer to show the booking in their own system; you can keep checking with the airline button or message us."
+    },
+    "checklist": {
+      "title": {
+        "planning": "Getting ready",
+        "week": "Your trip is next week",
+        "soon": "Just a few days to go",
+        "eve": "You travel tomorrow",
+        "today": "You travel today",
+        "during": "During your trip",
+        "after": "After your trip"
+      },
+      "items": {
+        "balance": {
+          "title": "Balance due",
+          "body": "A balance of {amount} remains. Arrange it with your advisor.",
+          "action": "View payments"
+        },
+        "names": {
+          "title": "Check the travelers' names",
+          "body": "They must match each person's passport or travel document.",
+          "action": "View travelers"
+        },
+        "passports": {
+          "title": "Check your passports",
+          "body": "Make sure every passport is valid and meets your destination's rules.",
+          "action": ""
+        },
+        "itinerary": {
+          "title": "Review your itinerary",
+          "body": "Dates, times and included services, day by day.",
+          "action": "View itinerary"
+        },
+        "requirements": {
+          "title": "Entry requirements",
+          "body": "See what your destination and connecting countries require.",
+          "action": "View requirements"
+        },
+        "documentsReady": {
+          "title": "Get your documents ready",
+          "body": "Passports, visas if needed, and your itinerary, printed or on your phone.",
+          "action": ""
+        },
+        "baggage": {
+          "title": "Check your baggage",
+          "body": "What your fare includes and each traveler's pieces.",
+          "action": "View baggage"
+        },
+        "airlineCheck": {
+          "title": "Look up your booking with the airline",
+          "body": "With your booking code and last name, on the airline's website.",
+          "action": "Open website"
+        },
+        "airlineApp": {
+          "title": "Download the airline's app",
+          "body": "Handy for check-in and for schedule or gate changes.",
+          "action": ""
+        },
+        "checkin": {
+          "title": "Check in online",
+          "body": "On the airline's website or app, once it opens.",
+          "action": "Open website"
+        },
+        "airport": {
+          "title": "Get to the airport early",
+          "body": "Each airline sets its own check-in and boarding cut-off times.",
+          "action": ""
+        },
+        "travelDocs": {
+          "title": "Keep your documents handy",
+          "body": "Passports, the airline booking code and your itinerary.",
+          "action": ""
+        },
+        "flightDetails": {
+          "title": "Today's flights",
+          "body": "Times, connections and airports.",
+          "action": "View flights"
+        },
+        "support": {
+          "title": "We're keeping an eye on your trip",
+          "body": "If anything changes, message us here or on WhatsApp.",
+          "action": "Message us"
+        },
+        "destination": {
+          "title": "Your destination",
+          "body": "Useful facts and places your advisor recommends.",
+          "action": "View destination"
+        },
+        "activities": {
+          "title": "Tours and excursions",
+          "body": "Want to add an activity? We'll quote it for you.",
+          "action": "See options"
+        },
+        "feedback": {
+          "title": "How is your trip going?",
+          "body": "Tell us in a few words; it goes straight to your advisor.",
+          "action": "Reply"
+        },
+        "review": {
+          "title": "Tell us how it went",
+          "body": "Your feedback helps us keep improving.",
+          "action": "Give feedback"
+        },
+        "share": {
+          "title": "Share your trip and win",
+          "body": "Post your trip video and enter for a prize.",
+          "action": "See how to take part"
+        },
+        "referral": {
+          "title": "Recommend viatour",
+          "body": "Share viatour with someone planning a trip.",
+          "action": "Share"
+        },
+        "nextTrip": {
+          "title": "Your next trip",
+          "body": "Ideas and destinations for whenever you're ready to travel again.",
+          "action": "View destinations"
+        }
+      }
+    },
+    "upNext": {
+      "title": "Coming up",
+      "all": "View itinerary",
+      "today": "Today",
+      "tomorrow": "Tomorrow"
+    },
+    "support": {
+      "label": "Help with your trip",
+      "sendMessage": "Send a message",
+      "reassurance": "Send us a message and one of our advisors will reply in this conversation.",
+      "before": {
+        "title": "Any questions about your trip?",
+        "body": "Message your advisor here or on WhatsApp."
+      },
+      "today": {
+        "title": "We're keeping an eye on your trip today",
+        "body": "If anything changes at the airport or with your flight, message us."
+      },
+      "during": {
+        "title": "Need help?",
+        "body": "During your trip you can message us here or on WhatsApp."
+      },
+      "after": {
+        "title": "Planning your next trip?",
+        "body": "Your advisor can help with whatever you need."
+      },
+      "cancelled": {
+        "title": "Questions about this booking?",
+        "body": "Message us and we'll be glad to help."
+      }
+    },
+    "offers": {
+      "title": "Complete your trip",
+      "titleDuring": "During your trip",
+      "titleAfter": "Plan your next trip",
+      "improveTitle": "Make more of your trip",
+      "intro": "Your advisor prepares a no-obligation quote.",
+      "all": "See all",
+      "items": {
+        "hotel": {
+          "title": "Hotel in {destination}",
+          "short": "a hotel",
+          "body": "We'll quote options for your dates, close to what you plan to see.",
+          "cta": "Get a hotel quote",
+          "placeholder": "Preferred area, room type, approximate budget",
+          "label": "Hotel"
+        },
+        "traslado": {
+          "title": "Airport – hotel transfer",
+          "short": "a transfer",
+          "body": "A coordinated ride from the airport to where you're staying, and back.",
+          "cta": "Get a transfer quote",
+          "placeholder": "Private or shared, number of bags",
+          "label": "Transfer"
+        },
+        "auto": {
+          "title": "Need a car in {destination}?",
+          "short": "a rental car",
+          "body": "Travel at your own pace. We'll quote a car for your dates, with pick-up at the airport or in town.",
+          "cta": "Get a car quote",
+          "placeholder": "Car type, airport pick-up, child seat",
+          "label": "Rental car"
+        },
+        "tour": {
+          "title": "Tours and excursions",
+          "short": "tours and excursions",
+          "body": "We'll suggest activities that fit your dates and interests.",
+          "cta": "See options",
+          "placeholder": "What interests you: beaches, culture, theme parks, shopping",
+          "label": "Tours and excursions"
+        },
+        "seguro": {
+          "title": "Travel insurance",
+          "short": "travel insurance",
+          "body": "Medical assistance and cover for the unexpected during your trip.",
+          "cta": "Get an insurance quote",
+          "placeholder": "Travelers' ages and anything we should know",
+          "label": "Travel insurance"
+        },
+        "equipaje": {
+          "title": "Checked bag",
+          "short": "extra baggage",
+          "body": "Your fare doesn't include a checked bag. We'll quote adding one before you fly.",
+          "cta": "Get a bag quote",
+          "placeholder": "How many bags, and for which travelers",
+          "label": "Extra baggage"
+        },
+        "vuelo": {
+          "title": "Your next flight",
+          "short": "flights",
+          "body": "We'll find options for your next trip.",
+          "cta": "Get a flight quote",
+          "placeholder": "Destination, rough dates and number of travelers",
+          "label": "Flights"
+        },
+        "a_medida": {
+          "title": "A trip made for you",
+          "short": "a tailor-made trip",
+          "body": "Tell us what you have in mind and your advisor will put together a proposal.",
+          "cta": "Let's plan your trip",
+          "placeholder": "Destination, dates, who's traveling and what you'd like to do",
+          "label": "Tailor-made trip"
+        }
+      }
+    },
+    "request": {
+      "intro": "Your advisor will receive this request with your booking details: destination, dates and travelers.",
+      "noteLabel": "Details (optional)",
+      "noteHint": "Up to 600 characters. Please don't include passport or payment details.",
+      "submit": "Send request",
+      "sending": "Sending",
+      "error": "We couldn't save your request. Please try again.",
+      "sentTitle": "We've received your request",
+      "sentBody": "It's saved on your booking and your advisor will prepare the quote.",
+      "continueWhatsapp": "Continue on WhatsApp",
+      "done": "Done",
+      "sentFallback": "If you prefer, carry on the conversation on WhatsApp; your request is already saved.",
+      "privacy": "Only your viatour advisor sees this request.",
+      "close": "Close",
+      "previewDisabled": "Disabled in the preview",
+      "whatsappMessage": "Hello, I requested a quote for {service} in Mi viaje for my trip to {destination} (booking {code}).",
+      "whatsappNote": "Details: {note}"
+    },
+    "requests": {
+      "title": "Your requests",
+      "sentOn": "Sent on {date}",
+      "note": "Your advisor will get back to you with the quote.",
+      "status": {
+        "nueva": "Received",
+        "en_cotizacion": "Being quoted",
+        "cotizada": "Quoted",
+        "confirmada": "Confirmed",
+        "cerrada": "Closed"
+      }
+    },
+    "car": {
+      "yoursTitle": "Your rental car",
+      "offerTitle": "Need a car in {destination}?",
+      "offerBody": "Get around at your own pace between parks, beaches and shopping. We'll quote a car for your dates, with no obligation.",
+      "offerDates": "For your dates: {from} – {to}",
+      "pickup": "Pick-up",
+      "return": "Return",
+      "place": "Pick-up location",
+      "company": "Rental company",
+      "documents": "Rental companies usually ask for a valid driver's license, a passport and a credit card in the driver's name. Your advisor will confirm the requirements."
+    },
+    "guide": {
+      "eyebrow": "Your destination",
+      "tourism": "Official tourism: {site}",
+      "todoTitle": "Things to do in {destination}",
+      "todoIntro": "Places your advisor recommends to make the most of your days.",
+      "todoFamily": "For a family trip: the most child-friendly places come first.",
+      "officialSite": "Official website",
+      "disclaimer": "Opening hours, prices and availability change; check each place's official website before you go.",
+      "credits": "Photo credits",
+      "facts": {
+        "airport": "Airport",
+        "currency": "Currency",
+        "language": "Language",
+        "power": "Electricity",
+        "tips": "Tipping",
+        "transport": "Getting around"
+      },
+      "categories": {
+        "imperdibles": "Must-see",
+        "cultura": "Culture",
+        "playa": "Beach",
+        "gastronomia": "Food",
+        "compras": "Shopping",
+        "familia": "Family",
+        "aventura": "Outdoors",
+        "vida_nocturna": "Nightlife"
+      }
+    },
+    "feedback": {
+      "title": "How was your trip?",
+      "intro": "Your feedback on our service goes straight to your advisor and is not published.",
+      "softTitle": "How is your trip going?",
+      "softIntro": "Tell us in a few words. It goes straight to your advisor.",
+      "question": "How would you rate viatour's service?",
+      "softQuestion": "How is everything so far?",
+      "scale": "1 is very poor and 5 is excellent.",
+      "stars": "{count, plural, one {# star} other {# stars}}",
+      "commentLabel": "Comment (optional)",
+      "commentPlaceholder": "What went well and what we could do better",
+      "submit": "Send feedback",
+      "sending": "Sending",
+      "error": "We couldn't send your feedback. Please try again.",
+      "thanks": "Thank you. We've received your feedback and your advisor will read it.",
+      "alreadySent": "We've already received your feedback on this trip. Thank you.",
+      "private": "Only the viatour team sees it.",
+      "previewDisabled": "Disabled in the preview"
+    },
+    "review": {
+      "title": "Post a review",
+      "body": "If you'd like, share your experience so other travelers can read it.",
+      "site": "Review on viatour",
+      "google": "Review on Google"
     }
   }
 }

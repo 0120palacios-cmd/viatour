@@ -127,6 +127,8 @@ test('receipt amount is written in Spanish words', () => {
 });
 
 const messages = load('src/lib/reservation-messages.ts');
+const portalDocuments = load('src/lib/portal-documents.ts');
+const chatAttachments = load('src/lib/chat-attachments.ts', { '@/lib/portal-documents': portalDocuments }, { String, RegExp, encodeURIComponent });
 test('message validation trims, bounds and rejects control characters and unknown topics', () => {
   assert.deepEqual(plain(messages.validateMessage({ body: '  Hola  ', topic: 'vuelo' })), { body: 'Hola', topic: 'vuelo' });
   assert.equal(messages.validateMessage({ body: '', topic: null }), null);
@@ -145,8 +147,11 @@ function messagesRoute({ session = "A", limit = true, origin } = {}) {
     'next/headers': { cookies: async () => ({ get: () => (session ? { value: 'cookie' } : undefined) }) },
     '@/lib/portal': { portalCookieName: 'c', verifyPortalCookie: () => session },
     '@/lib/supabase/admin': { createAdminClient: () => client },
-    '@/lib/public-security': { clientIP: () => '192.0.2.1' },
+    '@/lib/public-security': { clientIP: () => '192.0.2.1', readBody: async request => Buffer.from(await request.arrayBuffer()) },
     '@/lib/reservation-messages': messages,
+    '@/lib/chat-attachments': chatAttachments,
+    '@/lib/attachment-image': { cleanImage: async (bytes, mime) => ({ bytes: Buffer.from(bytes), mime }) },
+    '@/lib/portal-documents': portalDocuments,
     '@/lib/notifications': { sendResendEmail: async () => { calls.emails++; }, captureNotificationFailure() {} },
     '@/lib/site-config': { siteConfig: { supportEmail: 'qa@example.invalid', url: 'https://example.invalid' } },
   });
@@ -259,4 +264,78 @@ test('a cancelled trip offers no itinerary or confirmation and never shows the t
   const trip = build('cancelada');
   assert.deepEqual(trip.documents.filter(document => ['itinerary', 'confirmation', 'tickets'].includes(document.key)), []);
   assert.equal(trip.nextStep, 'cancelled');
+});
+
+test('a booking code shared by every traveler is grouped once; different codes stay per traveler', () => {
+  const trip = build('miami-emitido');
+  assert.deepEqual(trip.confirmations, [{ airline: 'Avianca', pnr: 'QA3ZI3', travelerIds: ['p1', 'p2'] }]);
+  assert.deepEqual(trip.travelers.map(traveler => traveler.ticket), ['issued', 'issued']);
+  const input = structuredClone(fixtures['miami-emitido'].input);
+  input.travel.tickets[1].pnr = 'QAOTHER';
+  assert.equal(plain(view.buildTripView(input)).confirmations.length, 2);
+});
+
+test('an issued file without a person\'s ticket number never shows that person as issued', () => {
+  const input = structuredClone(fixtures['miami-emitido'].input);
+  input.travel.tickets[1].number = '';
+  const trip = plain(view.buildTripView(input));
+  assert.deepEqual(trip.travelers.map(traveler => traveler.ticket), ['issued', 'processing']);
+  assert.equal(trip.travelers[1].ticketNumber, '');
+});
+
+test('next step follows the calendar once everything is ready: check-in two days out, travel day', () => {
+  const input = structuredClone(fixtures['miami-emitido'].input);
+  assert.equal(plain(view.buildTripView(input)).nextStep, 'ready');
+  assert.equal(plain(view.buildTripView({ ...input, today: '2026-11-13' })).nextStep, 'readySoon');
+  assert.equal(plain(view.buildTripView({ ...input, today: '2026-11-16' })).nextStep, 'checkin');
+  const travelDay = plain(view.buildTripView({ ...input, today: '2026-11-18' }));
+  assert.equal(travelDay.stage, 'in_progress');
+  assert.equal(travelDay.nextStep, 'travelDay');
+  assert.equal(plain(view.buildTripView({ ...input, today: '2026-11-20' })).nextStep, 'inProgress');
+});
+
+test('single unreviewed traveler and completed fixtures: no names, no tickets, honest stages', () => {
+  const single = build('un-viajero');
+  assert.equal(single.stage, 'registered');
+  assert.equal(single.travelers.length, 0);
+  assert.equal(single.confirmations.length, 0);
+  assert.equal(single.travelerCount, 1);
+  assert.equal(single.finance.state, 'due');
+  const done = build('completado');
+  assert.equal(done.stage, 'completed');
+  assert.equal(done.nextStep, 'completed');
+  assert.deepEqual(done.milestones.map(m => m.state), ['done', 'done', 'done', 'done']);
+});
+
+test('destination content: whole-word match to published entries, suggestions exclude the trip destination', () => {
+  const match = load('src/lib/destination-match.ts');
+  const content = load('src/lib/trip-destination.ts', { '@/lib/destination-match': match });
+  const items = [
+    { slug: 'cancun', nombre: 'Cancún', intro: 'Intro Cancún', cuerpo: 'Cuerpo', imagen_url: '/destinos/cancun.jpg', destacado: true, publicado: true },
+    { slug: 'nueva-york', nombre: 'Nueva York', intro: 'Intro NY', cuerpo: '', imagen_url: null, destacado: true, publicado: true },
+    { slug: 'punta-cana', nombre: 'Punta Cana', intro: 'Intro PC', cuerpo: '', imagen_url: '/destinos/punta-cana.jpg', destacado: true, publicado: true },
+    { slug: 'york', nombre: 'York', intro: 'Otro', cuerpo: '', imagen_url: 'https://hotlink.example/x.jpg', destacado: true, publicado: true },
+    { slug: 'oculto', nombre: 'Oculto', intro: 'No publicado', cuerpo: '', imagen_url: '/destinos/x.jpg', destacado: true, publicado: false },
+  ];
+  const cancun = plain(content.destinationContent('Cancún, México', items));
+  assert.equal(cancun.destination.slug, 'cancun');
+  assert.deepEqual(cancun.suggestions.map(item => item.slug), ['punta-cana'], 'no current destination, no remote or unpublished images');
+  assert.equal(plain(content.destinationContent('Nueva York y Toronto', items)).destination.slug, 'nueva-york', 'longest name wins over "York"');
+  assert.equal(plain(content.destinationContent('Miami', items)).destination, null, 'no published entry, no block');
+});
+
+test('chat: messages and support requests become one conversation; subjects come from the topic or the text', () => {
+  const chat = load('src/lib/trip-chat.ts');
+  const fromRequests = plain(chat.fromRequests([
+    { id: 'b', asunto: 'Pagos', mensaje: 'Segundo', estado: 'abierto', created_at: '2026-10-19T10:00:00Z', respuesta: null },
+    { id: 'a', asunto: 'Vuelos', mensaje: 'Primero', estado: 'respondido', created_at: '2026-10-17T10:00:00Z', respuesta: ' Respuesta ' },
+  ]));
+  assert.deepEqual(fromRequests.map(message => `${message.from}:${message.body}`), ['me:Primero', 'agency:Respuesta', 'me:Segundo']);
+  assert.equal(fromRequests[1].at, null, 'a reply has no timestamp of its own');
+  const fromMessages = plain(chat.fromMessages([{ id: '1', sender: 'agencia', topic: null, body: 'Hola', created_at: '2026-10-20T10:00:00Z', customer_read_at: null }]));
+  const summary = plain(chat.chatSummary('messages', fromMessages));
+  assert.equal(summary.unread, 1);
+  assert.equal(summary.last.body, 'Hola');
+  assert.equal(chat.requestSubject('x'.repeat(80), ''), `${'x'.repeat(57)}...`);
+  assert.equal(chat.requestSubject('Texto', 'Vuelos'), 'Vuelos');
 });

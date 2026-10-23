@@ -21,7 +21,7 @@ import { siteConfig } from "@/lib/site-config";
 
 export type PortalAccessState = { error?: string; notice?: string; step?: "otp" };
 
-const genericOtpError = "No se pudo verificar el código. Revise la información e inténtelo nuevamente.";
+const genericOtpError = "No se pudo verificar el código. Use el código más reciente que recibió por correo; si ya no es válido, elija «Ingresar otros datos» para solicitar uno nuevo.";
 const unavailableError = "No se pudo procesar su solicitud. Inténtelo nuevamente más adelante.";
 const accessNotice = "Si los datos coinciden con una reserva, recibirá un código en el correo registrado.";
 
@@ -114,7 +114,8 @@ export async function accessReservation(_: PortalAccessState, form: FormData): P
 
     const cookieStore = await cookies();
     cookieStore.delete(portalCookieName);
-    cookieStore.set({ name: portalPendingCookieName, value: signPortalPendingReservationId(reservationId), ...cookieOptions(portalOtpLifetimeSeconds, "/mi-reserva") });
+    // Path "/": the code step also runs on /en/mi-reserva, and the deletes below use the default path.
+    cookieStore.set({ name: portalPendingCookieName, value: signPortalPendingReservationId(reservationId), ...cookieOptions(portalOtpLifetimeSeconds, "/") });
     return { notice: accessNotice, step: "otp" };
   } catch {
     return { error: unavailableError, step: "otp" };

@@ -50,6 +50,9 @@ next-env.d.ts
 !/data/panama-packages.mjs
 !/data/panama-photos.json
 !/data/panama-photo-credits.json
+# Mi viaje destination photos: manifest and credits (public data; the credits are read by the app).
+!/data/trip-photos.json
+!/data/trip-photo-credits.json
 
 # Supabase CLI link metadata (local only)
 supabase/.temp/

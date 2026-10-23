@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { CalendarClock, ClipboardList, FileClock, FileText, Inbox, MessageSquare, Star, UserPlus, Wallet } from "lucide-react";
+import { CalendarClock, ClipboardList, FileClock, FileText, Inbox, MessageSquare, MessagesSquare, Sparkles, Star, UserPlus, Wallet } from "lucide-react";
+import { openTripRequests } from "@/lib/trip-request-admin";
+import { requestStatusLabels, serviceLabels } from "@/lib/trip-requests";
 import { pageMetadata } from "@/lib/seo";
 import { requireAdmin } from "@/lib/admin";
 import { expiringSoon, formatAmount, hondurasDay, monthTotals, outstandingBalances, quotationFunnel, summarizeLeads } from "@/lib/admin-reports";
@@ -26,7 +28,7 @@ export default async function Page() {
 
   // Work queue. Each count stands alone: an optional table that is not installed yet shows "—"
   // instead of breaking the page.
-  const [newLeads, drafts, awaiting, tickets, reviews, departures, recent, active] = await Promise.all([
+  const [newLeads, drafts, awaiting, tickets, reviews, departures, recent, active, tripNew, unreadMessages, tripQueue] = await Promise.all([
     client.from("leads").select("id", head).eq("estado", "nuevo"),
     client.from("quotations").select("id", head).eq("estado", "borrador"),
     client.from("quotations").select("id", head).eq("estado", "enviada"),
@@ -35,6 +37,10 @@ export default async function Page() {
     client.from("reservations").select("id,codigo,cliente_nombre,destino,estado,fecha_inicio,fecha_fin").gte("fecha_inicio", today).lte("fecha_inicio", in30).in("estado", ["pendiente", "confirmada"]).order("fecha_inicio", { ascending: true }).limit(8),
     client.from("quotations").select("id,codigo,cliente_nombre,destino,estado,updated_at").order("updated_at", { ascending: false }).limit(6),
     client.from("reservations").select("id,codigo,cliente_nombre,destino,moneda,total,estado,fecha_inicio").in("estado", ["pendiente", "confirmada", "en_curso"]).order("fecha_inicio", { ascending: true, nullsFirst: false }).limit(500),
+    // Mi viaje (docs/sql/reservation_messages.sql and mi_viaje_premium.sql): "—" until applied.
+    client.from("trip_service_requests").select("id", head).eq("status", "nueva"),
+    client.from("reservation_messages").select("id", head).eq("sender", "cliente").is("agency_read_at", null),
+    openTripRequests(client, 6),
   ]);
   let open: Rows = await client.from("quotations").select("id,codigo,cliente_nombre,destino,estado,vence_en,validez").in("estado", ["borrador", "enviada"]).limit(500);
   if (open.error) open = await client.from("quotations").select("id,codigo,cliente_nombre,destino,estado,validez").in("estado", ["borrador", "enviada"]).limit(500);
@@ -65,6 +71,8 @@ export default async function Page() {
     ["Saldos pendientes", activePayments.error ? null : balances.length, "Reservas activas con saldo", "/admin/reservas?saldo=pendiente", Wallet],
     ["Solicitudes abiertas", ok(tickets), "Soporte de clientes con reserva", "/admin/tickets?estado=abiertas", MessageSquare],
     ["Opiniones por revisar", ok(reviews), "Antes de publicarse en el sitio", "/admin/opiniones?estado=pendiente", Star],
+    ["Solicitudes de Mi viaje", ok(tripNew), "Servicios que los viajeros pidieron cotizar", "/admin/reservas", Sparkles],
+    ["Mensajes sin leer", ok(unreadMessages), "Conversaciones de Mi viaje", "/admin/reservas", MessagesSquare],
   ] as const;
 
   return <>
@@ -72,7 +80,7 @@ export default async function Page() {
 
     <section aria-labelledby="queue-title" className="space-y-4">
       <h2 id="queue-title" className="sr-only">Pendientes</h2>
-      <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{queue.map(([label, value, hint, href, Icon]) => <li key={label}>
+      <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{queue.map(([label, value, hint, href, Icon]) => <li key={label}>
         <Link href={href} className="flex h-full items-start gap-4 rounded-card border border-line bg-canvas p-5 hover:border-brand">
           <span className={`flex size-10 shrink-0 items-center justify-center rounded-btn ${value ? "bg-brand-tint text-brand" : "bg-surface text-ink-soft"}`}><Icon size={20} strokeWidth={1.75} aria-hidden="true" /></span>
           <span className="min-w-0"><span className="block text-ink-soft">{label}</span><span className="t-h2 block tabular-nums">{value ?? "—"}</span><span className="t-small block text-ink-soft">{value == null ? "No disponible" : hint}</span></span>
@@ -81,6 +89,9 @@ export default async function Page() {
     </section>
 
     <div className="grid gap-6 xl:grid-cols-2">
+      {tripQueue?.length ? <Panel title="Solicitudes de Mi viaje" description="Servicios adicionales pedidos desde Mi viaje que aún no se cierran.">
+        <ul className="divide-y divide-line">{tripQueue.map(row => <RecordRow key={row.id} href={row.reservation ? `/admin/reservas/${row.reservation.id}#solicitudes` : undefined} title={`${serviceLabels[row.service]} · ${row.reservation?.codigo ?? ""}`} badges={<StatusBadge tone={row.status === "nueva" ? "info" : "neutral"}>{requestStatusLabels[row.status]}</StatusBadge>} meta={[row.reservation?.cliente_nombre, row.destination, formatDay(row.created_at.slice(0, 10))].filter(Boolean).join(" · ")} icon={<Sparkles size={18} strokeWidth={1.75} />} />)}</ul>
+      </Panel> : null}
       <Panel title="Próximas salidas" description="Reservas pendientes o confirmadas que inician en los próximos 30 días." action={<Link href="/admin/reservas" className={`t-small ${textLink}`}>Ver reservas</Link>}>
         {departures.error || !departures.data?.length ? <p className="p-6 text-ink-soft">{departures.error ? "No se pudieron cargar las reservas." : "No hay salidas en los próximos 30 días."}</p> : <ul className="divide-y divide-line">{departures.data.map(row => <RecordRow key={String(row.id)} href={`/admin/reservas/${row.id}`} icon={<CalendarClock size={18} strokeWidth={1.75} />} title={String(row.cliente_nombre)} badges={<StatusBadge tone={reservationTone[row.estado as ReservationStatus]}>{reservationStatusLabel(row.estado as ReservationStatus)}</StatusBadge>} meta={`${row.codigo} · ${row.destino}`} aside={<span className="t-small font-semibold">{formatDay(row.fecha_inicio as string)}</span>} />)}</ul>}
       </Panel>
