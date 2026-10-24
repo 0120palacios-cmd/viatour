@@ -55,3 +55,10 @@ test('check digits and dates follow ICAO 9303', () => {
   assert.equal(mrz.countryName('HND'), 'Honduras');
   assert.equal(mrz.countryName('UTO'), 'UTO');
 });
+
+test('fillers read as K, L or C at the end of the name line are filler again', () => {
+  const ocr = 'P<UTOERIKSSON<<ANNA<MARIA<KLLLLLLLLLLLLLLLLLL\nL898902C36UTO7408122F1204159ZE184226B<<<<<10';
+  const result = mrz.parseMrz(ocr, today);
+  assert.deepEqual([result.lastName, result.firstName, result.middleName, result.valid], ['ERIKSSON', 'ANNA', 'MARIA', true]);
+  assert.equal(mrz.nameFillers('P<UTOSMITH<<KELLY<<<<<<'), 'P<UTOSMITH<<KELLY<<<<<<', 'a real name ending in L or K stays');
+});

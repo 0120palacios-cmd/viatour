@@ -38,6 +38,11 @@ function date(yymmdd: string, kind: "birth" | "expiry", today = new Date()) {
   return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === iso ? iso : "";
 }
 
+// OCR often reads the filler "<" of the name line as K, L or C. A run of those letters after a "<" that reaches the
+// end of the line cannot be part of a name (it has no vowel), so it is filler again. Names have no check digit:
+// the advisor always reviews them.
+export const nameFillers = (line: string) => line.replace(/<[<KLC]{2,}$/, match => "<".repeat(match.length));
+
 function names(field: string) {
   const [surname = "", given = ""] = field.replace(/<+$/, "").split("<<");
   const clean = (value: string) => value.split("<").filter(Boolean).join(" ");
@@ -62,7 +67,7 @@ export function parseMrz(text: string, today = new Date()): MrzResult | null {
       expiryDate: checkDigit(expiry) === digitsOnly(b[27]),
       composite: checkDigit(b.slice(0, 10) + birth + digitsOnly(b[19]) + expiry + digitsOnly(b[27]) + b.slice(28, 43)) === digitsOnly(b[43]),
     };
-    return build("TD3", "pasaporte", a.slice(2, 5), names(a.slice(5)), number, b.slice(10, 13), date(birth, "birth", today), b[20], date(expiry, "expiry", today), checks);
+    return build("TD3", "pasaporte", a.slice(2, 5), names(nameFillers(a).slice(5)), number, b.slice(10, 13), date(birth, "birth", today), b[20], date(expiry, "expiry", today), checks);
   }
   const td1 = lines.filter(line => line.length >= 29 && line.length <= 31).slice(-3).map(line => line.padEnd(30, "<").slice(0, 30));
   if (td1.length === 3 && /^[ACI]/.test(td1[0])) {
@@ -74,7 +79,7 @@ export function parseMrz(text: string, today = new Date()): MrzResult | null {
       expiryDate: checkDigit(expiry) === digitsOnly(b[14]),
       composite: checkDigit(a.slice(5, 30) + birth + digitsOnly(b[6]) + expiry + digitsOnly(b[14]) + b.slice(18, 29)) === digitsOnly(b[29]),
     };
-    return build("TD1", "identidad", a.slice(2, 5), names(c), number, b.slice(15, 18), date(birth, "birth", today), b[7], date(expiry, "expiry", today), checks);
+    return build("TD1", "identidad", a.slice(2, 5), names(nameFillers(c)), number, b.slice(15, 18), date(birth, "birth", today), b[7], date(expiry, "expiry", today), checks);
   }
   return null;
 }

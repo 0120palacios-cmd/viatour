@@ -26,7 +26,8 @@ async function prepare(bitmap: ImageBitmap, fromTop: number) {
   const range = Math.max(1, max - min);
   for (let i = 0; i < data.length; i += 4) { const value = Math.max(0, Math.min(255, ((data[i] - min) / range) * 255 * 1.15 - 20)); data[i] = data[i + 1] = data[i + 2] = value; }
   context.putImageData(image, 0, 0);
-  return canvas;
+  // A PNG file, not the canvas: the engine reads files reliably in every browser.
+  return new Promise<Blob>((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error("image")), "image/png"));
 }
 
 export async function readMrzFromImage(file: File, onProgress: (percent: number) => void = () => {}): Promise<OcrReading> {
