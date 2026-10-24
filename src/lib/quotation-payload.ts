@@ -41,10 +41,12 @@ export function parseQuotationPayload(raw: unknown): Result {
   if (id && !validUuid(id)) return { error: "Cotización inválida." };
   const tipo = quotationKinds.includes(data.tipo as QuotationKind) ? data.tipo as QuotationKind : "general";
   const client = (data.cliente && typeof data.cliente === "object" ? data.cliente : {}) as Record<string, unknown>;
-  const nombre = text(client.nombre, 200);
   const email = text(client.email, 254).toLowerCase();
   const telefono = text(client.telefono, 60);
-  if (!nombre) return { error: "Ingrese el nombre del cliente." };
+  // A quotation is sold with only the customer's WhatsApp number; the holder's full name is asked when it becomes
+  // a reservation. Until then the number stands in for the name.
+  const nombre = text(client.nombre, 200) || telefono;
+  if (!nombre) return { error: "Escriba el número de WhatsApp del cliente (o su nombre)." };
   if (email && !emailPattern.test(email)) return { error: "Revise el correo electrónico del cliente." };
   const moneda = currencies.includes(data.moneda as Currency) ? data.moneda as Currency : null;
   if (!moneda) return { error: "Seleccione la moneda." };

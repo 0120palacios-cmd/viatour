@@ -56,6 +56,7 @@ function fakeDb(seed = {}, options = {}) {
       eq(key, value) { state.filters.push(['eq', key, value]); return api; },
       in(key, value) { state.filters.push(['in', key, value]); return api; },
       ilike(key, value) { state.filters.push(['ilike', key, value]); return api; },
+      or() { return api; },
       insert(values) { state.op = 'insert'; state.values = values; return api; },
       update(values) { state.op = 'update'; state.values = values; return api; },
       delete() { state.op = 'delete'; return api; },
@@ -310,7 +311,8 @@ test('payload validation rejects oversized, malformed and inconsistent input', (
   assert.ok(parse('x'.repeat(payloadModule.maxPayloadBytes + 1)).error);
   assert.ok(parse('{not json').error);
   assert.ok(parse('[]').error);
-  assert.match(parse(JSON.stringify(payload({ cliente: { nombre: '   ', email: '' } }))).error, /nombre del cliente/);
+  assert.match(parse(JSON.stringify(payload({ cliente: { nombre: '   ', email: '' } }))).error, /WhatsApp del cliente/);
+  assert.equal(parse(JSON.stringify(payload({ cliente: { nombre: '', email: '', telefono: '+504 9999-0099' } }))).payload.cliente.nombre, '+504 9999-0099', 'only a WhatsApp number is enough to quote');
   assert.match(parse(JSON.stringify(payload({ cliente: { nombre: 'A', email: 'no-es-correo' } }))).error, /correo/);
   assert.match(parse(JSON.stringify(payload({ moneda: 'EUR' }))).error, /moneda/);
   assert.match(parse(JSON.stringify(payload({ items: [{ descripcion: 'X', tipo: 'Hotel', cantidad: '-1', precio_unitario: '5' }] }))).error, /concepto de precio 1/i);
@@ -413,7 +415,7 @@ test('a discounted quotation keeps the same total through reservation and invoic
     '@/lib/site-config': { siteConfig: {} }, '@/lib/notifications': { captureNotificationFailure() {} }, '@/lib/lead-admin': { customerWhatsappHref: () => '' },
     '@/lib/lead-validation': { leadSegments: [], normalizePhone: value => value }, '@/lib/money': money, '@/lib/invoice-query': load('src/lib/invoice-query.ts'),
   });
-  const convert = form({ quotation_id: created.quotationId, version_id: db.tables.quotations[0].accepted_version_id, confirmado: 'si', modo: 'reserva', apellido: 'Pérez' });
+  const convert = form({ quotation_id: created.quotationId, version_id: db.tables.quotations[0].accepted_version_id, confirmado: 'si', modo: 'reserva', apellido: 'Pérez', titular: 'Ana Pérez' });
   await assert.rejects(reservations.convertQuotationToReservation({}, convert), /redirect:\/admin\/reservas\//);
   const [reservation] = db.tables.reservations;
   assert.equal(reservation.total, 1212.6);
@@ -477,8 +479,8 @@ test('the reservation is created from the accepted version, once, with the origi
   // Even if live rows were altered behind the application, the accepted snapshot is what gets converted.
   db.tables.quotation_items.push({ id: 'stray', quotation_id: id, descripcion: 'Duplicado', tipo: 'Tarifa aérea', cantidad: 2, precio_unitario: 312, orden: 9 });
   const reservations = reservationActions(db, 'agent-2');
-  await assert.rejects(reservations.convertQuotationToReservation({}, form({ quotation_id: id, version_id: db.tables.quotations[0].accepted_version_id, confirmado: 'si', modo: 'reserva', apellido: 'Pérez' })), /redirect:\/admin\/reservas\//);
-  await assert.rejects(reservations.convertQuotationToReservation({}, form({ quotation_id: id, version_id: db.tables.quotations[0].accepted_version_id, confirmado: 'si', modo: 'reserva', apellido: 'Pérez' })), /redirect:\/admin\/reservas\//);
+  await assert.rejects(reservations.convertQuotationToReservation({}, form({ quotation_id: id, version_id: db.tables.quotations[0].accepted_version_id, confirmado: 'si', modo: 'reserva', apellido: 'Pérez', titular: 'Ana Pérez' })), /redirect:\/admin\/reservas\//);
+  await assert.rejects(reservations.convertQuotationToReservation({}, form({ quotation_id: id, version_id: db.tables.quotations[0].accepted_version_id, confirmado: 'si', modo: 'reserva', apellido: 'Pérez', titular: 'Ana Pérez' })), /redirect:\/admin\/reservas\//);
   assert.equal(db.tables.reservations.length, 1);
   assert.equal(db.tables.reservations[0].total, 604);
   assert.equal(db.tables.reservations[0].agente_id, 'agent-1');
@@ -488,7 +490,7 @@ test('the reservation is created from the accepted version, once, with the origi
 test('a converted quotation cannot be moved out of "aceptada"', async () => {
   const db = fakeDb({ reservation_items: [], payments: [], invoices: [] });
   const { api, id } = await sentAndAccepted(db);
-  await assert.rejects(reservationActions(db).convertQuotationToReservation({}, form({ quotation_id: id, version_id: db.tables.quotations[0].accepted_version_id, confirmado: 'si', modo: 'reserva', apellido: 'Pérez' })), /redirect/);
+  await assert.rejects(reservationActions(db).convertQuotationToReservation({}, form({ quotation_id: id, version_id: db.tables.quotations[0].accepted_version_id, confirmado: 'si', modo: 'reserva', apellido: 'Pérez', titular: 'Ana Pérez' })), /redirect/);
   assert.match((await api.updateQuotationStatus({}, form({ id, estado: 'rechazada' }))).error, /por qué el cliente rechazó/);
   assert.match((await api.updateQuotationStatus({}, form({ id, estado: 'rechazada', motivo: 'Eligió otra fecha' }))).error, /requiere una enmienda/);
   assert.equal(db.tables.quotations[0].estado, 'aceptada');
@@ -693,7 +695,7 @@ test('an accepted package converts into a reservation from exactly the accepted 
   assert.match((await api.updateQuotationStatus({}, form({ id: created.quotationId, estado: 'aceptada', version_id: db.tables.quotation_versions.at(-1)?.id ?? '', confirmado: 'si' }))).success, /Cotización aceptada/);
   const locked = await api.saveQuotation(JSON.stringify(packagePayload({ id: created.quotationId })));
   assert.equal(locked.locked, true);
-  await assert.rejects(reservationActions(db).convertQuotationToReservation({}, form({ quotation_id: created.quotationId, version_id: db.tables.quotations[0].accepted_version_id, confirmado: 'si', modo: 'reserva', apellido: 'Pérez' })), /redirect:\/admin\/reservas\//);
+  await assert.rejects(reservationActions(db).convertQuotationToReservation({}, form({ quotation_id: created.quotationId, version_id: db.tables.quotations[0].accepted_version_id, confirmado: 'si', modo: 'reserva', apellido: 'Pérez', titular: 'Ana Pérez' })), /redirect:\/admin\/reservas\//);
   assert.equal(db.tables.reservations.length, 1);
   assert.equal(db.tables.reservations[0].total, 4029.5);
   assert.deepEqual(json(db.tables.reservation_items.map(item => item.descripcion)), json(db.tables.quotation_versions[0].snapshot.items.map(item => item.descripcion)));
@@ -859,4 +861,34 @@ test('share message, link and expiry rules', () => {
   assert.ok(shareModule.validShareToken(token) && /^[0-9a-f]{64}$/.test(hash));
   assert.ok(!shareModule.validShareToken('../../etc') && !shareModule.validShareToken(`${token}x`));
   assert.equal(shareModule.shareOrigin('evil.example/../x'), 'https://miviatour.com');
+});
+
+test('a quotation sold with only a WhatsApp number becomes a reservation once the holder is named', async () => {
+  const run = async ({ withoutCustomer }) => {
+    const db = fakeDb({ reservation_items: [], payments: [], invoices: [] });
+    const api = actions(db);
+    const calls = [];
+    const rpc = db.client.rpc;
+    db.client.rpc = async (name, args) => { calls.push({ name, args }); return rpc(name, args); };
+    const created = await api.saveQuotation(JSON.stringify(payload({ cliente: { nombre: '', email: '', telefono: '+50499990099' } })));
+    assert.equal(db.tables.quotations[0].cliente_nombre, '+50499990099');
+    if (withoutCustomer) { db.tables.quotations[0].customer_id = null; db.tables.customers = []; }
+    await api.registerQuotationSent({}, form({ id: created.quotationId, canal: 'whatsapp', confirmado: 'si' }));
+    await api.updateQuotationStatus({}, form({ id: created.quotationId, estado: 'aceptada', version_id: db.tables.quotation_versions.at(-1).id, confirmado: 'si' }));
+    const reservations = reservationActions(db);
+    const base = { quotation_id: created.quotationId, version_id: db.tables.quotations[0].accepted_version_id, confirmado: 'si', modo: 'reserva', apellido: 'PRUEBA' };
+    assert.match((await reservations.convertQuotationToReservation({}, form({ ...base, titular: '+504 9999-0099' }))).error, /nombre completo del titular/);
+    assert.match((await reservations.convertQuotationToReservation({}, form({ ...base, titular: 'Ana Lucia Prueba Torres', correo: 'no-es-correo' }))).error, /correo del titular/);
+    await assert.rejects(reservations.convertQuotationToReservation({}, form({ ...base, titular: '  Ana  Lucia Prueba Torres ', correo: 'ANA.PRUEBA@example.test' })), /redirect:\/admin\/reservas\//);
+    const convert = calls.find(call => call.name === 'convert_accepted_quotation');
+    return { db, convert };
+  };
+  const existing = await run({ withoutCustomer: false });
+  assert.equal(existing.convert.args.p_holder_name, 'Ana Lucia Prueba Torres');
+  assert.equal(existing.convert.args.p_customer, existing.db.tables.customers[0].id);
+  assert.deepEqual([existing.db.tables.customers[0].nombre, existing.db.tables.customers[0].email], ['Ana Lucia Prueba Torres', 'ana.prueba@example.test'], 'a customer named with just the number takes the holder name and e-mail');
+  const legacy = await run({ withoutCustomer: true });
+  assert.equal(legacy.db.tables.customers.length, 1, 'a quotation with no customer gets one at conversion');
+  assert.deepEqual([legacy.db.tables.customers[0].nombre, legacy.db.tables.customers[0].telefono], ['Ana Lucia Prueba Torres', '+50499990099']);
+  assert.equal(legacy.convert.args.p_customer, legacy.db.tables.customers[0].id);
 });

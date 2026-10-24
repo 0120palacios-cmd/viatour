@@ -58,7 +58,13 @@ export async function convertQuotationToReservation(_: ReservationActionState, f
   const { client } = await requireAdmin();
   const quotationId = clean(form.get("quotation_id")), versionId = clean(form.get("version_id")), mode = clean(form.get("modo"));
   if (!validUuid(quotationId) || !validUuid(versionId) || !["prerreserva", "reserva"].includes(mode) || form.get("confirmado") !== "si") return { error: "Revise la versión y confirme la conversión." };
-  const args = { p_id: quotationId, p_version_id: versionId, p_prereservation: mode === "prerreserva", p_lastname: clean(form.get("apellido")) };
+  // The holder is named here: a quotation is sold with only a WhatsApp number (owner request, 2026-10-23).
+  const holder = clean(form.get("titular")).replace(/\s+/g, " ").slice(0, 200), email = clean(form.get("correo")).toLowerCase();
+  if (holder.length < 3 || /^[+\d\s().-]+$/.test(holder)) return { error: "Escriba el nombre completo del titular, como figura en su documento." };
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: "Revise el correo del titular." };
+  const customer = await holderCustomer(client, quotationId, holder, email);
+  if ("error" in customer) return { error: customer.error };
+  const args = { p_id: quotationId, p_version_id: versionId, p_prereservation: mode === "prerreserva", p_lastname: clean(form.get("apellido")), p_holder_name: holder, p_customer: customer.id };
   const passengers = form.get("passengers");
   let travelArgs;
   if (passengers) {
@@ -67,9 +73,36 @@ export async function convertQuotationToReservation(_: ReservationActionState, f
   }
   const result = travelArgs ? await client.rpc("convert_quotation_with_passengers",travelArgs) : await client.rpc("convert_accepted_quotation", args);
   if (result.error || !result.data) return { error: commercialError(result.error) };
+  // The access e-mail can be completed once on a reservation that has none (reservation_commercial_guard).
+  if (email) await client.from("reservations").update({ cliente_email: email }).eq("id", String(result.data)).or("cliente_email.is.null,cliente_email.eq.");
   refreshReservationPaths(String(result.data));
   revalidatePath(`/admin/cotizaciones/${quotationId}`);
   redirect(`/admin/reservas/${result.data}`);
+}
+
+type AdminClient = Awaited<ReturnType<typeof requireAdmin>>["client"];
+const phoneOnly = (value: string) => /^[+\d\s().-]*$/.test(value);
+// The reservation's customer: the quotation's if it has one; otherwise the one with the same WhatsApp number, or a
+// new one. A customer still named with just a number takes the holder's name; a missing e-mail is completed.
+async function holderCustomer(client: AdminClient, quotationId: string, holder: string, email: string): Promise<{ id: string } | { error: string }> {
+  const quote = await client.from("quotations").select("customer_id,cliente_telefono").eq("id", quotationId).maybeSingle();
+  if (quote.error || !quote.data) return { error: "No se encontró la cotización." };
+  const phone = normalizePhone(String(quote.data.cliente_telefono ?? "")) || String(quote.data.cliente_telefono ?? "");
+  let id = quote.data.customer_id ? String(quote.data.customer_id) : "";
+  if (!id) {
+    const digits = phone.replace(/\D/g, "").slice(-8);
+    const same = digits.length === 8 ? (await client.from("customers").select("id").ilike("telefono", `%${digits.slice(0, 4)}%${digits.slice(4)}%`).limit(2)).data ?? [] : [];
+    if (same.length === 1) id = String(same[0].id);
+    else {
+      const created = await client.from("customers").insert({ nombre: holder, telefono: phone || null, email: email || null }).select("id").single();
+      if (created.error || !created.data) return { error: "No se pudo registrar al titular como cliente. Intente nuevamente." };
+      return { id: String(created.data.id) };
+    }
+  }
+  const current = await client.from("customers").select("nombre,email").eq("id", id).maybeSingle();
+  const changes = { ...(phoneOnly(String(current.data?.nombre ?? "")) ? { nombre: holder } : {}), ...(email && !current.data?.email ? { email } : {}) };
+  if (Object.keys(changes).length) await client.from("customers").update(changes).eq("id", id);
+  return { id };
 }
 
 export async function promoteReservation(_: ReservationActionState, form: FormData): Promise<ReservationActionState> {
