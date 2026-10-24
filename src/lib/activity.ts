@@ -5,7 +5,7 @@ import { reservationStatusLabel, type ReservationStatus } from "@/lib/reservatio
 
 // The activity history (docs/sql/admin_audit_log.sql and later steps) in words. Entries hold states, codes and
 // amounts only, never personal data, so nothing here can reveal a passport, a phone or a message.
-export type ActivityEntry = { id: number; created_at: string; actor: string | null; action: string; entity: string; entity_id: string | null; reference: string | null; details: Record<string, unknown> };
+export type ActivityEntry = { id: number; at: string; actor: string | null; action: string; entity: string; entity_id: string | null; reference: string | null; details: Record<string, unknown> };
 export type ActivityLine = { id: number; at: string; who: string; text: string; href: string | null; reference: string };
 
 export const activityEntities = [["", "Todo"], ["quotation", "Cotizaciones"], ["reservation", "Reservas"], ["payment", "Pagos"], ["invoice", "Facturas"], ["receipt", "Recibos"], ["travel", "Expedientes"], ["passenger_profile", "Pasajeros"]] as const;
@@ -65,10 +65,11 @@ function link(entry: ActivityEntry) {
 }
 
 export function toLines(entries: ActivityEntry[], userId: string): ActivityLine[] {
-  return entries.map(entry => ({ id: entry.id, at: entry.created_at, who: entry.actor ? (entry.actor === userId ? "Usted" : "Otro administrador") : "Sistema", text: describe(entry), href: link(entry), reference: entry.reference ?? "" }));
+  return entries.map(entry => ({ id: entry.id, at: entry.at, who: entry.actor ? (entry.actor === userId ? "Usted" : "Otro administrador") : "Sistema", text: describe(entry), href: link(entry), reference: entry.reference ?? "" }));
 }
 
-const fields = "id,created_at,actor,action,entity,entity_id,reference,details";
+export const activityFields = "id,at,actor,action,entity,entity_id,reference,details";
+const fields = activityFields;
 // Latest entries, optionally of one kind. Before the activity log exists the list is simply unavailable.
 export async function listActivity(client: SupabaseClient, { entity = "", limit = 100, before }: { entity?: string; limit?: number; before?: number } = {}) {
   let query = client.from("admin_audit_log").select(fields).order("id", { ascending: false }).limit(limit);

@@ -10,7 +10,7 @@ const activity = load('src/lib/activity.ts', {
   '@/lib/reservation-types': load('src/lib/reservation-types.ts', { '@/lib/quotation-types': types }),
 });
 const ME = '11111111-1111-4111-8111-111111111111', R = '22222222-2222-4222-8222-222222222222', Q = '33333333-3333-4333-8333-333333333333', C = '44444444-4444-4444-8444-444444444444';
-const entry = (action, entity, extra = {}) => ({ id: 1, created_at: '2026-10-23T15:00:00Z', actor: ME, action, entity, entity_id: null, reference: null, details: {}, ...extra });
+const entry = (action, entity, extra = {}) => ({ id: 1, at: '2026-10-23T15:00:00Z', actor: ME, action, entity, entity_id: null, reference: null, details: {}, ...extra });
 const line = (value, user = ME) => JSON.parse(JSON.stringify(activity.toLines([value], user)[0]));
 
 test('state changes, money and shares read as sentences, with a link to the record', () => {
@@ -33,4 +33,12 @@ test('who: the signed-in admin, another admin, or the system (daily job)', () =>
 test('an unknown action is shown as recorded, never invented', () => {
   assert.equal(line(entry('future.thing', 'admin')).text, 'future.thing');
   assert.equal(line(entry('future.thing', 'admin')).href, null);
+});
+
+test('the screen reads only columns that exist in the production schema snapshot', async () => {
+  const fs = await import('node:fs');
+  const schema = fs.readFileSync(new URL('../docs/sql/000_baseline_schema.sql', import.meta.url), 'utf8');
+  const table = schema.slice(schema.indexOf('create table public.admin_audit_log ('), schema.indexOf(');', schema.indexOf('create table public.admin_audit_log (')));
+  const columns = [...table.matchAll(/^\s+([a-z_]+) /gm)].map(match => match[1]);
+  for (const field of activity.activityFields.split(',')) assert.ok(columns.includes(field), `${field} not in ${columns.join(',')}`);
 });
