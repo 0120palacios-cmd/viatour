@@ -129,3 +129,14 @@ SQL `docs/sql/finance_ledger.sql` (ensayo 11 de 11; se aplica **después** de `q
 Verificado en el preview con staging: aviso de factura desactualizada (578 frente a 600), devolución de 50 (pagado 250, saldo 350), reverso rechazado por dejar el neto en negativo, cancelación guiada con motivo y factura anulada. No verificado en pantalla: «Comparar copias» (las reservas de prueba no tienen expediente).
 
 **Decisiones del propietario pendientes para las dos reservas reales:** VT-7CC608B0, ¿578 o 548? VT-CCB2E6FD, ¿pasar a «confirmada»?
+
+## Paso 6: pasajeros (2026-10-23)
+SQL `docs/sql/passenger_profiles.sql` (ensayo 7 de 7; **aplicado solo en staging**). Código en `admin-release` (`3788a94` … `30707b3`).
+
+- Pasajeros por cliente (el titular o sus acompañantes) en la ficha del cliente. En claro solo nombres, categoría, nacionalidad, tipo de documento, país de emisión, vencimiento y los 4 últimos caracteres; nacimiento, sexo, número del documento y contactos cifrados con la clave del expediente y ligados al pasajero. Aviso de documento vencido o con menos de 6 meses.
+- Foto e imagen del pasaporte en el bucket privado `passenger-docs`, recodificadas en el navegador (sin metadatos de ubicación o dispositivo), abiertas con enlaces firmados de 60 segundos; cada apertura del pasaporte queda en el historial.
+- **Conservación (decisión del propietario, 2026-10-23):** la imagen del pasaporte se conserva hasta que vence el pasaporte (10 años desde la carga si no se conoce el vencimiento) y la tarea diaria la elimina después. Se apaga con `PASSPORT_IMAGE_RETENTION=0`.
+- Un pasajero guardado se carga en el expediente de una reserva («Desde la ficha del cliente»).
+- Lectura del pasaporte (MRZ), siempre en el navegador: pegando las dos líneas (Texto en vivo/Google Lens) o **desde una foto** con tesseract.js 7.0.0 y el modelo inglés compacto, servidos desde `/ocr` del propio sitio (`scripts/copy-ocr-assets.mjs`, sin CDN ni servicio externo; unos 6,5 MB que el navegador descarga una vez). Se verifican los dígitos de control ICAO. **Límite conocido:** el dígito de control no distingue L de 1 ni K de 0 (tienen el mismo valor), y los nombres no tienen dígito de control; la pantalla pide siempre comparar el número y los nombres con el pasaporte. Probado con el espécimen ICAO en el preview: fechas, sexo y apellido correctos; número leído «1898902C3» (L→1) y segundo nombre «Kmartia», ambos señalados para revisión.
+
+Pendiente para el paso 7: el expediente de la reserva usa el diálogo nativo `window.confirm` al guardar; bloquea la automatización y conviene sustituirlo por una confirmación en la página.
