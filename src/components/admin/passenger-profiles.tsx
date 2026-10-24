@@ -85,7 +85,7 @@ function ProfileForm({ customerId, profile, onDone }: { customerId: string; prof
   const [draft, setDraft] = useState<Draft>(() => profile ? { ...blank, ...profile } : blank);
   const [state, action, pending] = useActionState<ProfileState, FormData>(savePassengerProfile, {});
   const [mrzText, setMrzText] = useState("");
-  const [mrz, setMrz] = useState<MrzResult | null | "none">(null);
+  const [mrz, setMrz] = useState<MrzResult | null | "none" | "failed">(null);
   const set = (key: keyof Draft, value: string) => setDraft(current => ({ ...current, [key]: value }));
   const field = (key: keyof Draft, label: string, type = "text", extra: Record<string, unknown> = {}) => <label className="block t-small">{label}<input className={input} type={type} value={String(draft[key])} onChange={event => set(key, event.target.value)} {...extra} /></label>;
   const profileId = profile?.id ?? state.profileId;
@@ -99,11 +99,12 @@ function ProfileForm({ customerId, profile, onDone }: { customerId: string; prof
     if (!file) return;
     setPhoto(file); setPhotoSaved(""); setReading(0); setMrz(null);
     try {
-      const reading = await readMrzFromImage(file, setReading);
-      const lines = normalizeMrz(reading.text).filter(line => line.length >= 29);
-      setMrzText(lines.slice(-3).join("\n"));
-      applyMrz(reading.result);
-    } catch { setMrz("none"); }
+      const scan = await readMrzFromImage(file, setReading);
+      // The MRZ-looking lines when there are any; otherwise everything read, so the advisor sees what came out.
+      const lines = normalizeMrz(scan.text).filter(line => line.length >= 29);
+      setMrzText(lines.length ? lines.slice(-3).join("\n") : scan.text.trim());
+      applyMrz(scan.result);
+    } catch (error) { console.error("Lector de pasaporte", error); setMrz("failed"); }
     setReading(null);
   }
   function applyMrz(result: MrzResult | null) {
@@ -122,9 +123,10 @@ function ProfileForm({ customerId, profile, onDone }: { customerId: string; prof
       {reading !== null ? <p role="status" className="t-small mt-2 text-ink-soft">La primera lectura descarga el lector (unos 6 MB) una sola vez; las siguientes son inmediatas.</p> : null}
       <textarea className={`${input} font-mono`} rows={3} value={mrzText} onChange={event => setMrzText(event.target.value)} spellCheck={false} autoCapitalize="characters" placeholder={"P<HND...\n..."} aria-label="Líneas MRZ del pasaporte" />
       <Button type="button" variant="ghost" className="mt-2" onClick={readMrz} disabled={!mrzText.trim()}>Leer y completar</Button>
+      {mrz === "failed" ? <p role="alert" className="t-small mt-2 text-error">No se pudo usar el lector de fotos en este navegador. Pegue las dos líneas o complete los datos a mano.</p> : null}
       {mrz === "none" ? <p role="alert" className="t-small mt-2 text-error">No se reconocieron las líneas MRZ. Pruebe con una foto más recta y nítida, o copie las dos líneas completas (44 caracteres cada una).</p> : null}
       {photo && mrz && reading === null ? (profileId ? photoSaved ? <p role="status" className="t-small mt-2 text-success">{photoSaved}</p> : <Button type="button" variant="ghost" className="mt-2" onClick={async () => { const result = await uploadPassengerImage(profileId, "pasaporte", photo); setPhotoSaved(result.error ?? result.success ?? ""); }}>Guardar esta foto como imagen del pasaporte</Button> : <p className="t-small mt-2 text-ink-soft">Guarde el pasajero para adjuntar esta foto como imagen del pasaporte.</p>) : null}
-      {mrz && mrz !== "none" ? <p role="status" className={`t-small mt-2 ${mrz.valid ? "text-success" : "text-error"}`}>{mrz.valid ? "Datos leídos y verificados con los dígitos de control. Revíselos antes de guardar." : `Leído con errores en: ${[!mrz.checks.documentNumber && "número", !mrz.checks.birthDate && "nacimiento", !mrz.checks.expiryDate && "vencimiento", !mrz.checks.composite && "control general"].filter(Boolean).join(", ")}. Corrija contra el documento.`}</p> : null}
+      {mrz && mrz !== "none" && mrz !== "failed" ? <p role="status" className={`t-small mt-2 ${mrz.valid ? "text-success" : "text-error"}`}>{mrz.valid ? "Datos leídos y verificados con los dígitos de control. Revíselos antes de guardar." : `Leído con errores en: ${[!mrz.checks.documentNumber && "número", !mrz.checks.birthDate && "nacimiento", !mrz.checks.expiryDate && "vencimiento", !mrz.checks.composite && "control general"].filter(Boolean).join(", ")}. Corrija contra el documento.`}</p> : null}
     </details>
     <form action={action} className="space-y-4">
       <input type="hidden" name="customer_id" value={customerId} /><input type="hidden" name="id" value={profileId ?? ""} /><input type="hidden" name="payload" value={JSON.stringify(draft)} />
