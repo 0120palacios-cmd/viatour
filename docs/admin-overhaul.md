@@ -140,3 +140,22 @@ SQL `docs/sql/passenger_profiles.sql` (ensayo 7 de 7; **aplicado solo en staging
 - Lectura del pasaporte (MRZ), siempre en el navegador: pegando las dos líneas (Texto en vivo/Google Lens) o **desde una foto** con tesseract.js 7.0.0 y el modelo inglés compacto, servidos desde `/ocr` del propio sitio (`scripts/copy-ocr-assets.mjs`, sin CDN ni servicio externo; unos 6,5 MB que el navegador descarga una vez). Se verifican los dígitos de control ICAO. **Límite conocido:** el dígito de control no distingue L de 1 ni K de 0 (tienen el mismo valor), y los nombres no tienen dígito de control; la pantalla pide siempre comparar el número y los nombres con el pasaporte. Probado con el espécimen ICAO en el preview: fechas, sexo y apellido correctos; número leído «1898902C3» (L→1) y segundo nombre «Kmartia», ambos señalados para revisión.
 
 Pendiente para el paso 7: el expediente de la reserva usa el diálogo nativo `window.confirm` al guardar; bloquea la automatización y conviene sustituirlo por una confirmación en la página.
+
+## Paso 7: uso y diseño del panel (2026-10-23)
+Código en `admin-release` (`5c8aced`, `f529418`). Sin SQL nuevo.
+
+- **Actividad** (menú Operación): todo el historial en frases, filtrable por tipo, con enlace a cada registro; cada cotización y reserva muestra su propio historial. Quién: «Usted», «Otro administrador» o «Sistema». Verificado en el preview con todo el día de pruebas.
+- **Inicio → «Para revisar»**: envíos por WhatsApp sin confirmar y documentos de viaje vencidos o que vencen en menos de 6 meses.
+- **Sin diálogos nativos del navegador** (`window.confirm`): el expediente, «Quitar pasajero» e «Iniciar otro pago» preguntan dentro de la página.
+- La reserva muestra «Usted»/«Otro administrador» en lugar de identificadores internos; los enlaces «Abrir reserva» y «Ver versión aceptada» ya no aparecen pegados.
+- Prueba que compara los campos que lee la pantalla de actividad con el esquema de producción (un error de nombre de columna se detectó así en el preview).
+
+**No verificado: vista en teléfono.** Desde esta sesión no se pudo simular un teléfono (la ventana no cambia de tamaño y el navegador bloquea ventanas emergentes). Lo nuevo usa los mismos patrones adaptables del panel (listas apiladas, formularios de una columna, tablas con desplazamiento propio); queda una revisión del propietario en su teléfono.
+
+## Publicación: lista de verificación
+1. **Respaldo** de producción por el propietario (pg_dump o el panel de Supabase).
+2. **SQL en producción, en este orden**, cada uno verificado con consultas de solo lectura: `quotation_integrity.sql` → `quotation_shares.sql` → `finance_ledger.sql` → `passenger_profiles.sql`. Comprobar que no aparecen tildes dañadas (`Ã`). Regenerar `000_baseline_schema.sql` y comparar con staging (0 diferencias).
+3. **Fusionar `admin-release` en `main`** (no `admin-overhaul`, que contiene Mi viaje premium). Vercel despliega producción; el paso `prebuild` copia los archivos del lector a `/ocr`.
+4. **Efectos del despliegue:** se activa la tarea diaria (07:00 Honduras): vence cotizaciones enviadas fuera de validez, resumen al correo de soporte, y elimina imágenes de pasaporte de pasaportes ya vencidos (ninguna hoy). Recordatorios a clientes, invitaciones y retención de documentos del portal siguen apagados.
+5. **Después:** abrir VT-7CC608B0 y VT-CCB2E6FD, revisar «Comparar copias» y guardar solo si indica que se aceptaría; decidir 578/548 y el estado de VT-CCB2E6FD; revisar el panel en el teléfono; aprobar los textos de WhatsApp y de la página del cliente.
+6. **Reversión:** «Instant Rollback» de Vercel al despliegue anterior; el SQL es aditivo (columnas, tablas y funciones nuevas) y no borra datos.
