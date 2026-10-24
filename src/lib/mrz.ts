@@ -41,7 +41,11 @@ function date(yymmdd: string, kind: "birth" | "expiry", today = new Date()) {
 // OCR often reads the filler "<" of the name line as K, L or C. A run of those letters after a "<" that reaches the
 // end of the line cannot be part of a name (it has no vowel), so it is filler again. Names have no check digit:
 // the advisor always reviews them.
-export const nameFillers = (line: string) => line.replace(/<[<KLC]{2,}$/, match => "<".repeat(match.length));
+// The same goes for a single K, L or C between two fillers, and for a long run of them at the end with no "<".
+export const nameFillers = (line: string) => line
+  .replace(/<[KLC](?=<)/g, "<<")
+  .replace(/<[<KLC]{2,}$/, match => "<".repeat(match.length))
+  .replace(/[KLC]{6,}$/, match => "<".repeat(match.length));
 
 function names(field: string) {
   const [surname = "", given = ""] = field.replace(/<+$/, "").split("<<");
@@ -55,10 +59,21 @@ export function normalizeMrz(text: string) {
   return text.toUpperCase().replace(/«/g, "<").split(/\r?\n/).map(line => line.replace(/\s+/g, "").replace(/[^A-Z0-9<]/g, "")).filter(line => line.length >= 28);
 }
 
+// The passport's two lines: the name line starts with P (OCR may add or drop fillers, so its length is loose; it
+// is cut or padded to 44) and the data line follows it with exactly 44 characters: cutting a longer one could make
+// its last check digit pass by chance.
+function passportLines(lines: string[]) {
+  const first = lines.findIndex(line => /^P[A-Z<]/.test(line) && line.length >= 38 && line.length <= 56);
+  const second = first < 0 ? undefined : lines.slice(first + 1).find(line => line.length === 44);
+  return first < 0 || !second ? null : [nameFillers(lines[first]).padEnd(44, "<").slice(0, 44), second.padEnd(44, "<").slice(0, 44)];
+}
+
 export function parseMrz(text: string, today = new Date()): MrzResult | null {
   const lines = normalizeMrz(text);
-  const td3 = lines.filter(line => line.length >= 42 && line.length <= 46).slice(-2).map(line => line.padEnd(44, "<").slice(0, 44));
-  if (td3.length === 2 && /^P/.test(td3[0])) {
+  const td3 = passportLines(lines);
+  if (td3) {
+    // Check digits cannot tell some OCR look-alikes apart (L and 1, or K and 0, have the same value in the
+    // calculation), so the document number is kept exactly as read and the advisor compares it with the passport.
     const [a, b] = td3;
     const number = b.slice(0, 9), birth = digitsOnly(b.slice(13, 19)), expiry = digitsOnly(b.slice(21, 27));
     const checks = {
@@ -67,7 +82,7 @@ export function parseMrz(text: string, today = new Date()): MrzResult | null {
       expiryDate: checkDigit(expiry) === digitsOnly(b[27]),
       composite: checkDigit(b.slice(0, 10) + birth + digitsOnly(b[19]) + expiry + digitsOnly(b[27]) + b.slice(28, 43)) === digitsOnly(b[43]),
     };
-    return build("TD3", "pasaporte", a.slice(2, 5), names(nameFillers(a).slice(5)), number, b.slice(10, 13), date(birth, "birth", today), b[20], date(expiry, "expiry", today), checks);
+    return build("TD3", "pasaporte", a.slice(2, 5), names(a.slice(5)), number, b.slice(10, 13), date(birth, "birth", today), b[20], date(expiry, "expiry", today), checks);
   }
   const td1 = lines.filter(line => line.length >= 29 && line.length <= 31).slice(-3).map(line => line.padEnd(30, "<").slice(0, 30));
   if (td1.length === 3 && /^[ACI]/.test(td1[0])) {

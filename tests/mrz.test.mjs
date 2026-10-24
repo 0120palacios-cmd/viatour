@@ -62,3 +62,25 @@ test('fillers read as K, L or C at the end of the name line are filler again', (
   assert.deepEqual([result.lastName, result.firstName, result.middleName, result.valid], ['ERIKSSON', 'ANNA', 'MARIA', true]);
   assert.equal(mrz.nameFillers('P<UTOSMITH<<KELLY<<<<<<'), 'P<UTOSMITH<<KELLY<<<<<<', 'a real name ending in L or K stays');
 });
+
+// Exact text the on-device engine produced from a synthetic image of the specimen (browser, 2026-10-23).
+const engineRaw = 'P<UTOERTKSSON<K<ANNA<KMARTIA<LLLLLLLLLLLLLLLLLLL\n1898902C36UTO7408122F1204159Z2E184226B<<<<<10\n';
+const enginePrepared = 'P<UTOERIKSSON<K<ANNA<KMARTIALKLLLLLLLLLLLLLLLLKLKLL\n1898902C36UTO7408122F1204159ZE184226B<<<<<10\n';
+
+test('a real engine reading: L read as 1 passes the check digit (same value), so the number is kept as read', () => {
+  const result = mrz.parseMrz(enginePrepared, today);
+  assert.equal(result.documentNumber, '1898902C3', 'the advisor must compare the number with the passport');
+  assert.equal(mrz.checkDigit('1898902C3'), mrz.checkDigit('L898902C3'));
+  assert.equal(result.valid, true);
+  assert.deepEqual([result.lastName, result.birthDate, result.expiryDate, result.sex], ['ERIKSSON', '1974-08-12', '2012-04-15', 'F']);
+});
+
+test('a data line with an extra character is not accepted (cutting it could pass a check digit by chance)', () => {
+  assert.equal(mrz.parseMrz(engineRaw, today), null);
+});
+
+test('a wrong character is never "repaired"', () => {
+  const result = mrz.parseMrz(passport.replace('L898902C3', 'L898903C3'), today);
+  assert.equal(result.documentNumber, 'L898903C3');
+  assert.equal(result.checks.documentNumber, false);
+});

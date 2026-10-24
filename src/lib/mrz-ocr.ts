@@ -6,6 +6,7 @@ import { parseMrz, type MrzResult } from "@/lib/mrz";
 // from /ocr on this site (scripts/copy-ocr-assets.mjs) and the image never leaves the device.
 // The bottom of the document is tried first (where the MRZ is), then larger areas; the first reading whose check
 // digits all pass wins, otherwise the reading with the most passing checks is returned for the advisor to correct.
+// Check digits cannot tell L from 1 (or K from 0): the screen always asks to compare the number with the passport.
 
 export type OcrReading = { text: string; result: MrzResult | null };
 const passing = (result: MrzResult | null) => result ? Object.values(result.checks).filter(Boolean).length + (result.valid ? 1 : 0) : -1;
@@ -43,7 +44,8 @@ export async function readMrzFromImage(file: File, onProgress: (percent: number)
     for (const fromTop of [0.62, 0.5, 0.3, 0]) {
       const { data } = await worker.recognize(await prepare(bitmap, fromTop));
       const result = parseMrz(data.text);
-      if (passing(result) > passing(best.result)) best = { text: data.text, result };
+      // The first non-empty text is kept even when nothing parses, so the advisor sees what was read and can fix it.
+      if (passing(result) > passing(best.result) || (!best.text.trim() && data.text.trim())) best = { text: data.text, result: result ?? best.result };
       if (result?.valid) break;
     }
     return best;
