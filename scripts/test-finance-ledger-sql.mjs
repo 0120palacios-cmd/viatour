@@ -3,9 +3,10 @@
 import fs from "node:fs";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { ADMIN, STAFF, asUser, baselineDb } from "./baseline-db.mjs";
+import { ADMIN, STAFF, asUser, baselineDb, snapshotAt } from "./baseline-db.mjs";
 
-const db = await baselineDb();
+// Applied to production on 2026-10-23: rehearsed on the snapshot from before it (commit 4fd4510).
+const db = await baselineDb({ snapshot: snapshotAt("4fd4510") });
 const sql = name => fs.readFileSync(new URL(`../docs/sql/${name}`, import.meta.url), "utf8");
 await db.exec(sql("quotation_integrity.sql"));
 const migration = sql("finance_ledger.sql");

@@ -1,5 +1,5 @@
 -- viatour production schema snapshot (public + storage policies). Structure only: no rows, no secrets.
--- Generated from a READ ONLY metadata query at 2026-10-23T17:48:26.158926+00:00 (PostgreSQL 17.6).
+-- Generated from a READ ONLY metadata query at 2026-10-24T00:38:06.274662+00:00 (PostgreSQL 17.6).
 -- Migration history table: none (schema is managed by reviewed files in docs/sql).
 -- Reference only. Do NOT run against production. Order: types, sequences, tables, keys, indexes, views, functions, triggers, RLS, grants, storage.
 
@@ -219,6 +219,26 @@ create table public.packages (
   etiquetas text[],
   no_incluye text[]
 );
+create table public.passenger_profiles (
+  id uuid default gen_random_uuid() not null,
+  customer_id uuid not null,
+  nombre text not null,
+  otros_nombres text default ''::text not null,
+  apellidos text not null,
+  categoria text default 'adulto'::text not null,
+  nacionalidad text default ''::text not null,
+  tipo_documento text default 'pasaporte'::text not null,
+  pais_emision text default ''::text not null,
+  vence_documento date,
+  documento_final text default ''::text not null,
+  privado text,
+  foto_path text,
+  pasaporte_path text,
+  pasaporte_borrar_despues date,
+  creado_por uuid default auth.uid(),
+  created_at timestamp with time zone default now() not null,
+  updated_at timestamp with time zone default now() not null
+);
 create table public.payment_receipts (
   id uuid default gen_random_uuid() not null,
   payment_id uuid not null,
@@ -246,7 +266,10 @@ create table public.payments (
   fecha_pago date default CURRENT_DATE not null,
   registrado_por uuid,
   notas text,
-  created_at timestamp with time zone default now() not null
+  created_at timestamp with time zone default now() not null,
+  tipo text default 'pago'::text not null,
+  revierte_a uuid,
+  motivo text
 );
 create table public.portal_otps (
   id uuid default gen_random_uuid() not null,
@@ -276,6 +299,26 @@ create table public.quotation_items (
   cantidad integer default 1 not null,
   precio_unitario numeric(12,2) default 0 not null,
   orden integer default 0 not null
+);
+create table public.quotation_shares (
+  id uuid default gen_random_uuid() not null,
+  quotation_id uuid not null,
+  version_id uuid not null,
+  canal text not null,
+  telefono text,
+  mensaje text,
+  plantilla text default 'cotizacion_v1'::text not null,
+  token_hash text not null,
+  estado text default 'preparado'::text not null,
+  proveedor_id text,
+  expira_en timestamp with time zone not null,
+  creado_por uuid default auth.uid(),
+  created_at timestamp with time zone default now() not null,
+  confirmado_en timestamp with time zone,
+  confirmado_por uuid,
+  cerrado_en timestamp with time zone,
+  abierto_en timestamp with time zone,
+  aperturas integer default 0 not null
 );
 create table public.quotation_versions (
   id uuid default gen_random_uuid() not null,
@@ -311,7 +354,12 @@ create table public.quotations (
   aceptada_por uuid,
   aceptacion_notas text,
   accepted_version_id uuid,
-  sent_version_id uuid
+  sent_version_id uuid,
+  motivo_rechazo text,
+  rechazada_en timestamp with time zone,
+  enmienda_de uuid,
+  reemplazada_por uuid,
+  reemplazada_en timestamp with time zone
 );
 create table public.rate_limits (
   bucket text not null,
@@ -392,7 +440,10 @@ create table public.reservations (
   supplier_status text default 'pendiente'::text not null,
   supplier_reference text,
   promoted_at timestamp with time zone,
-  promoted_by uuid
+  promoted_by uuid,
+  cancelacion_motivo text,
+  cancelada_en timestamp with time zone,
+  cancelada_por uuid
 );
 create table public.review_invitations (
   id uuid default gen_random_uuid() not null,
@@ -503,12 +554,14 @@ alter table public.invoices add constraint invoices_pkey PRIMARY KEY (id);
 alter table public.leads add constraint leads_pkey PRIMARY KEY (id);
 alter table public.newsletter_subscribers add constraint newsletter_subscribers_pkey PRIMARY KEY (id);
 alter table public.packages add constraint packages_pkey PRIMARY KEY (id);
+alter table public.passenger_profiles add constraint passenger_profiles_pkey PRIMARY KEY (id);
 alter table public.payment_receipts add constraint payment_receipts_pkey PRIMARY KEY (id);
 alter table public.payment_recording_requests add constraint payment_recording_requests_pkey PRIMARY KEY (request_id);
 alter table public.payments add constraint payments_pkey PRIMARY KEY (id);
 alter table public.portal_otps add constraint portal_otps_pkey PRIMARY KEY (id);
 alter table public.promo_spins add constraint promo_spins_pkey PRIMARY KEY (id);
 alter table public.quotation_items add constraint quotation_items_pkey PRIMARY KEY (id);
+alter table public.quotation_shares add constraint quotation_shares_pkey PRIMARY KEY (id);
 alter table public.quotation_versions add constraint quotation_versions_pkey PRIMARY KEY (id);
 alter table public.quotations add constraint quotations_pkey PRIMARY KEY (id);
 alter table public.rate_limits add constraint rate_limits_pkey PRIMARY KEY (bucket);
@@ -534,6 +587,7 @@ alter table public.payment_receipts add constraint payment_receipts_number_key U
 alter table public.payment_receipts add constraint payment_receipts_payment_id_key UNIQUE (payment_id);
 alter table public.payment_recording_requests add constraint payment_recording_requests_payment_id_key UNIQUE (payment_id);
 alter table public.promo_spins add constraint promo_spins_code_key UNIQUE (code);
+alter table public.quotation_shares add constraint quotation_shares_token_hash_key UNIQUE (token_hash);
 alter table public.quotation_versions add constraint quotation_versions_quotation_id_version_key UNIQUE (quotation_id, version);
 alter table public.quotations add constraint quotations_codigo_key UNIQUE (codigo);
 alter table public.reservation_message_attachments add constraint reservation_message_attachments_path_key UNIQUE (path);
@@ -545,7 +599,7 @@ alter table public.travel_deliveries add constraint travel_deliveries_reservatio
 alter table public.trip_feedback add constraint trip_feedback_reservation_id_key UNIQUE (reservation_id);
 alter table public.admin_audit_log add constraint admin_audit_log_action_check CHECK (((action ~ '^[a-z_]+\.[a-z_]+$'::text) AND (length(action) <= 80)));
 alter table public.admin_audit_log add constraint admin_audit_log_details_check CHECK ((pg_column_size(details) <= 4096));
-alter table public.admin_audit_log add constraint admin_audit_log_entity_check CHECK ((entity = ANY (ARRAY['quotation'::text, 'reservation'::text, 'invoice'::text, 'payment'::text, 'receipt'::text, 'travel'::text, 'admin'::text])));
+alter table public.admin_audit_log add constraint admin_audit_log_entity_check CHECK ((entity = ANY (ARRAY['quotation'::text, 'reservation'::text, 'invoice'::text, 'payment'::text, 'receipt'::text, 'travel'::text, 'admin'::text, 'passenger_profile'::text])));
 alter table public.admin_audit_log add constraint admin_audit_log_reference_check CHECK ((length(reference) <= 80));
 alter table public.admins add constraint admins_role_check CHECK ((role = ANY (ARRAY['admin'::text, 'agent'::text])));
 alter table public.airline_catalog add constraint airline_catalog_iata_check CHECK ((iata ~ '^[A-Z0-9]{2}$'::text));
@@ -593,17 +647,41 @@ alter table public.hotel_catalog add constraint hotel_catalog_ubicacion_check CH
 alter table public.invoices add constraint invoices_estado_check CHECK ((estado = ANY (ARRAY['borrador'::text, 'emitida'::text, 'pagada'::text, 'anulada'::text])));
 alter table public.invoices add constraint invoices_moneda_check CHECK ((moneda = ANY (ARRAY['USD'::text, 'HNL'::text])));
 alter table public.leads add constraint leads_estado_check CHECK ((estado = ANY (ARRAY['nuevo'::text, 'contactado'::text, 'ganado'::text, 'perdido'::text, 'cerrado'::text])));
+alter table public.passenger_profiles add constraint passenger_profiles_apellidos_check CHECK (((char_length(btrim(apellidos)) >= 1) AND (char_length(btrim(apellidos)) <= 120)));
+alter table public.passenger_profiles add constraint passenger_profiles_categoria_check CHECK ((categoria = ANY (ARRAY['adulto'::text, 'nino'::text, 'infante'::text])));
+alter table public.passenger_profiles add constraint passenger_profiles_check CHECK (((pasaporte_path IS NULL) OR (pasaporte_borrar_despues IS NOT NULL)));
+alter table public.passenger_profiles add constraint passenger_profiles_documento_final_check CHECK ((documento_final ~ '^[A-Z0-9]{0,4}$'::text));
+alter table public.passenger_profiles add constraint passenger_profiles_foto_path_check CHECK ((foto_path ~ '^[0-9a-f-]{36}/foto-[0-9a-f]{32}\.jpg$'::text));
+alter table public.passenger_profiles add constraint passenger_profiles_nacionalidad_check CHECK ((char_length(nacionalidad) <= 60));
+alter table public.passenger_profiles add constraint passenger_profiles_nombre_check CHECK (((char_length(btrim(nombre)) >= 1) AND (char_length(btrim(nombre)) <= 120)));
+alter table public.passenger_profiles add constraint passenger_profiles_otros_nombres_check CHECK ((char_length(otros_nombres) <= 120));
+alter table public.passenger_profiles add constraint passenger_profiles_pais_emision_check CHECK ((char_length(pais_emision) <= 60));
+alter table public.passenger_profiles add constraint passenger_profiles_pasaporte_path_check CHECK ((pasaporte_path ~ '^[0-9a-f-]{36}/pasaporte-[0-9a-f]{32}\.jpg$'::text));
+alter table public.passenger_profiles add constraint passenger_profiles_privado_check CHECK ((privado ~ '^v1\.'::text));
+alter table public.passenger_profiles add constraint passenger_profiles_tipo_documento_check CHECK ((tipo_documento = ANY (ARRAY['ninguno'::text, 'pasaporte'::text, 'identidad'::text, 'otro'::text])));
 alter table public.payments add constraint payments_metodo_check CHECK ((metodo = ANY (ARRAY['tarjeta'::text, 'transferencia'::text, 'efectivo'::text, 'otro'::text])));
 alter table public.payments add constraint payments_moneda_check CHECK ((moneda = ANY (ARRAY['USD'::text, 'HNL'::text])));
-alter table public.payments add constraint payments_monto_check CHECK ((monto > (0)::numeric));
+alter table public.payments add constraint payments_monto_check CHECK ((((tipo = 'pago'::text) AND (monto > (0)::numeric)) OR ((tipo <> 'pago'::text) AND (monto < (0)::numeric))));
+alter table public.payments add constraint payments_movimiento_check CHECK ((((tipo = 'reverso'::text) = (revierte_a IS NOT NULL)) AND ((tipo = 'pago'::text) OR ((char_length(btrim(COALESCE(motivo, ''::text))) >= 3) AND (char_length(btrim(COALESCE(motivo, ''::text))) <= 500)))));
+alter table public.payments add constraint payments_tipo_check CHECK ((tipo = ANY (ARRAY['pago'::text, 'reembolso'::text, 'reverso'::text])));
 alter table public.portal_otps add constraint portal_otps_attempts_check CHECK ((attempts >= 0));
 alter table public.promo_spins add constraint promo_spins_estado_check CHECK ((estado = ANY (ARRAY['pendiente'::text, 'usada'::text, 'expirada'::text])));
 alter table public.quotation_items add constraint quotation_items_cantidad_check CHECK ((cantidad > 0));
 alter table public.quotation_items add constraint quotation_items_tipo_check CHECK (((tipo IS NULL) OR (tipo = ANY (ARRAY['vuelo'::text, 'hotel'::text, 'tour'::text, 'traslado'::text, 'paquete'::text, 'otro'::text, 'Tarifa aérea'::text, 'Impuestos y tasas'::text, 'Hotel'::text, 'Ferry'::text, 'Paquete'::text, 'Traslado'::text, 'Tour'::text, 'Seguro'::text, 'Asistencia'::text, 'Equipaje'::text, 'Cargo por servicio'::text, 'Descuento'::text, 'Otro'::text]))));
+alter table public.quotation_shares add constraint quotation_shares_aperturas_check CHECK ((aperturas >= 0));
+alter table public.quotation_shares add constraint quotation_shares_canal_check CHECK ((canal = ANY (ARRAY['whatsapp_manual'::text, 'whatsapp_api'::text, 'correo'::text])));
+alter table public.quotation_shares add constraint quotation_shares_check CHECK (((expira_en > created_at) AND (expira_en <= (created_at + '90 days'::interval))));
+alter table public.quotation_shares add constraint quotation_shares_estado_check CHECK ((estado = ANY (ARRAY['preparado'::text, 'confirmado'::text, 'cancelado'::text, 'revocado'::text, 'enviado'::text, 'entregado'::text, 'leido'::text, 'fallido'::text])));
+alter table public.quotation_shares add constraint quotation_shares_mensaje_check CHECK ((char_length(mensaje) <= 1000));
+alter table public.quotation_shares add constraint quotation_shares_plantilla_check CHECK ((char_length(plantilla) <= 60));
+alter table public.quotation_shares add constraint quotation_shares_telefono_check CHECK ((telefono ~ '^\+[1-9][0-9]{7,14}$'::text));
+alter table public.quotation_shares add constraint quotation_shares_token_hash_check CHECK ((token_hash ~ '^[0-9a-f]{64}$'::text));
 alter table public.quotation_versions add constraint quotation_versions_version_check CHECK ((version > 0));
 alter table public.quotations add constraint quotations_detalles_size CHECK ((pg_column_size(detalles) <= 262144));
-alter table public.quotations add constraint quotations_estado_check CHECK ((estado = ANY (ARRAY['borrador'::text, 'enviada'::text, 'aceptada'::text, 'rechazada'::text, 'expirada'::text])));
+alter table public.quotations add constraint quotations_estado_check CHECK ((estado = ANY (ARRAY['borrador'::text, 'enviada'::text, 'aceptada'::text, 'rechazada'::text, 'expirada'::text, 'reemplazada'::text])));
 alter table public.quotations add constraint quotations_moneda_check CHECK ((moneda = ANY (ARRAY['USD'::text, 'HNL'::text])));
+alter table public.quotations add constraint quotations_rechazo_motivo CHECK (((estado <> 'rechazada'::text) OR ((char_length(btrim(COALESCE(motivo_rechazo, ''::text))) >= 3) AND (char_length(btrim(COALESCE(motivo_rechazo, ''::text))) <= 500)))) NOT VALID;
+alter table public.quotations add constraint quotations_reemplazo CHECK ((((estado = 'reemplazada'::text) = (reemplazada_por IS NOT NULL)) AND ((enmienda_de IS NULL) OR (enmienda_de <> id)))) NOT VALID;
 alter table public.quotations add constraint quotations_tipo_check CHECK ((tipo = ANY (ARRAY['general'::text, 'vuelo'::text, 'hotel'::text, 'ferry'::text, 'paquete'::text, 'combinado'::text])));
 alter table public.quotations add constraint quotations_version_check CHECK ((version >= 0));
 alter table public.reservation_items add constraint reservation_items_cantidad_check CHECK ((cantidad > 0));
@@ -618,6 +696,7 @@ alter table public.reservation_messages add constraint reservation_messages_chec
 alter table public.reservation_messages add constraint reservation_messages_sender_check CHECK ((sender = ANY (ARRAY['cliente'::text, 'agencia'::text])));
 alter table public.reservation_messages add constraint reservation_messages_topic_check CHECK (((topic IS NULL) OR (topic = ANY (ARRAY['vuelo'::text, 'hotel'::text, 'documentos'::text, 'cambios'::text, 'pagos'::text, 'otro'::text]))));
 alter table public.reservation_travel add constraint reservation_travel_revision_check CHECK ((revision > 0));
+alter table public.reservations add constraint reservations_cancelacion_motivo CHECK (((estado <> 'cancelada'::text) OR ((char_length(btrim(COALESCE(cancelacion_motivo, ''::text))) >= 3) AND (char_length(btrim(COALESCE(cancelacion_motivo, ''::text))) <= 500)))) NOT VALID;
 alter table public.reservations add constraint reservations_comision_check CHECK (((comision IS NULL) OR (comision >= (0)::numeric)));
 alter table public.reservations add constraint reservations_estado_check CHECK ((estado = ANY (ARRAY['pendiente'::text, 'confirmada'::text, 'en_curso'::text, 'completada'::text, 'cancelada'::text])));
 alter table public.reservations add constraint reservations_moneda_check CHECK ((moneda = ANY (ARRAY['USD'::text, 'HNL'::text])));
@@ -659,6 +738,8 @@ alter table public.airline_fare_presets add constraint airline_fare_presets_airl
 alter table public.customers add constraint customers_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id);
 alter table public.invoices add constraint invoices_reservation_id_fkey FOREIGN KEY (reservation_id) REFERENCES reservations(id);
 alter table public.packages add constraint packages_destination_id_fkey FOREIGN KEY (destination_id) REFERENCES destinations(id) ON DELETE SET NULL;
+alter table public.passenger_profiles add constraint passenger_profiles_creado_por_fkey FOREIGN KEY (creado_por) REFERENCES auth.users(id);
+alter table public.passenger_profiles add constraint passenger_profiles_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE RESTRICT;
 alter table public.payment_receipts add constraint payment_receipts_payment_id_fkey FOREIGN KEY (payment_id) REFERENCES payments(id);
 alter table public.payment_receipts add constraint payment_receipts_reservation_id_fkey FOREIGN KEY (reservation_id) REFERENCES reservations(id);
 alter table public.payment_recording_requests add constraint payment_recording_requests_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id);
@@ -666,13 +747,20 @@ alter table public.payment_recording_requests add constraint payment_recording_r
 alter table public.payment_recording_requests add constraint payment_recording_requests_reservation_id_fkey FOREIGN KEY (reservation_id) REFERENCES reservations(id);
 alter table public.payments add constraint payments_registrado_por_fkey FOREIGN KEY (registrado_por) REFERENCES auth.users(id);
 alter table public.payments add constraint payments_reservation_id_fkey FOREIGN KEY (reservation_id) REFERENCES reservations(id) ON DELETE CASCADE;
+alter table public.payments add constraint payments_revierte_a_fkey FOREIGN KEY (revierte_a) REFERENCES payments(id);
 alter table public.portal_otps add constraint portal_otps_reservation_id_fkey FOREIGN KEY (reservation_id) REFERENCES reservations(id) ON DELETE CASCADE;
 alter table public.quotation_items add constraint quotation_items_quotation_id_fkey FOREIGN KEY (quotation_id) REFERENCES quotations(id) ON DELETE CASCADE;
+alter table public.quotation_shares add constraint quotation_shares_confirmado_por_fkey FOREIGN KEY (confirmado_por) REFERENCES auth.users(id);
+alter table public.quotation_shares add constraint quotation_shares_creado_por_fkey FOREIGN KEY (creado_por) REFERENCES auth.users(id);
+alter table public.quotation_shares add constraint quotation_shares_quotation_id_fkey FOREIGN KEY (quotation_id) REFERENCES quotations(id) ON DELETE CASCADE;
+alter table public.quotation_shares add constraint quotation_shares_version_id_fkey FOREIGN KEY (version_id) REFERENCES quotation_versions(id);
 alter table public.quotation_versions add constraint quotation_versions_quotation_id_fkey FOREIGN KEY (quotation_id) REFERENCES quotations(id) ON DELETE CASCADE;
 alter table public.quotations add constraint quotations_accepted_version_id_fkey FOREIGN KEY (accepted_version_id) REFERENCES quotation_versions(id);
 alter table public.quotations add constraint quotations_agente_id_fkey FOREIGN KEY (agente_id) REFERENCES auth.users(id);
 alter table public.quotations add constraint quotations_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customers(id);
+alter table public.quotations add constraint quotations_enmienda_de_fkey FOREIGN KEY (enmienda_de) REFERENCES quotations(id);
 alter table public.quotations add constraint quotations_lead_id_fkey FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE SET NULL;
+alter table public.quotations add constraint quotations_reemplazada_por_fkey FOREIGN KEY (reemplazada_por) REFERENCES quotations(id);
 alter table public.quotations add constraint quotations_sent_version_id_fkey FOREIGN KEY (sent_version_id) REFERENCES quotation_versions(id);
 alter table public.reservation_items add constraint reservation_items_reservation_id_fkey FOREIGN KEY (reservation_id) REFERENCES reservations(id) ON DELETE CASCADE;
 alter table public.reservation_message_attachments add constraint reservation_message_attachments_message_id_reservation_id_fkey FOREIGN KEY (message_id, reservation_id) REFERENCES reservation_messages(id, reservation_id) ON DELETE RESTRICT;
@@ -682,6 +770,7 @@ alter table public.reservation_travel add constraint reservation_travel_reservat
 alter table public.reservation_travel_history add constraint reservation_travel_history_reservation_id_fkey FOREIGN KEY (reservation_id) REFERENCES reservations(id);
 alter table public.reservations add constraint reservations_accepted_version_id_fkey FOREIGN KEY (accepted_version_id) REFERENCES quotation_versions(id);
 alter table public.reservations add constraint reservations_agente_id_fkey FOREIGN KEY (agente_id) REFERENCES auth.users(id);
+alter table public.reservations add constraint reservations_cancelada_por_fkey FOREIGN KEY (cancelada_por) REFERENCES auth.users(id);
 alter table public.reservations add constraint reservations_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customers(id);
 alter table public.reservations add constraint reservations_quotation_id_fkey FOREIGN KEY (quotation_id) REFERENCES quotations(id);
 alter table public.support_tickets add constraint support_tickets_reservation_id_fkey FOREIGN KEY (reservation_id) REFERENCES reservations(id) ON DELETE CASCADE;
@@ -702,7 +791,12 @@ CREATE UNIQUE INDEX hotel_catalog_nombre_ciudad_unique ON public.hotel_catalog U
 CREATE UNIQUE INDEX invoices_commercial_active_unique ON public.invoices USING btree (reservation_id) WHERE ((commercial_snapshot IS NOT NULL) AND (estado <> 'anulada'::text));
 CREATE INDEX leads_estado_created_idx ON public.leads USING btree (estado, created_at DESC);
 CREATE UNIQUE INDEX leads_referencia_key ON public.leads USING btree (referencia) WHERE (referencia IS NOT NULL);
+CREATE INDEX passenger_profiles_customer_idx ON public.passenger_profiles USING btree (customer_id);
+CREATE INDEX passenger_profiles_retention_idx ON public.passenger_profiles USING btree (pasaporte_borrar_despues) WHERE (pasaporte_path IS NOT NULL);
+CREATE UNIQUE INDEX payments_revierte_a_unique ON public.payments USING btree (revierte_a) WHERE (revierte_a IS NOT NULL);
 CREATE INDEX portal_otps_reservation_created_idx ON public.portal_otps USING btree (reservation_id, created_at DESC);
+CREATE INDEX quotation_shares_quotation_idx ON public.quotation_shares USING btree (quotation_id, created_at DESC);
+CREATE INDEX quotations_enmienda_de_idx ON public.quotations USING btree (enmienda_de) WHERE (enmienda_de IS NOT NULL);
 CREATE INDEX quotations_lead_id_idx ON public.quotations USING btree (lead_id);
 CREATE INDEX quotations_ref_creacion_idx ON public.quotations USING btree (((detalles ->> 'refCreacion'::text))) WHERE (detalles ? 'refCreacion'::text);
 CREATE INDEX quotations_vence_en_idx ON public.quotations USING btree (vence_en);
@@ -781,6 +875,8 @@ begin
   end if;
   update public.quotations set estado = 'aceptada', version_aceptada = v.version,
     accepted_version_id = v.id, aceptada_en = now(), aceptada_por = auth.uid(), aceptacion_notas = nullif(btrim(p_notes),'') where id = p_id;
+  -- step 3: an accepted amendment replaces its original (and moves its reservation) in this same transaction.
+  perform public.apply_quotation_amendment(p_id);
   return v.id;
 end; $function$;
 
@@ -791,6 +887,58 @@ CREATE OR REPLACE FUNCTION public.admin_audit_log_immutable()
 AS $function$
 begin
   raise exception 'El registro de actividad no se puede modificar.' using errcode = '23514';
+end; $function$;
+
+CREATE OR REPLACE FUNCTION public.apply_quotation_amendment(p_amendment uuid)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SET search_path TO ''
+AS $function$
+declare a public.quotations; o public.quotations; v public.quotation_versions; r public.reservations; s jsonb; amount numeric; paid numeric;
+  start_date date; end_date date;
+begin
+  if not public.is_admin() then raise exception 'No autorizado.' using errcode = '42501'; end if;
+  select * into strict a from public.quotations where id = p_amendment;
+  if a.enmienda_de is null then return null; end if;
+  if a.estado <> 'aceptada' or a.accepted_version_id is null then
+    raise exception 'Acepte la enmienda antes de aplicarla.' using errcode = '23514'; end if;
+  select * into strict o from public.quotations where id = a.enmienda_de for update;
+  if o.estado = 'reemplazada' and o.reemplazada_por = a.id then
+    return (select id from public.reservations where quotation_id = a.id);
+  end if;
+  if o.estado <> 'aceptada' then
+    raise exception 'La cotización % ya no está vigente; enmiende la versión vigente.', o.codigo using errcode = '23514'; end if;
+  select * into strict v from public.quotation_versions where id = a.accepted_version_id and quotation_id = a.id;
+  s := v.snapshot->'quotation';
+  amount := (s->>'total')::numeric;
+  select * into r from public.reservations where quotation_id = o.id for update;
+  if r.id is not null then
+    if r.estado in ('cancelada','completada') then
+      raise exception 'La reserva % está %: no admite enmiendas.', r.codigo, r.estado using errcode = '23514'; end if;
+    if s->>'moneda' is distinct from r.moneda then
+      raise exception 'La enmienda debe estar en %, la moneda de la reserva %.', r.moneda, r.codigo using errcode = '23514'; end if;
+    if a.customer_id is distinct from r.customer_id then
+      raise exception 'La enmienda debe ser del mismo cliente que la reserva %.', r.codigo using errcode = '23514'; end if;
+    select coalesce(sum(monto), 0) into paid from public.payments where reservation_id = r.id;
+    if paid > amount then
+      raise exception 'El cliente ya pagó % %, más que el nuevo total de % %. Registre primero la devolución.', paid, r.moneda, amount, r.moneda using errcode = '23514'; end if;
+  end if;
+
+  update public.quotations set estado = 'reemplazada', reemplazada_por = a.id, reemplazada_en = now() where id = o.id;
+  if r.id is null then return null; end if;
+
+  start_date := nullif(s#>>'{detalles,fechaSalida}','')::date;
+  end_date := nullif(s#>>'{detalles,fechaRegreso}','')::date;
+  update public.reservations set quotation_id = a.id, accepted_version_id = v.id, accepted_snapshot = v.snapshot, total = amount,
+    destino = s->>'destino', fecha_inicio = coalesce(start_date, r.fecha_inicio), fecha_fin = coalesce(end_date, r.fecha_fin)
+    where id = r.id;
+  perform set_config('viatour.amending_reservation', r.id::text, true);
+  delete from public.reservation_items where reservation_id = r.id;
+  perform set_config('viatour.amending_reservation', '', true);
+  insert into public.reservation_items(reservation_id,descripcion,tipo,cantidad,precio_unitario,orden)
+    select r.id,x->>'descripcion',x->>'tipo',(x->>'cantidad')::numeric,(x->>'precio_unitario')::numeric,(n-1)::int
+    from jsonb_array_elements(v.snapshot->'items') with ordinality as lines(x,n);
+  return r.id;
 end; $function$;
 
 CREATE OR REPLACE FUNCTION public.audit_invoice_change()
@@ -811,6 +959,32 @@ begin
   return null;
 end; $function$;
 
+CREATE OR REPLACE FUNCTION public.audit_passenger_profile()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare changed text[];
+begin
+  if tg_op = 'INSERT' then
+    insert into public.admin_audit_log (actor, action, entity, entity_id, details)
+      values (auth.uid(), 'passenger.created', 'passenger_profile', new.id, jsonb_build_object('customer_id', new.customer_id));
+  elsif tg_op = 'DELETE' then
+    insert into public.admin_audit_log (actor, action, entity, entity_id, details)
+      values (auth.uid(), 'passenger.deleted', 'passenger_profile', old.id, jsonb_build_object('customer_id', old.customer_id));
+  else
+    select array_agg(key order by key) into changed from jsonb_each(to_jsonb(new)) n
+      where key not in ('updated_at') and n.value is distinct from to_jsonb(old)->key;
+    if changed is not null then
+      insert into public.admin_audit_log (actor, action, entity, entity_id, details)
+        values (auth.uid(), case when 'pasaporte_path' = any(changed) and new.pasaporte_path is null then 'passenger.passport_image_removed' else 'passenger.updated' end,
+          'passenger_profile', new.id, jsonb_build_object('customer_id', new.customer_id, 'campos', to_jsonb(changed)));
+    end if;
+  end if;
+  return null;
+end; $function$;
+
 CREATE OR REPLACE FUNCTION public.audit_payment_change()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -820,7 +994,8 @@ AS $function$
 begin
   if tg_op = 'INSERT' then
     insert into public.admin_audit_log (actor, action, entity, entity_id, details)
-      values (auth.uid(), 'payment.recorded', 'payment', new.id, jsonb_build_object('reservation_id', new.reservation_id, 'monto', new.monto, 'moneda', new.moneda, 'metodo', new.metodo, 'fecha_pago', new.fecha_pago));
+      values (auth.uid(), case new.tipo when 'reembolso' then 'payment.refunded' when 'reverso' then 'payment.reversed' else 'payment.recorded' end, 'payment', new.id,
+        jsonb_strip_nulls(jsonb_build_object('reservation_id', new.reservation_id, 'monto', new.monto, 'moneda', new.moneda, 'metodo', new.metodo, 'fecha_pago', new.fecha_pago, 'tipo', new.tipo, 'revierte_a', new.revierte_a)));
   elsif tg_op = 'UPDATE' then
     insert into public.admin_audit_log (actor, action, entity, entity_id, details)
       values (auth.uid(), 'payment.edited', 'payment', new.id, jsonb_build_object('reservation_id', new.reservation_id, 'monto', jsonb_build_array(old.monto, new.monto), 'moneda', jsonb_build_array(old.moneda, new.moneda), 'fecha_pago', jsonb_build_array(old.fecha_pago, new.fecha_pago)));
@@ -849,6 +1024,25 @@ begin
           'sent_version_id', new.sent_version_id, 'accepted_version_id', new.accepted_version_id,
           'agente_from', case when new.agente_id is distinct from old.agente_id then old.agente_id end,
           'agente_to', case when new.agente_id is distinct from old.agente_id then new.agente_id end)));
+  end if;
+  return null;
+end; $function$;
+
+CREATE OR REPLACE FUNCTION public.audit_quotation_share()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+begin
+  if tg_op = 'INSERT' then
+    insert into public.admin_audit_log (actor, action, entity, entity_id, reference, details)
+      values (auth.uid(), 'quotation.share_prepared', 'quotation', new.quotation_id, null,
+        jsonb_build_object('share_id', new.id, 'canal', new.canal, 'version_id', new.version_id, 'plantilla', new.plantilla));
+  elsif new.estado is distinct from old.estado then
+    insert into public.admin_audit_log (actor, action, entity, entity_id, reference, details)
+      values (auth.uid(), 'quotation.share_' || new.estado, 'quotation', new.quotation_id, null,
+        jsonb_build_object('share_id', new.id, 'canal', new.canal, 'version_id', new.version_id, 'from', old.estado));
   end if;
   return null;
 end; $function$;
@@ -910,6 +1104,27 @@ begin
   return null;
 end; $function$;
 
+CREATE OR REPLACE FUNCTION public.cancel_reservation(p_id uuid, p_reason text, p_annul_invoices boolean)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SET search_path TO ''
+AS $function$
+declare r public.reservations; annulled integer := 0; received numeric;
+begin
+  if not public.is_admin() then raise exception 'No autorizado.' using errcode = '42501'; end if;
+  select * into strict r from public.reservations where id = p_id for update;
+  if r.estado = 'cancelada' then return jsonb_build_object('estado', 'cancelada', 'ya_cancelada', true); end if;
+  if r.estado = 'completada' then raise exception 'Una reserva completada no se cancela.' using errcode = '23514'; end if;
+  if char_length(btrim(coalesce(p_reason, ''))) not between 3 and 500 then raise exception 'Indique el motivo de la cancelación.' using errcode = '23514'; end if;
+  update public.reservations set estado = 'cancelada', cancelacion_motivo = btrim(p_reason), cancelada_en = now(), cancelada_por = auth.uid() where id = r.id;
+  if p_annul_invoices then
+    update public.invoices set estado = 'anulada' where reservation_id = r.id and estado in ('borrador', 'emitida');
+    get diagnostics annulled = row_count;
+  end if;
+  select coalesce(sum(monto), 0) into received from public.payments where reservation_id = r.id and moneda = r.moneda;
+  return jsonb_build_object('estado', 'cancelada', 'facturas_anuladas', annulled, 'recibido', received, 'moneda', r.moneda);
+end; $function$;
+
 CREATE OR REPLACE FUNCTION public.catalog_audit()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -928,6 +1143,26 @@ begin
   return new;
 end;
 $function$;
+
+CREATE OR REPLACE FUNCTION public.confirm_quotation_share(p_share uuid)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SET search_path TO ''
+AS $function$
+declare s public.quotation_shares; q public.quotations;
+begin
+  if not public.is_admin() then raise exception 'No autorizado.' using errcode = '42501'; end if;
+  select * into strict s from public.quotation_shares where id = p_share for update;
+  if s.estado = 'confirmado' then return s.version_id; end if;
+  if s.estado <> 'preparado' then raise exception 'Este envío ya no está pendiente (%).', s.estado using errcode = '23514'; end if;
+  if s.expira_en < now() then raise exception 'El enlace de este envío ya venció. Prepare uno nuevo.' using errcode = '23514'; end if;
+  select * into strict q from public.quotations where id = s.quotation_id for update;
+  if q.estado not in ('borrador', 'enviada') then
+    raise exception 'La cotización está %; ya no se registra como enviada.', q.estado using errcode = '23514'; end if;
+  update public.quotation_shares set estado = 'confirmado', confirmado_en = now(), confirmado_por = auth.uid() where id = s.id;
+  update public.quotations set estado = 'enviada', sent_version_id = s.version_id where id = q.id;
+  return s.version_id;
+end; $function$;
 
 CREATE OR REPLACE FUNCTION public.convert_accepted_quotation(p_id uuid, p_version_id uuid, p_prereservation boolean, p_lastname text)
  RETURNS uuid
@@ -1009,6 +1244,42 @@ begin
  insert into public.payment_receipts(payment_id,reservation_id,created_by,snapshot) values(p.id,r.id,auth.uid(),jsonb_build_object('customer',r.cliente_nombre,'reservation',r.codigo,'amount',p.monto,'currency',p.moneda,'method',p.metodo,'reference',p.referencia,'date',p.fecha_pago,'balance',r.total-paid)) returning id into receipt;
  return receipt;
 end $function$;
+
+CREATE OR REPLACE FUNCTION public.create_quotation_copy(p_source uuid, p_amendment boolean, p_row jsonb, p_items jsonb)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SET search_path TO ''
+AS $function$
+declare src public.quotations; open_code text; new_id uuid; amount numeric;
+begin
+  if not public.is_admin() then raise exception 'No autorizado.' using errcode = '42501'; end if;
+  select * into strict src from public.quotations where id = p_source;
+  if jsonb_typeof(p_row) is distinct from 'object' or jsonb_typeof(p_items) is distinct from 'array' or jsonb_array_length(p_items) > 50 then
+    raise exception 'Copia inválida.' using errcode = '23514'; end if;
+  if p_amendment then
+    if src.estado = 'reemplazada' then
+      raise exception 'La cotización % ya fue reemplazada por %. Enmiende la versión vigente.', src.codigo, (select codigo from public.quotations where id = src.reemplazada_por) using errcode = '23514'; end if;
+    if src.estado <> 'aceptada' then
+      raise exception 'Solo se enmienda una cotización aceptada; esta todavía se puede editar.' using errcode = '23514'; end if;
+    select codigo into open_code from public.quotations where enmienda_de = src.id and estado in ('borrador','enviada') limit 1;
+    if open_code is not null then
+      raise exception 'Ya existe la enmienda % en curso. Ábrala para continuar.', open_code using errcode = '23514'; end if;
+  end if;
+  insert into public.quotations (codigo, customer_id, cliente_nombre, cliente_email, cliente_telefono, destino, moneda, validez, notas,
+      agente_id, estado, tipo, detalles, lead_id, enmienda_de, total)
+    values (p_row->>'codigo', nullif(p_row->>'customer_id','')::uuid, p_row->>'cliente_nombre', nullif(p_row->>'cliente_email',''),
+      nullif(p_row->>'cliente_telefono',''), p_row->>'destino', coalesce(p_row->>'moneda', src.moneda), nullif(p_row->>'validez','')::date,
+      p_row->>'notas', auth.uid(), 'borrador', coalesce(p_row->>'tipo', src.tipo), coalesce(p_row->'detalles', '{}'::jsonb), src.lead_id,
+      case when p_amendment then src.id end, 0)
+    returning id into new_id;
+  insert into public.quotation_items (quotation_id, descripcion, tipo, cantidad, precio_unitario, orden)
+    select new_id, x->>'descripcion', x->>'tipo', (x->>'cantidad')::integer, (x->>'precio_unitario')::numeric, (n - 1)::int
+    from jsonb_array_elements(p_items) with ordinality as lines(x, n);
+  select coalesce(sum(case when lower(btrim(tipo)) = 'descuento' then -1 else 1 end * round(cantidad * precio_unitario, 2)), 0)
+    into amount from public.quotation_items where quotation_id = new_id;
+  update public.quotations set total = amount where id = new_id;
+  return new_id;
+end; $function$;
 
 CREATE OR REPLACE FUNCTION public.create_reservation_invoice(p_id uuid, p_due date)
  RETURNS uuid
@@ -1198,12 +1469,33 @@ CREATE OR REPLACE FUNCTION public.quotation_items_lock_accepted()
  SET search_path TO ''
 AS $function$
 begin
-  if exists (select 1 from public.quotations q where q.id = coalesce(new.quotation_id, old.quotation_id) and q.estado = 'aceptada') then
+  if exists (select 1 from public.quotations q where q.id = coalesce(new.quotation_id, old.quotation_id) and q.estado in ('aceptada','reemplazada')) then
     raise exception 'La cotización fue aceptada y sus precios no se pueden modificar. Cree una enmienda.' using errcode = 'check_violation';
   end if;
   return coalesce(new, old);
 end;
 $function$;
+
+CREATE OR REPLACE FUNCTION public.quotation_shares_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO ''
+AS $function$
+begin
+  if (new.quotation_id, new.version_id, new.canal, new.telefono, new.mensaje, new.plantilla, new.token_hash, new.expira_en, new.creado_por, new.created_at)
+     is distinct from (old.quotation_id, old.version_id, old.canal, old.telefono, old.mensaje, old.plantilla, old.token_hash, old.expira_en, old.creado_por, old.created_at) then
+    raise exception 'Un envío registrado no se puede modificar.' using errcode = '23514';
+  end if;
+  if new.aperturas < old.aperturas then raise exception 'Contador inválido.' using errcode = '23514'; end if;
+  if new.estado is distinct from old.estado and not (
+       (old.estado = 'preparado' and new.estado in ('confirmado', 'cancelado', 'enviado', 'fallido'))
+    or (old.estado in ('confirmado', 'enviado', 'entregado', 'leido') and new.estado = 'revocado')
+    or (old.estado = 'enviado' and new.estado in ('entregado', 'leido', 'fallido'))
+    or (old.estado = 'entregado' and new.estado = 'leido')) then
+    raise exception 'Cambio de estado del envío no permitido (% a %).', old.estado, new.estado using errcode = '23514';
+  end if;
+  return new;
+end; $function$;
 
 CREATE OR REPLACE FUNCTION public.quotation_versions_immutable()
  RETURNS trigger
@@ -1227,7 +1519,14 @@ begin
     and exists(select 1 from public.quotation_versions where id=new.accepted_version_id and quotation_id=old.id and version=old.version_aceptada)
     and (to_jsonb(new)-array['updated_at','accepted_version_id','aceptada_en','aceptada_por','aceptacion_notas'])
       is not distinct from (to_jsonb(old)-array['updated_at','accepted_version_id','aceptada_en','aceptada_por','aceptacion_notas']) then return new; end if;
-  if old.estado = 'aceptada' and (to_jsonb(new) - array['updated_at','agente_id'])
+  -- step 3: an accepted quotation is replaced only by its own accepted amendment, and nothing else changes.
+  if old.estado = 'aceptada' and new.estado = 'reemplazada'
+    and (to_jsonb(new) - array['updated_at','estado','reemplazada_por','reemplazada_en'])
+      is not distinct from (to_jsonb(old) - array['updated_at','estado','reemplazada_por','reemplazada_en'])
+    and exists (select 1 from public.quotations a where a.id = new.reemplazada_por and a.enmienda_de = old.id and a.estado = 'aceptada') then
+    return new;
+  end if;
+  if old.estado in ('aceptada','reemplazada') and (to_jsonb(new) - array['updated_at','agente_id'])
     is distinct from (to_jsonb(old) - array['updated_at','agente_id']) then
     raise exception 'La cotización aceptada es inmutable. Cree una enmienda.' using errcode = '23514';
   end if;
@@ -1264,6 +1563,55 @@ begin
  values(p_request,p_reservation,payment,body,auth.uid());
  return payment;
 end $function$;
+
+CREATE OR REPLACE FUNCTION public.record_reservation_refund(p_request uuid, p_reservation uuid, p_kind text, p_amount numeric, p_method text, p_date date, p_reference text, p_reason text, p_reverses uuid DEFAULT NULL::uuid)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+declare previous public.payment_recording_requests; r public.reservations; original public.payments; body jsonb; movement uuid; received numeric; amount numeric; method text; day date;
+begin
+  if not public.is_admin() then raise exception 'No autorizado.' using errcode = '42501'; end if;
+  if p_request is null or p_reservation is null or p_kind not in ('reembolso', 'reverso') then raise exception 'Movimiento inválido.' using errcode = '23514'; end if;
+  perform pg_advisory_xact_lock(hashtextextended(p_request::text, 0));
+  body := jsonb_build_object('kind', p_kind, 'amount', p_amount, 'method', p_method, 'date', p_date, 'reference', nullif(p_reference, ''), 'reason', nullif(btrim(p_reason), ''), 'reverses', p_reverses);
+  select * into previous from public.payment_recording_requests where request_id = p_request;
+  if found then
+    if previous.reservation_id <> p_reservation or previous.payload <> body then raise exception 'Este registro ya se usó con otros datos. Recargue el formulario.' using errcode = '23514'; end if;
+    return previous.payment_id;
+  end if;
+  select * into r from public.reservations where id = p_reservation for update;
+  if not found then raise exception 'No se encontró la reserva.' using errcode = '23514'; end if;
+  if char_length(btrim(coalesce(p_reason, ''))) not between 3 and 500 or length(coalesce(p_reference, '')) > 200 then
+    raise exception 'Indique el motivo (y una referencia breve, si la hay).' using errcode = '23514'; end if;
+  if p_kind = 'reverso' then
+    select * into original from public.payments where id = p_reverses and reservation_id = r.id for update;
+    if not found or original.tipo <> 'pago' then raise exception 'Elija un pago de esta reserva.' using errcode = '23514'; end if;
+    if exists (select 1 from public.payments where revierte_a = original.id) then raise exception 'Ese pago ya fue revertido.' using errcode = '23514'; end if;
+    if exists (select 1 from public.payment_receipts where payment_id = original.id) then
+      raise exception 'Ese pago ya tiene recibo: registre un reembolso en lugar de un reverso.' using errcode = '23514'; end if;
+    select coalesce(sum(monto), 0) into received from public.payments where reservation_id = r.id and moneda = r.moneda;
+    if original.moneda = r.moneda and received - original.monto < 0 then
+      raise exception 'Ya se devolvió parte de este pago; revertirlo dejaría el saldo recibido en negativo. Revise las devoluciones.' using errcode = '23514'; end if;
+    amount := original.monto; method := original.metodo; day := (now() at time zone 'America/Tegucigalpa')::date;
+  else
+    if p_reverses is not null then raise exception 'Movimiento inválido.' using errcode = '23514'; end if;
+    if p_amount is null or p_amount <= 0 or p_amount <> round(p_amount, 2) or p_amount > 999999999.99 then raise exception 'Revise el monto.' using errcode = '23514'; end if;
+    if p_method is null or p_method not in ('tarjeta', 'transferencia', 'efectivo', 'otro') then raise exception 'Elija cómo se devolvió el dinero.' using errcode = '23514'; end if;
+    if p_date is null or p_date > (now() at time zone 'America/Tegucigalpa')::date then raise exception 'Registre una fecha de devolución ya realizada.' using errcode = '23514'; end if;
+    select coalesce(sum(monto), 0) into received from public.payments where reservation_id = r.id and moneda = r.moneda;
+    if p_amount > received then
+      raise exception 'Solo se puede devolver lo recibido: % %.', received, r.moneda using errcode = '23514'; end if;
+    amount := p_amount; method := p_method; day := p_date;
+  end if;
+  insert into public.payments (reservation_id, monto, moneda, metodo, fecha_pago, referencia, notas, tipo, revierte_a, motivo, registrado_por)
+    values (r.id, -amount, r.moneda, method, day, nullif(p_reference, ''), null, p_kind, case when p_kind = 'reverso' then original.id end, btrim(p_reason), auth.uid())
+    returning id into movement;
+  insert into public.payment_recording_requests (request_id, reservation_id, payment_id, payload, created_by)
+    values (p_request, p_reservation, movement, body, auth.uid());
+  return movement;
+end; $function$;
 
 CREATE OR REPLACE FUNCTION public.redeem_promo_spin(p_code text, p_segments jsonb)
  RETURNS TABLE(premio_id text, premio_label text)
@@ -1351,6 +1699,22 @@ begin
       raise exception 'Revise el correo de acceso del cliente.' using errcode = '23514'; end if;
     editable := array_append(editable, 'cliente_email');
   end if;
+  -- step 3: only an accepted amendment of this reservation's quotation may move it to another version, and only
+  -- with exactly that version's snapshot and total, in the same currency.
+  if old.accepted_version_id is not null and new.accepted_version_id is distinct from old.accepted_version_id then
+    if old.estado in ('cancelada','completada') or new.moneda is distinct from old.moneda
+      or new.accepted_snapshot is distinct from (select snapshot from public.quotation_versions where id = new.accepted_version_id and quotation_id = new.quotation_id)
+      or new.total is distinct from (new.accepted_snapshot#>>'{quotation,total}')::numeric
+      or not exists (select 1 from public.quotations a where a.id = new.quotation_id and a.enmienda_de = old.quotation_id
+                       and a.estado = 'aceptada' and a.accepted_version_id = new.accepted_version_id) then
+      raise exception 'Solo una enmienda aceptada de esta reserva puede cambiar sus datos comerciales.' using errcode = '23514';
+    end if;
+    editable := editable || array['quotation_id','accepted_version_id','accepted_snapshot','total','destino'];
+  end if;
+  -- step 5: the cancellation record is written once, together with the cancellation.
+  if old.estado <> 'cancelada' and new.estado = 'cancelada' then
+    editable := editable || array['cancelacion_motivo','cancelada_en','cancelada_por'];
+  end if;
   if old.accepted_version_id is not null and (to_jsonb(new) - editable) is distinct from (to_jsonb(old) - editable) then
     raise exception 'Los datos comerciales aceptados están bloqueados.' using errcode = '23514'; end if;
   if old.estado in ('cancelada','completada') and new.estado <> old.estado then raise exception 'Estado final.' using errcode = '23514'; end if;
@@ -1410,6 +1774,19 @@ BEGIN
 
   IF TG_OP = 'DELETE' THEN
     target_id := OLD.reservation_id;
+    -- step 3: apply_quotation_amendment replaces the services of the reservation it is moving, and only those.
+    IF current_setting('viatour.amending_reservation', true) = OLD.reservation_id::text
+       AND EXISTS (
+         SELECT 1
+         FROM public.reservations r
+         JOIN public.quotations a ON a.id = r.quotation_id
+         WHERE r.id = OLD.reservation_id
+           AND a.enmienda_de IS NOT NULL
+           AND a.accepted_version_id = r.accepted_version_id
+       )
+    THEN
+      RETURN OLD;
+    END IF;
   ELSE
     target_id := NEW.reservation_id;
   END IF;
@@ -1523,10 +1900,14 @@ CREATE TRIGGER audit_invoice_change AFTER INSERT OR UPDATE ON public.invoices FO
 CREATE TRIGGER invoice_integrity_guard BEFORE INSERT OR UPDATE ON public.invoices FOR EACH ROW EXECUTE FUNCTION invoice_integrity_guard();
 CREATE TRIGGER trg_invoices_updated_at BEFORE UPDATE ON public.invoices FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE TRIGGER trg_packages_updated_at BEFORE UPDATE ON public.packages FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+CREATE TRIGGER audit_passenger_profile AFTER INSERT OR DELETE OR UPDATE ON public.passenger_profiles FOR EACH ROW EXECUTE FUNCTION audit_passenger_profile();
+CREATE TRIGGER passenger_profiles_updated_at BEFORE UPDATE ON public.passenger_profiles FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE TRIGGER audit_receipt_created AFTER INSERT ON public.payment_receipts FOR EACH ROW EXECUTE FUNCTION audit_receipt_created();
 CREATE TRIGGER audit_payment_change AFTER INSERT OR DELETE OR UPDATE ON public.payments FOR EACH ROW EXECUTE FUNCTION audit_payment_change();
 CREATE TRIGGER receipted_payment_locked BEFORE DELETE OR UPDATE ON public.payments FOR EACH ROW EXECUTE FUNCTION guard_receipted_payment();
 CREATE TRIGGER quotation_items_lock_accepted BEFORE INSERT OR DELETE OR UPDATE ON public.quotation_items FOR EACH ROW EXECUTE FUNCTION quotation_items_lock_accepted();
+CREATE TRIGGER audit_quotation_share AFTER INSERT OR UPDATE ON public.quotation_shares FOR EACH ROW EXECUTE FUNCTION audit_quotation_share();
+CREATE TRIGGER quotation_shares_guard BEFORE UPDATE ON public.quotation_shares FOR EACH ROW EXECUTE FUNCTION quotation_shares_guard();
 CREATE TRIGGER quotation_versions_no_update BEFORE UPDATE ON public.quotation_versions FOR EACH ROW EXECUTE FUNCTION quotation_versions_immutable();
 CREATE TRIGGER audit_quotation_change AFTER INSERT OR UPDATE ON public.quotations FOR EACH ROW EXECUTE FUNCTION audit_quotation_change();
 CREATE TRIGGER quotations_lock_accepted BEFORE UPDATE ON public.quotations FOR EACH ROW EXECUTE FUNCTION quotations_lock_accepted();
@@ -1586,6 +1967,8 @@ create policy "admin read packages" on public.packages as permissive for select 
 create policy "admin update packages" on public.packages as permissive for update to authenticated using (is_admin());
 create policy "admin write packages" on public.packages as permissive for insert to authenticated with check (is_admin());
 create policy "anon can read published packages" on public.packages as permissive for select to anon using ((publicado = true));
+alter table public.passenger_profiles enable row level security;
+create policy "staff passenger profiles" on public.passenger_profiles as permissive for all to authenticated using (is_admin()) with check (is_admin());
 alter table public.payment_receipts enable row level security;
 create policy receipt_admin on public.payment_receipts as permissive for select to authenticated using (is_admin());
 alter table public.payment_recording_requests enable row level security;
@@ -1598,6 +1981,8 @@ alter table public.promo_spins enable row level security;
 create policy promo_spins_staff_only on public.promo_spins as permissive for all to authenticated using (is_admin()) with check (is_admin());
 alter table public.quotation_items enable row level security;
 create policy "staff quotation_items" on public.quotation_items as permissive for all to authenticated using (is_admin()) with check (is_admin());
+alter table public.quotation_shares enable row level security;
+create policy "staff quotation shares" on public.quotation_shares as permissive for all to authenticated using (is_admin()) with check (is_admin());
 alter table public.quotation_versions enable row level security;
 create policy quotation_versions_admin_insert on public.quotation_versions as permissive for insert to authenticated with check ((is_admin() AND (emitida_por = auth.uid())));
 create policy quotation_versions_admin_select on public.quotation_versions as permissive for select to authenticated using (is_admin());
@@ -1669,7 +2054,7 @@ revoke all on public.hotel_catalog from anon, authenticated, service_role;
 grant delete, insert, references, select, trigger, truncate, update on public.hotel_catalog to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.hotel_catalog to service_role;
 revoke all on public.invoices from anon, authenticated, service_role;
-grant delete, insert, references, select, trigger, truncate, update on public.invoices to authenticated;
+grant insert, references, select, trigger, update on public.invoices to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.invoices to service_role;
 revoke all on public.leads from anon, authenticated, service_role;
 grant delete, insert, references, select, trigger, truncate, update on public.leads to authenticated;
@@ -1681,6 +2066,9 @@ revoke all on public.packages from anon, authenticated, service_role;
 grant select on public.packages to anon;
 grant delete, insert, references, select, trigger, truncate, update on public.packages to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.packages to service_role;
+revoke all on public.passenger_profiles from anon, authenticated, service_role;
+grant delete, insert, select, update on public.passenger_profiles to authenticated;
+grant select, update on public.passenger_profiles to service_role;
 revoke all on public.payment_receipts from anon, authenticated, service_role;
 grant select on public.payment_receipts to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.payment_receipts to service_role;
@@ -1688,7 +2076,7 @@ revoke all on public.payment_recording_requests from anon, authenticated, servic
 grant select on public.payment_recording_requests to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.payment_recording_requests to service_role;
 revoke all on public.payments from anon, authenticated, service_role;
-grant delete, insert, references, select, trigger, truncate, update on public.payments to authenticated;
+grant insert, references, select, trigger on public.payments to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.payments to service_role;
 revoke all on public.portal_otps from anon, authenticated, service_role;
 grant delete, insert, references, select, trigger, truncate, update on public.portal_otps to authenticated;
@@ -1699,6 +2087,9 @@ grant delete, insert, references, select, trigger, truncate, update on public.pr
 revoke all on public.quotation_items from anon, authenticated, service_role;
 grant delete, insert, references, select, trigger, truncate, update on public.quotation_items to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.quotation_items to service_role;
+revoke all on public.quotation_shares from anon, authenticated, service_role;
+grant insert, select, update on public.quotation_shares to authenticated;
+grant select, update on public.quotation_shares to service_role;
 revoke all on public.quotation_versions from anon, authenticated, service_role;
 grant delete, insert, references, select, trigger, truncate, update on public.quotation_versions to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.quotation_versions to service_role;
@@ -1724,7 +2115,7 @@ revoke all on public.reservation_travel_history from anon, authenticated, servic
 grant select on public.reservation_travel_history to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.reservation_travel_history to service_role;
 revoke all on public.reservations from anon, authenticated, service_role;
-grant delete, insert, references, select, trigger, truncate, update on public.reservations to authenticated;
+grant insert, references, select, trigger, update on public.reservations to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.reservations to service_role;
 revoke all on public.review_invitations from anon, authenticated, service_role;
 grant delete, insert, references, select, trigger, truncate, update on public.review_invitations to authenticated;
@@ -1764,15 +2155,22 @@ grant execute on function public.accept_quotation(p_id uuid, p_version_id uuid, 
 -- admin_audit_log_immutable()
 revoke all on function public.admin_audit_log_immutable() from public, anon, authenticated, service_role;
 grant execute on function public.admin_audit_log_immutable() to service_role;
+-- apply_quotation_amendment(p_amendment uuid)
+revoke all on function public.apply_quotation_amendment(p_amendment uuid) from public, anon, authenticated, service_role;
+grant execute on function public.apply_quotation_amendment(p_amendment uuid) to authenticated;
 -- audit_invoice_change() · SECURITY DEFINER
 revoke all on function public.audit_invoice_change() from public, anon, authenticated, service_role;
 grant execute on function public.audit_invoice_change() to service_role;
+-- audit_passenger_profile() · SECURITY DEFINER
+revoke all on function public.audit_passenger_profile() from public, anon, authenticated, service_role;
 -- audit_payment_change() · SECURITY DEFINER
 revoke all on function public.audit_payment_change() from public, anon, authenticated, service_role;
 grant execute on function public.audit_payment_change() to service_role;
 -- audit_quotation_change() · SECURITY DEFINER
 revoke all on function public.audit_quotation_change() from public, anon, authenticated, service_role;
 grant execute on function public.audit_quotation_change() to service_role;
+-- audit_quotation_share() · SECURITY DEFINER
+revoke all on function public.audit_quotation_share() from public, anon, authenticated, service_role;
 -- audit_receipt_created() · SECURITY DEFINER
 revoke all on function public.audit_receipt_created() from public, anon, authenticated, service_role;
 grant execute on function public.audit_receipt_created() to service_role;
@@ -1782,12 +2180,18 @@ grant execute on function public.audit_reservation_change() to service_role;
 -- audit_travel_revision() · SECURITY DEFINER
 revoke all on function public.audit_travel_revision() from public, anon, authenticated, service_role;
 grant execute on function public.audit_travel_revision() to service_role;
+-- cancel_reservation(p_id uuid, p_reason text, p_annul_invoices boolean)
+revoke all on function public.cancel_reservation(p_id uuid, p_reason text, p_annul_invoices boolean) from public, anon, authenticated, service_role;
+grant execute on function public.cancel_reservation(p_id uuid, p_reason text, p_annul_invoices boolean) to authenticated;
 -- catalog_audit()
 revoke all on function public.catalog_audit() from public, anon, authenticated, service_role;
 grant execute on function public.catalog_audit() to public;
 grant execute on function public.catalog_audit() to anon;
 grant execute on function public.catalog_audit() to authenticated;
 grant execute on function public.catalog_audit() to service_role;
+-- confirm_quotation_share(p_share uuid)
+revoke all on function public.confirm_quotation_share(p_share uuid) from public, anon, authenticated, service_role;
+grant execute on function public.confirm_quotation_share(p_share uuid) to authenticated;
 -- convert_accepted_quotation(p_id uuid, p_version_id uuid, p_prereservation boolean, p_lastname text)
 revoke all on function public.convert_accepted_quotation(p_id uuid, p_version_id uuid, p_prereservation boolean, p_lastname text) from public, anon, authenticated, service_role;
 grant execute on function public.convert_accepted_quotation(p_id uuid, p_version_id uuid, p_prereservation boolean, p_lastname text) to authenticated;
@@ -1800,6 +2204,9 @@ grant execute on function public.convert_quotation_with_passengers(p_id uuid, p_
 revoke all on function public.create_payment_receipt(p_payment uuid) from public, anon, authenticated, service_role;
 grant execute on function public.create_payment_receipt(p_payment uuid) to authenticated;
 grant execute on function public.create_payment_receipt(p_payment uuid) to service_role;
+-- create_quotation_copy(p_source uuid, p_amendment boolean, p_row jsonb, p_items jsonb)
+revoke all on function public.create_quotation_copy(p_source uuid, p_amendment boolean, p_row jsonb, p_items jsonb) from public, anon, authenticated, service_role;
+grant execute on function public.create_quotation_copy(p_source uuid, p_amendment boolean, p_row jsonb, p_items jsonb) to authenticated;
 -- create_reservation_invoice(p_id uuid, p_due date)
 revoke all on function public.create_reservation_invoice(p_id uuid, p_due date) from public, anon, authenticated, service_role;
 grant execute on function public.create_reservation_invoice(p_id uuid, p_due date) to authenticated;
@@ -1861,6 +2268,8 @@ grant execute on function public.quotation_items_lock_accepted() to public;
 grant execute on function public.quotation_items_lock_accepted() to anon;
 grant execute on function public.quotation_items_lock_accepted() to authenticated;
 grant execute on function public.quotation_items_lock_accepted() to service_role;
+-- quotation_shares_guard()
+revoke all on function public.quotation_shares_guard() from public, anon, authenticated, service_role;
 -- quotation_versions_immutable()
 revoke all on function public.quotation_versions_immutable() from public, anon, authenticated, service_role;
 grant execute on function public.quotation_versions_immutable() to public;
@@ -1877,6 +2286,9 @@ grant execute on function public.quotations_lock_accepted() to service_role;
 revoke all on function public.record_reservation_payment(p_request uuid, p_reservation uuid, p_amount numeric, p_currency text, p_method text, p_date date, p_reference text, p_notes text) from public, anon, authenticated, service_role;
 grant execute on function public.record_reservation_payment(p_request uuid, p_reservation uuid, p_amount numeric, p_currency text, p_method text, p_date date, p_reference text, p_notes text) to authenticated;
 grant execute on function public.record_reservation_payment(p_request uuid, p_reservation uuid, p_amount numeric, p_currency text, p_method text, p_date date, p_reference text, p_notes text) to service_role;
+-- record_reservation_refund(p_request uuid, p_reservation uuid, p_kind text, p_amount numeric, p_method text, p_date date, p_reference text, p_reason text, p_reverses uuid) · SECURITY DEFINER
+revoke all on function public.record_reservation_refund(p_request uuid, p_reservation uuid, p_kind text, p_amount numeric, p_method text, p_date date, p_reference text, p_reason text, p_reverses uuid) from public, anon, authenticated, service_role;
+grant execute on function public.record_reservation_refund(p_request uuid, p_reservation uuid, p_kind text, p_amount numeric, p_method text, p_date date, p_reference text, p_reason text, p_reverses uuid) to authenticated;
 -- redeem_promo_spin(p_code text, p_segments jsonb) · SECURITY DEFINER
 revoke all on function public.redeem_promo_spin(p_code text, p_segments jsonb) from public, anon, authenticated, service_role;
 grant execute on function public.redeem_promo_spin(p_code text, p_segments jsonb) to service_role;
@@ -1913,6 +2325,7 @@ grant execute on function public.set_updated_at() to service_role;
 
 -- Storage buckets.
 -- blog-images: PUBLIC, limit 5242880, types image/jpeg image/png image/webp
+-- passenger-docs: private, limit 5242880, types image/jpeg
 -- portal-docs: private, limit 8388608, types application/pdf image/jpeg image/png image/webp
 -- quotation-media: private, limit 5242880, types image/jpeg
 -- review-photos: PUBLIC, limit 3145728, types image/jpeg image/png image/webp
@@ -1921,6 +2334,9 @@ grant execute on function public.set_updated_at() to service_role;
 -- admin delete blog-images · DELETE · authenticated · using (((bucket_id = 'blog-images'::text) AND is_admin()))
 -- admin update blog-images · UPDATE · authenticated · using (((bucket_id = 'blog-images'::text) AND is_admin()))
 -- admin upload blog-images · INSERT · authenticated · check (((bucket_id = 'blog-images'::text) AND is_admin()))
+-- passenger_docs_admin_delete · DELETE · authenticated · using (((bucket_id = 'passenger-docs'::text) AND is_admin()))
+-- passenger_docs_admin_insert · INSERT · authenticated · check (((bucket_id = 'passenger-docs'::text) AND is_admin() AND (name ~ '^[0-9a-f-]{36}/(foto|pasaporte)-[0-9a-f]{32}\.jpg$'::text) AND (EXISTS ( SELECT 1 FROM passenger_profiles p WHERE ((p.id)::text = split_part(objects.name, '/'::text, 1))))))
+-- passenger_docs_admin_select · SELECT · authenticated · using (((bucket_id = 'passenger-docs'::text) AND is_admin()))
 -- portal_docs_admin_delete · DELETE · authenticated · using (((bucket_id = 'portal-docs'::text) AND is_admin()))
 -- portal_docs_admin_insert · INSERT · authenticated · check (((bucket_id = 'portal-docs'::text) AND is_admin()))
 -- portal_docs_admin_select · SELECT · authenticated · using (((bucket_id = 'portal-docs'::text) AND is_admin()))

@@ -2,9 +2,10 @@
 // Run: node scripts/test-quotation-integrity-sql.mjs
 import fs from "node:fs";
 import assert from "node:assert/strict";
-import { ADMIN, STAFF, asUser, baselineDb } from "./baseline-db.mjs";
+import { ADMIN, STAFF, asUser, baselineDb, snapshotAt } from "./baseline-db.mjs";
 
-const db = await baselineDb();
+// Applied to production on 2026-10-23: rehearsed on the snapshot from before it (commit 4fd4510).
+const db = await baselineDb({ snapshot: snapshotAt("4fd4510") });
 const migration = fs.readFileSync(new URL("../docs/sql/quotation_integrity.sql", import.meta.url), "utf8");
 const one = async (sql, params) => (await db.query(sql, params)).rows[0];
 const admin = (sql, params) => asUser(db, ADMIN, () => db.query(sql, params));

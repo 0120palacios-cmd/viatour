@@ -159,3 +159,10 @@ Código en `admin-release` (`5c8aced`, `f529418`). Sin SQL nuevo.
 4. **Efectos del despliegue:** se activa la tarea diaria (07:00 Honduras): vence cotizaciones enviadas fuera de validez, resumen al correo de soporte, y elimina imágenes de pasaporte de pasaportes ya vencidos (ninguna hoy). Recordatorios a clientes, invitaciones y retención de documentos del portal siguen apagados.
 5. **Después:** abrir VT-7CC608B0 y VT-CCB2E6FD, revisar «Comparar copias» y guardar solo si indica que se aceptaría; decidir 578/548 y el estado de VT-CCB2E6FD; revisar el panel en el teléfono; aprobar los textos de WhatsApp y de la página del cliente.
 6. **Reversión:** «Instant Rollback» de Vercel al despliegue anterior; el SQL es aditivo (columnas, tablas y funciones nuevas) y no borra datos.
+
+## Publicación (2026-10-23)
+Respaldo de producción tomado por el propietario. Antes de aplicar: la estructura de producción coincidía exactamente con la instantánea usada en todos los ensayos (0 diferencias).
+
+**SQL aplicado en producción**, en orden, cada uno verificado con consultas de solo lectura: `quotation_integrity.sql` (5 columnas, 2 funciones, estado «reemplazada», aceptación ligada a enmiendas), `quotation_shares.sql` (tabla con RLS y 2 disparadores, sin lectura anónima ni borrado), `finance_ledger.sql` (los 2 pagos existentes con tipo «pago», total recibido sin cambios en 1.624,00; pagos sin edición ni borrado; facturas y reservas sin borrado) y `passenger_profiles.sql` (tabla con RLS, bucket privado de 5 MB con 3 políticas). Sin tildes dañadas; conteos sin cambios (40 cotizaciones, 4 reservas, 2 pagos, 2 facturas, 3 clientes). Instantánea regenerada: producción y staging coinciden (0 diferencias). Los ensayos de estos archivos usan la instantánea anterior (commit `4fd4510`).
+
+PGlite (`@electric-sql/pglite` 0.5.8) queda declarado como dependencia de desarrollo: antes estaba instalado sin declarar y `npm install` lo eliminó.

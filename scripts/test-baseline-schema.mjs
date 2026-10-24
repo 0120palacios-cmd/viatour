@@ -33,7 +33,7 @@ await check("an admin can create a customer, a non-admin cannot read it", async 
 });
 
 await check("cancelled reservations are final (reservation_commercial_guard)", async () => {
-  const reservation = await one("insert into public.reservations (cliente_nombre, cliente_email, destino, moneda, total, estado) values ('Cliente Prueba', 'prueba@example.test', 'Miami', 'USD', 100, 'cancelada') returning id");
+  const reservation = await one("insert into public.reservations (cliente_nombre, cliente_email, destino, moneda, total, estado, cancelacion_motivo) values ('Cliente Prueba', 'prueba@example.test', 'Miami', 'USD', 100, 'cancelada', 'Prueba') returning id");
   await assert.rejects(db.query("update public.reservations set estado = 'pendiente' where id = $1", [reservation.id]), /Estado final/);
 });
 
