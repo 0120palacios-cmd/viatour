@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarClock, ClipboardList, FileClock, FileText, Inbox, MessageSquare, Star, UserPlus, Wallet } from "lucide-react";
+import { CalendarClock, ClipboardList, FileClock, FileText, IdCard, Inbox, MessageCircle, MessageSquare, Star, UserPlus, Wallet } from "lucide-react";
 import { pageMetadata } from "@/lib/seo";
 import { requireAdmin } from "@/lib/admin";
 import { expiringSoon, formatAmount, hondurasDay, monthTotals, outstandingBalances, quotationFunnel, summarizeLeads } from "@/lib/admin-reports";
@@ -43,6 +43,18 @@ export default async function Page() {
   const activePayments = activeRows.length ? await client.from("payments").select("reservation_id,monto,moneda").in("reservation_id", activeRows.map(row => String(row.id))) : { data: [], error: null };
   const balances = activePayments.error ? [] : outstandingBalances(activeRows, (activePayments.data ?? []) as Row[]);
 
+  // Follow-ups from the overhaul: WhatsApp shares waiting for "Lo envié" (docs/sql/quotation_shares.sql) and saved
+  // travel documents expired or expiring within 6 months (docs/sql/passenger_profiles.sql). Absent tables: nothing.
+  const [pendingShares, expiringDocuments] = await Promise.all([
+    client.from("quotation_shares").select("id,quotation_id,created_at").eq("estado", "preparado").gt("expira_en", now.toISOString()).order("created_at", { ascending: false }).limit(8),
+    client.from("passenger_profiles").select("id,customer_id,nombre,apellidos,tipo_documento,vence_documento").neq("tipo_documento", "ninguno").not("vence_documento", "is", null).lte("vence_documento", hondurasDay(now, 183)).order("vence_documento", { ascending: true }).limit(8),
+  ]);
+  const shareQuotes = pendingShares.data?.length ? (await client.from("quotations").select("id,codigo,cliente_nombre,destino").in("id", pendingShares.data.map(row => String(row.quotation_id)))).data ?? [] : [];
+  const followUps = [
+    ...(pendingShares.data ?? []).map(row => { const quote = shareQuotes.find(item => item.id === row.quotation_id); return { key: `s${row.id}`, href: `/admin/cotizaciones/${row.quotation_id}`, icon: <MessageCircle size={18} strokeWidth={1.75} />, title: quote ? String(quote.cliente_nombre) : "Cotización", meta: `${quote?.codigo ?? ""} · Envío por WhatsApp preparado: confirme si lo envió`, aside: formatDay(String(row.created_at)) }; }),
+    ...(expiringDocuments.data ?? []).map(row => ({ key: `d${row.id}`, href: `/admin/clientes/${row.customer_id}`, icon: <IdCard size={18} strokeWidth={1.75} />, title: `${row.nombre} ${row.apellidos}`, meta: `${String(row.vence_documento) < today ? "Documento vencido" : "Documento vence en menos de 6 meses"}`, aside: formatDay(String(row.vence_documento)) })),
+  ];
+
   // Indicators (unchanged from before; optional columns fall back when absent).
   let leads: Rows = await client.from("leads").select("servicio,estado,created_at,origen_web").gte("created_at", since30).limit(2000);
   if (leads.error) leads = await client.from("leads").select("servicio,estado,created_at,payload").gte("created_at", since30).limit(2000);
@@ -79,6 +91,10 @@ export default async function Page() {
         </Link>
       </li>)}</ul>
     </section>
+
+    {followUps.length ? <Panel title="Para revisar" description="Envíos por WhatsApp sin confirmar y documentos de viaje vencidos o por vencer.">
+      <ul className="divide-y divide-line">{followUps.map(item => <RecordRow key={item.key} href={item.href} icon={item.icon} title={item.title} meta={item.meta} aside={<span className="t-small font-semibold">{item.aside}</span>} />)}</ul>
+    </Panel> : null}
 
     <div className="grid gap-6 xl:grid-cols-2">
       <Panel title="Próximas salidas" description="Reservas pendientes o confirmadas que inician en los próximos 30 días." action={<Link href="/admin/reservas" className={`t-small ${textLink}`}>Ver reservas</Link>}>

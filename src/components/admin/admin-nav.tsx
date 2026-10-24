@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { BedDouble, BookOpen, CircleHelp, ClipboardList, ExternalLink, FileText, Gift, Inbox, LayoutDashboard, LogOut, Luggage, MapPin, Menu, MessageSquare, Plane, ReceiptText, Ship, Star, Users, X } from "lucide-react";
+import { BedDouble, BookOpen, CircleHelp, ClipboardList, ExternalLink, FileText, Gift, History, Inbox, LayoutDashboard, LogOut, Luggage, MapPin, Menu, MessageSquare, Plane, ReceiptText, Ship, Star, Users, X } from "lucide-react";
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { signOut } from "@/app/admin/actions";
 import blackLogo from "../../../public/logo-black.png";
@@ -15,7 +15,7 @@ type Item = readonly [label: string, href: string, icon: typeof Users];
 export const adminSections: readonly { title: string | null; items: readonly Item[] }[] = [
   { title: null, items: [["Inicio", "/admin", LayoutDashboard]] },
   { title: "Ventas", items: [["Leads", "/admin/leads", Inbox], ["Clientes", "/admin/clientes", Users], ["Cotizaciones", "/admin/cotizaciones", FileText]] },
-  { title: "Operación", items: [["Reservas", "/admin/reservas", ClipboardList], ["Facturación", "/admin/facturacion", ReceiptText], ["Solicitudes", "/admin/tickets", MessageSquare]] },
+  { title: "Operación", items: [["Reservas", "/admin/reservas", ClipboardList], ["Facturación", "/admin/facturacion", ReceiptText], ["Solicitudes", "/admin/tickets", MessageSquare], ["Actividad", "/admin/actividad", History]] },
   { title: "Catálogos", items: [["Hoteles", "/admin/catalogos/hoteles", BedDouble], ["Aerolíneas", "/admin/catalogos/aerolineas", Plane], ["Servicios y navieras", "/admin/catalogos/servicios", Ship]] },
   { title: "Sitio web", items: [["Paquetes", "/admin/paquetes", Luggage], ["Destinos", "/admin/destinos", MapPin], ["Opiniones", "/admin/opiniones", Star], ["Blog", "/admin/blog", BookOpen], ["Preguntas frecuentes", "/admin/faq", CircleHelp], ["Promociones", "/admin/promociones", Gift]] },
 ];

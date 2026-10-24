@@ -28,6 +28,8 @@ import { testRecipients } from "@/lib/test-recipients";
 import { AccessEmailForm, AccessSurnameForm } from "@/components/admin/access-surname-form";
 import { CancelReservationForm, RefundForm } from "@/components/admin/finance-forms";
 import { compareTravelCopies } from "@/lib/travel-compare";
+import { recordActivity, toLines } from "@/lib/activity";
+import { ActivityList } from "@/components/admin/activity-list";
 import { listProfiles, profileToPassenger } from "@/lib/passenger-profiles";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) { return noindexMetadata(`viatour | Reserva ${(await params).id}`, "Detalle privado de una reserva de viatour."); }
@@ -37,7 +39,8 @@ const sections = [["mensajes", "Mensajes"], ["envio", "Cliente y envíos"], ["da
 // One reservation: a summary column (balance, dates, customer, origin) beside the working sections,
 // which keep their own forms and actions.
 export default async function ReservationDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { client } = await requireAdmin();
+  const { client, user } = await requireAdmin();
+  const person = (id: string | null | undefined) => !id ? "Sin asignar" : id === user.id ? "Usted" : "Otro administrador";
   const { id } = await params;
   const record = await getAdminReservation(client, id);
   if (!record) return <><PageHeader title="Reserva no encontrada" back={{ href: "/admin/reservas", label: "Reservas" }} /><p className="rounded-card border border-line bg-canvas p-6">No se encontró la reserva. Puede que el enlace esté incompleto.</p></>;
@@ -66,6 +69,7 @@ export default async function ReservationDetailPage({ params }: { params: Promis
   // An invoice copies the reservation when it is generated; after an amendment it can show an earlier total.
   const outdatedInvoices = record.invoices.filter(invoice => invoice.estado !== "anulada" && invoice.moneda === reservation.moneda && Math.round(Number(invoice.total) * 100) !== Math.round(Number(reservation.total) * 100));
   const savedPassengers = reservation.customer_id ? (await listProfiles(client, reservation.customer_id, { decrypt: true })).profiles.filter(profile => profile.private !== null).map(profile => ({ label: [profile.firstName, profile.middleName, profile.lastName].filter(Boolean).join(" ") + (profile.documentLast4 ? ` · doc. …${profile.documentLast4}` : ""), passenger: profileToPassenger(profile) })) : [];
+  const activity = await recordActivity(client, id);
   const comparison = travel.available && travel.privateData && travel.data ? compareTravelCopies(travel.privateData, travel.data, reservation.fecha_inicio, reservation.accepted_snapshot?.quotation?.detalles) : null;
   // Listed with the admin session; returns nothing until docs/sql/portal_docs_admin.sql has been run.
   const documents = await listReservationDocuments(client.storage.from(portalDocsBucket), reservation.id).catch(() => []);
@@ -105,7 +109,7 @@ export default async function ReservationDetailPage({ params }: { params: Promis
 
   return <>
     <PageHeader back={{ href: "/admin/reservas", label: "Reservas" }} eyebrow={<span className="inline-flex items-center gap-2">{reservation.codigo}<StatusBadge tone={reservationTone[reservation.estado]}>{reservationStatusLabel(reservation.estado)}</StatusBadge>{unreadFor(thread, "agencia") ? <a href="#mensajes" className="t-small rounded-btn bg-brand px-2 text-white">{unreadFor(thread, "agencia")} mensajes sin leer</a> : null}</span>} title={`${reservation.cliente_nombre} · ${reservation.destino}`} />
-    <section className="space-y-4 rounded-panel border border-line bg-canvas p-4"><h2 className="t-h3">{reservation.prerreserva ? "Prerreservación" : "Reserva"}</h2><p>Proveedor: {reservation.supplier_status ?? "Pendiente de verificar"}</p><p className="t-small">Asesor responsable: {reservation.agente_id}</p><div className="flex flex-wrap gap-4"><a className={textLink} href={`/api/admin/reservas/${id}/pdf`}>Descargar PDF de reservación</a><a className={textLink} href={`/admin/reservas/${id}/client-preview`} target="_blank" rel="noopener noreferrer">Ver como cliente</a><a className={textLink} href={`/admin/reservas/${id}/correo`} target="_blank" rel="noopener noreferrer">Vista previa de correos</a><a className={textLink} href="#facturas">Generar factura</a></div>{reservation.prerreserva && reservation.estado === "pendiente" ? <PromoteReservationForm id={id} /> : null}<p className="t-small text-ink-soft">Acceso del cliente: referencia {reservation.codigo}, apellido registrado {reservation.cliente_apellido || "pendiente"} y código de verificación por correo.</p>{reservation.cliente_apellido?.trim() ? null : <AccessSurnameForm id={id} />}{reservation.cliente_email?.trim() ? null : <AccessEmailForm id={id} />}</section>
+    <section className="space-y-4 rounded-panel border border-line bg-canvas p-4"><h2 className="t-h3">{reservation.prerreserva ? "Prerreservación" : "Reserva"}</h2><p>Proveedor: {reservation.supplier_status ?? "Pendiente de verificar"}</p><p className="t-small">Asesor responsable: {person(reservation.agente_id)}</p><div className="flex flex-wrap gap-4"><a className={textLink} href={`/api/admin/reservas/${id}/pdf`}>Descargar PDF de reservación</a><a className={textLink} href={`/admin/reservas/${id}/client-preview`} target="_blank" rel="noopener noreferrer">Ver como cliente</a><a className={textLink} href={`/admin/reservas/${id}/correo`} target="_blank" rel="noopener noreferrer">Vista previa de correos</a><a className={textLink} href="#facturas">Generar factura</a></div>{reservation.prerreserva && reservation.estado === "pendiente" ? <PromoteReservationForm id={id} /> : null}<p className="t-small text-ink-soft">Acceso del cliente: referencia {reservation.codigo}, apellido registrado {reservation.cliente_apellido || "pendiente"} y código de verificación por correo.</p>{reservation.cliente_apellido?.trim() ? null : <AccessSurnameForm id={id} />}{reservation.cliente_email?.trim() ? null : <AccessEmailForm id={id} />}</section>
     <nav aria-label="Secciones de la reserva" className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0"><ul className="chip-row flex gap-2">{sections.map(([anchor, label]) => <li key={anchor}><a href={`#${anchor}`} className="t-small inline-flex min-h-10 items-center whitespace-nowrap rounded-btn border border-line bg-canvas px-3 text-ink-soft hover:border-brand hover:text-brand">{label}</a></li>)}</ul></nav>
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
       <div className="order-2 min-w-0 space-y-6 xl:order-1">
@@ -120,7 +124,7 @@ export default async function ReservationDetailPage({ params }: { params: Promis
         </details> : null}
         <TravelEditor id={id} profiles={savedPassengers} initial={travel.privateData} visible={travel.data} revision={travel.revision} available={travel.available} hasFlights={travelServices(reservation.accepted_snapshot?.quotation.detalles).vuelos.journeys.some(j=>j.segmentos.length)} />
         {travel.privateData ? <PurgeTravel id={id}/> : null}
-        {history.data?.length ? <details className="rounded-panel border border-line bg-canvas p-6"><summary className="min-h-11 cursor-pointer font-semibold">Historial del expediente</summary><ol className="space-y-4 border-l border-line pl-4">{history.data.map(event=><li key={event.revision}><p className="font-semibold">Revisión {event.revision} · {ticketingLabels[event.public_data.status as keyof typeof ticketingLabels]??"Expediente actualizado"}</p><p className="t-small text-ink-soft">{formatDay(event.created_at)} · Responsable: {event.changed_by}</p></li>)}</ol></details> : null}
+        {history.data?.length ? <details className="rounded-panel border border-line bg-canvas p-6"><summary className="min-h-11 cursor-pointer font-semibold">Historial del expediente</summary><ol className="space-y-4 border-l border-line pl-4">{history.data.map(event=><li key={event.revision}><p className="font-semibold">Revisión {event.revision} · {ticketingLabels[event.public_data.status as keyof typeof ticketingLabels]??"Expediente actualizado"}</p><p className="t-small text-ink-soft">{formatDay(event.created_at)} · Responsable: {person(event.changed_by)}</p></li>)}</ol></details> : null}
         <section className="space-y-4 rounded-panel border border-line bg-canvas p-6"><h2 className="t-h3">Recibos de pagos registrados</h2>{receipts.map(receipt=><div key={receipt.id}><a className={textLink} href={`/api/admin/recibos/${receipt.id}`}>{receipt.number} · Descargar recibo</a><SendReceipt id={receipt.id} email={reservation.cliente_email} enabled={process.env.TRAVEL_EMAIL_ENABLED === "true"}/></div>)}{record.payments.filter(payment=>(movements.get(payment.id)?.tipo??"pago")==="pago"&&!reversedIds.has(payment.id)).map(payment=><div key={payment.id} className="flex flex-wrap items-center justify-between gap-4 border-t border-line pt-4"><p>{formatDay(payment.fecha_pago)} · {formatMoney(Number(payment.monto),payment.moneda)}</p><ReceiptAction id={payment.id}/></div>)}</section>
         <div id="datos" className="scroll-mt-6"><ReservationBuilder reservation={reservation} items={record.items} /></div>
         <div id="documentos" className="scroll-mt-6"><ReservationDocuments reservationId={reservation.id} documents={documents} /></div>
@@ -144,6 +148,7 @@ export default async function ReservationDetailPage({ params }: { params: Promis
             { label: `Proveedor: ${reservation.supplier_status ?? "pendiente"}. Cancele también con el proveedor.`, warn: ["confirmada", "emitida", "parcial"].includes(reservation.supplier_status ?? "") },
             { label: travel.data?.status === "emitida" ? "Hay boletos emitidos: gestione la cancelación o el cambio con la aerolínea." : "Sin boletos emitidos.", warn: travel.data?.status === "emitida" },
           ]} /></div></details> : null}
+        {activity.entries.length ? <details className="rounded-panel border border-line bg-canvas"><summary className="min-h-11 cursor-pointer p-6 font-semibold">Historial de la reserva</summary><ActivityList lines={toLines(activity.entries, user.id)} showLinks={false} /></details> : null}
       </div>
       <aside aria-label="Resumen de la reserva" className="order-1 xl:sticky xl:top-6 xl:order-2 xl:self-start">{summary}</aside>
     </div>
