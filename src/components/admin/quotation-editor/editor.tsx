@@ -154,9 +154,11 @@ export function QuotationEditor({ initial, customers, recentHotels, meta, sideba
     return { ...current, destino: current.destino || (outboundEnd ? cityName(outboundEnd.destino, outboundEnd.destinoNombre) : ""), detalles: { ...current.detalles, origen: current.detalles.origen || (first ? cityName(first.origen, first.origenNombre) : "") } };
   });
 
+  // Customers registered by phone have no e-mail: they are offered as "name · phone" and their e-mail stays empty.
+  const customerOption = (item: Customer) => `${item.nombre} · ${item.email || item.telefono || "sin contacto"}`;
   const chooseCustomer = (value: string) => {
-    const customer = customers.find(item => `${item.nombre} · ${item.email}` === value);
-    if (customer) change(current => ({ ...current, customerId: customer.id, cliente: { nombre: customer.nombre, email: customer.email, telefono: customer.telefono ?? "" } }));
+    const customer = customers.find(item => customerOption(item) === value);
+    if (customer) change(current => ({ ...current, customerId: customer.id, cliente: { nombre: customer.nombre, email: customer.email ?? "", telefono: customer.telefono ?? "" } }));
   };
   const linked = customers.find(item => item.id === draft.customerId);
   const saveLabel = { saved: lastSaved ? `Guardado ${lastSaved.toLocaleTimeString("es-HN", { hour: "numeric", minute: "2-digit" })}` : "Guardado", dirty: draft.id ? "Cambios sin guardar" : "Borrador sin guardar", saving: "Guardando", error: "No se guardó", conflict: "Conflicto de edición" }[saveState];
@@ -171,7 +173,7 @@ export function QuotationEditor({ initial, customers, recentHotels, meta, sideba
     </Section> : null}
     <Section id="cliente" title="Cliente y viaje">
       <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="Buscar cliente existente" className="sm:col-span-2" hint={linked ? `Vinculada a ${linked.nombre}.` : "Escriba para buscar por nombre o correo; si no existe, se crea con los datos de abajo."}>{(id, describedBy) => <><input id={id} aria-describedby={describedBy} className={inputClass} list="customer-options" placeholder="Nombre o correo" onChange={event => chooseCustomer(event.target.value)} /><datalist id="customer-options">{customers.map(customer => <option key={customer.id} value={`${customer.nombre} · ${customer.email}`} />)}</datalist></>}</Field>
+        <Field label="Buscar cliente existente" className="sm:col-span-2" hint={linked ? `Vinculada a ${linked.nombre}.` : "Escriba para buscar por nombre, correo o teléfono; si no existe, se crea con los datos de abajo."}>{(id, describedBy) => <><input id={id} aria-describedby={describedBy} className={inputClass} list="customer-options" placeholder="Nombre o correo" onChange={event => chooseCustomer(event.target.value)} /><datalist id="customer-options">{customers.map(customer => <option key={customer.id} value={customerOption(customer)} />)}</datalist></>}</Field>
         <TextField label="Nombre del cliente *" value={draft.cliente.nombre} onChange={value => change(current => ({ ...current, cliente: { ...current.cliente, nombre: value.slice(0, 200) } }))} autoComplete="off" />
         <TextField label="Correo electrónico" type="email" value={draft.cliente.email} onChange={value => change(current => ({ ...current, cliente: { ...current.cliente, email: value.slice(0, 254) } }))} hint="Necesario para enviar la cotización" autoComplete="off" />
         <TextField label="Teléfono o WhatsApp" value={draft.cliente.telefono} onChange={value => change(current => ({ ...current, cliente: { ...current.cliente, telefono: value.slice(0, 60) } }))} autoComplete="off" />

@@ -48,7 +48,7 @@ export default async function CustomerPage({ params, searchParams }: { params: P
       actions={<><NewQuotationMenu query={`cliente=${id}`} label="Cotizar para este cliente" />{whatsapp ? <a href={whatsapp} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-12 items-center gap-2 rounded-btn bg-wa px-5 font-semibold text-ink hover:bg-wa-deep"><MessageCircle size={18} strokeWidth={1.75} aria-hidden="true" />WhatsApp</a> : null}</>} />
     {creado ? <p role="status" className="rounded-card border border-line bg-brand-tint p-4">Cliente creado. Ya puede prepararle una cotización.</p> : null}
     <ul className="t-small flex flex-wrap gap-x-6 gap-y-2 text-ink-soft">
-      <li className="inline-flex items-center gap-2"><Mail size={16} strokeWidth={1.75} aria-hidden="true" /><a className="break-all text-ink hover:text-brand" href={`mailto:${customer.email}`}>{String(customer.email)}</a></li>
+      {customer.email ? <li className="inline-flex items-center gap-2"><Mail size={16} strokeWidth={1.75} aria-hidden="true" /><a className="break-all text-ink hover:text-brand" href={`mailto:${customer.email}`}>{String(customer.email)}</a></li> : null}
       {phone ? <li className="inline-flex items-center gap-2"><Phone size={16} strokeWidth={1.75} aria-hidden="true" /><a className="text-ink hover:text-brand" href={`tel:${phone.replace(/[^\d+]/g, "")}`}>{phone}</a></li> : null}
     </ul>
     <div className="grid gap-6 xl:grid-cols-2">

@@ -36,7 +36,7 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
     {!customers.length ? <EmptyState title={search ? "Ningún cliente coincide con la búsqueda" : "Todavía no hay clientes"} description={search ? <Link href="/admin/clientes" className="text-brand underline underline-offset-4">Ver todos los clientes</Link> : "Los clientes se crean aquí o automáticamente al guardar una cotización."} action={search ? undefined : <Link href="/admin/clientes/nuevo" className={primaryLink}>Crear cliente</Link>} /> : <RecordList label="Clientes">{customers.map((customer: Record<string, unknown>) => {
       const id = String(customer.id);
       return <RecordRow key={id} href={`/admin/clientes/${id}`} icon={<UserRound size={18} strokeWidth={1.75} />} title={String(customer.nombre)}
-        meta={<span className="break-all">{String(customer.email)}{customer.telefono ? ` · ${customer.telefono}` : ""}</span>}
+        meta={<span className="break-all">{[customer.email, customer.telefono].filter(Boolean).join(" · ")}</span>}
         aside={<span className="t-small text-ink-soft">{plural(quotationCount.get(id) ?? 0, "cotización", "cotizaciones")} · {plural(reservationCount.get(id) ?? 0, "reserva", "reservas")}</span>} />;
     })}</RecordList>}
     <Pagination label="Páginas de clientes" summary={`${plural(total, "cliente", "clientes")} · página ${page}`} previous={page > 1 ? href(page - 1) : undefined} next={page * pageSize < total ? href(page + 1) : undefined} />
